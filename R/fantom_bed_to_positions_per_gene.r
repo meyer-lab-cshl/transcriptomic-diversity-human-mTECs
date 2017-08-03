@@ -7,7 +7,7 @@ setwd("/home/stroemic/hiwi_16/data/external/Fantom5/CTSS_BED/tissues/")
 
 my_chr = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14","chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrM", "chrX", "chrY")
 
-#####Load gene object
+#####Load gene object order by entrez gene ID to make sure findOverlaps= 'first' takes smaller ID
 txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
 seqlevels(txdb)<- my_chr
 tx_genes <- genes(txdb)
@@ -21,6 +21,7 @@ datalist<-list()
 datalist_wo<-list()
 c <- 1
 
+## loop over all files 
 for(i in fantoms){
   dat <- read.table(i)
   #get identifier to name later file
@@ -46,6 +47,7 @@ for(i in fantoms){
   #export data frame as csv, do not use quotes, rownames; do use colnames
   write.table(dat_export, file =paste("/home/stroemic/hiwi_16/data/raw_positions/",name, ".positions.csv", sep=""), row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
   
+  ## save data frames in lists, one with; one without thymus 
   dat_export$iteration <- c
   if (grepl("thymus", i)) {
     print("one")
@@ -58,11 +60,15 @@ for(i in fantoms){
   c <- c+1
 }
 
+
+##get one file for sample
 print("rbinding")
+## bind dataframes together 
 dat_fantom5 = do.call(rbind, datalist)
 dat_fantom5_wo_thymus = do.call(rbind, datalist_wo)
 
 print("aggregating")
+## aggregate positions 
 dat_agg_fantom5 <- setDT(dat_fantom5)[, lapply(.SD, sum), by=.(chrom,geneID,strand,start,end), .SDcols=c("BarcodeCount")]
 setDF(dat_agg_fantom5)
 dat_agg_fantom5_wo_thymus <- setDT(dat_fantom5_wo_thymus)[, lapply(.SD, sum), by=.(chrom,geneID,strand,start,end), .SDcols=c("BarcodeCount")]

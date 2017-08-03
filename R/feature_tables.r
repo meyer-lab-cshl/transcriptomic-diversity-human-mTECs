@@ -7,6 +7,8 @@ library(dplyr)
 
 
 my_chr = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14","chr15", "chr16", "chr17", "chr18", "chr19", "chrM", "chrX", "chrY")
+
+#####Load gene object order by entrez gene ID to make sure findOverlaps= 'first' takes smaller ID
 txdb <- TxDb.Mmusculus.UCSC.mm9.knownGene
 seqlevels(txdb)<- my_chr
 tx_genes <- genes(txdb)
@@ -14,15 +16,19 @@ o <- order(as.numeric(tx_genes$gene_id))
 tx_genes <- tx_genes[o]
 transcript <- transcripts(txdb)
 
+## load genome sequence 
 genome <- BSgenome.Mmusculus.UCSC.mm9::BSgenome.Mmusculus.UCSC.mm9
 
-
+#### Functions ####
 preprocess_feature_table <- function(datx, daty) {
+  #merge dataframes to find non-overlapping positions
   dat <- merge(datx, daty, by=c("geneID","Position"), all.x = TRUE )
   dat <- subset(dat, select = -c(ReadCount.x, PosFromAnno.x, Class.x, ReadCount.y, PosFromAnno.y, Class.y))
+  #define response value: In other data source? yes/no
   dat$response<- "blub"
   dat[is.na(dat$BarcodeCount.y),]$response<- 'no'
   dat[!is.na(dat$BarcodeCount.y),]$response <- 'yes'
+  #split into genes and intergenic regions
   dat_inter <- dat[grepl("intergenic", dat$geneID),]
   dat <- dat[!grepl("intergenic", dat$geneID),]
   ###for genes annotate chromosome and strand with tx_genes object
@@ -51,13 +57,17 @@ total_fa <- dplyr::rename(total_fa, start=Position, Internal=response)
 
 
 ###Expressionlevel as rank for genes
+#make sub dataframe for genes
 genes_int <- total_int[,c("geneID","start","BarcodeCount.x")]
+#sum up count from all positions of each gene 
 genes_int <- setDT(genes_int)[, lapply(.SD, sum), by=.(geneID), .SDcols=c("BarcodeCount.x")]
 setDF(genes_int)
+#define a rank for each gene based on overall expression level
 genes_int$rank <- rank(genes_int$BarcodeCount.x, ties.method = "average")
 total_int$expr_rank_gene <- with(total_int, genes_int$rank[geneID])
 
 ###Expressionlevel relativ to gene and to total for each peak
+#use dplyr to mutate data frame, for each gene separately 
 total_int <- total_int %>% 
   group_by(geneID) %>% 
   mutate(sumCount = sum(BarcodeCount.x)) %>% 
@@ -67,10 +77,8 @@ total_int <- total_int %>%
   dplyr::select(-sumCount)
 
 
-###Relative Position in gene
-#GRanges(seqnames = test$chrom, strand = test$strand, ranges = IRanges( start = start(tx_genes[test$geneID]), end = test$Position ))
-
 ###Absolut Position
+#Granges object from positions
 int_ranges <- makeGRangesFromDataFrame(total_int, keep.extra.columns = TRUE)
 
 ####Define GRanges
@@ -88,21 +96,26 @@ TSS100_transcripts <- promoters(transcript, upstream = 100, downstream = 100)
 total_int$TSS_100_trans <- overlapsAny(int_ranges, TSS100_transcripts)
 
 #First Exon 
+#exon is genomicranges list object, for each element of list take either first or last entry, depending on strand 
 exon = exonsBy(txdb, by='gene')
 first_exon = lapply(exon, function(x) if( unique(strand(x)) == '+') x[1] else x[length(x)])
 first_exon = do.call(GRangesList, first_exon)
 first_exon = unlist(first_exon)
 total_int$first_exon <- overlapsAny(int_ranges, first_exon)
 #Other Exons 
+#same as first exon, except all exon ranges are taken except for first or last entry, depending on strand
 other_exon = lapply(exon, function(x) if( unique(strand(x)) == '+') x[-1] else x[-length(x)])
 other_exon = do.call(GRangesList, other_exon)
 other_exon = unlist(other_exon)
 total_int$other_exon <- overlapsAny(int_ranges, other_exon)
 #Introns
+#later a different more correct definition was used
 all_exons <- unlist(exon)
 introns <- GenomicRanges::setdiff(tx_genes, all_exons)
 total_int$intron <- overlapsAny(int_ranges, introns)
 
+
+##everything from here on has to be strand specific, so split granges first and merge at the ende
 #TTS +-100
 plus <- tx_genes[strand(tx_genes) == '+']
 minus <- tx_genes[strand(tx_genes) == '-']
@@ -154,6 +167,7 @@ upstream_genes <- c(plus, minus)
 total_int$upstream_gene <- overlapsAny(int_ranges, upstream_genes)
 
 #Antisense
+# later this object was extended by 1000
 plus <- tx_genes[strand(tx_genes) == '+']
 minus <- tx_genes[strand(tx_genes) == '-']
 strand(plus) <- '-'
@@ -162,6 +176,7 @@ antisense <- c(plus, minus)
 total_int$antisense <- overlapsAny(int_ranges, antisense)
 
 ####2 Bases  after
+# getSeq to get actual sequence from genome object containing genomic sequence, reverse for minus strand
 total_int_plus <- total_int[total_int$strand == '+',]
 total_int_minus <- total_int[total_int$strand == '-',]
 total_int_plus$Basesafter <- getSeq(genome, total_int_plus$chrom, (total_int_plus$start+1), (total_int_plus$start +2), as.character=TRUE)

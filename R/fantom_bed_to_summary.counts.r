@@ -6,7 +6,7 @@ setwd("/home/stroemic/hiwi_16/data/external/Fantom5/CTSS_BED/tissues/")
 
 my_chr = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14","chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrM", "chrX", "chrY")
 
-#####Load gene object
+#####Load gene object order by entrez gene ID to make sure findOverlaps= 'first' takes smaller ID
 txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
 seqlevels(txdb)<- my_chr
 tx_genes <- genes(txdb)

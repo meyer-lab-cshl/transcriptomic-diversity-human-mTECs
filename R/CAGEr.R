@@ -12,6 +12,7 @@ my_chr = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9
 seqlevels(txdb)<- my_chr
 tx_genes <- genes(txdb)
 
+## read in file list, store names of tissues in list, append all_mTECs sample
 fantoms <- list.files(pattern="*.bed$", full.names = TRUE)
 samples <- lapply(fantoms, function(x) gsub("./(.*).CNhs.*", "\\1", x ))
 fantoms <- append(fantoms, "/home/stroemic/hiwi_16/data/Summary_counts/bed/all_mTECs.bed")
@@ -23,12 +24,15 @@ samples <- append(samples, "all_mTECs")
 myCAGEset <- new("CAGEset", genomeName = "BSgenome.Hsapiens.UCSC.hg19",
                  inputFiles = fantoms, inputFilesType = "bed",
                  sampleLabels = unlist(samples))
+##read in TSS positions and save because time intensive
 getCTSS(myCAGEset)
 saveRDS(object = myCAGEset, file = "/home/stroemic/hiwi_16/analysis/CAGEr/myCAGEset.rds")
+## calculate TSS 
 ctss_calc <- CTSStagCount(myCAGEset)
-
+## normalisation --> here it failed for the big dataset, even in the simpleTpm mode
 normalizeTagCount(myCAGEset, method = "simpleTpm")
 
+## cluster TSS 
 clusterCTSS(object = myCAGEset, threshold = 2, thresholdIsTpm = TRUE, nrPassThreshold = 1,  
             method = "distclu", maxDist = 12, removeSingletons = TRUE, keepSingletonsAbove = 10,
             useMulticore = TRUE, nrCores = 10)
