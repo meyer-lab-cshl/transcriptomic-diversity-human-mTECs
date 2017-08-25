@@ -1,0 +1,161 @@
+---
+title: "Shifted TSS patterns in mTECs vs. Tissues analysis"
+author: "Léonie Strömich"
+date: "August 15, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This script is used based on the list of matrices for each protein coding gene calculated in shifted_tss_patterns_mTECs_tissues.Rmd. The list was saved as .rds named list_genes_matrices_protein_coding.rds. 
+
+## Prerequisites
+#### Load libraries
+
+```{r libraries, message=FALSE}
+library(reshape)
+library(LSD)
+library(ggplot2)
+library(scales)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(biomaRt)
+```
+#### Read in Data
+ 
+
+```{r read in}
+### BioMart object
+ensembl <- useMart(biomart="ENSEMBL_MART_ENSEMBL", 
+                   host="grch37.ensembl.org", 
+                   dataset="hsapiens_gene_ensembl")
+
+###read in tra genes 
+tra_entrez <- read.table(file ="/home/stroemic/hiwi_16/analysis/gene_lists/human_tra_genes_sansom.csv", sep=",", header = TRUE)
+##table with aire dep genes 
+aire_dep_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_aire_dep_san_genes.csv", header=TRUE, sep=",")
+##table with fezf2 dep genes 
+fezf2_dep_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_fezf2_dep_genes.csv", header=TRUE, sep=",")
+
+## merge aire and fezf2 dep genes with tra genes
+aire_dep_tras <- merge(tra_entrez, aire_dep_genes, by="entrezgene")
+fezf2_dep_tras <- merge(tra_entrez, fezf2_dep_genes, by="entrezgene")
+
+#### read in List of gene matrices
+list_genes <- readRDS(file="/home/stroemic/hiwi_16/analysis/shifted_TSS/list_genes_matrices_protein_coding.rds")
+
+```
+
+
+## Analysis 
+First the p.value between 
+```{r p_value}
+##calculate p values
+list_fisher <- lapply(list_genes, function(x) fisher.test(round(x[,1:2])))
+```
+#### Plot 1
+Boxplot of ratios between counts in 5'UTR and CDS for tissues and mTECs
+```{r boxplots, message=FALSE, warning=FALSE}
+##calculate ratios
+ratio_tissues<- sapply(list_genes, function(x) x[1,2] / (x[1,1] + x[1,2]))
+ratio_mTEC  <- sapply(list_genes, function(x) x[2,2] / (x[2,1] + x[2,2]))
+##plot distribution in box_plots
+df_ratios <- data.frame("Tissues"=ratio_tissues, "mTECs"=ratio_mTEC)
+m_df_ratios <- melt(df_ratios)
+#pdf(file="/home/stroemic/hiwi_16/analysis/shifted_TSS/plots/boxplot_ratios_tissues_mTECs.pdf")
+p1 <- ggplot(m_df_ratios, aes(x=variable, y=value, fill=variable))
+#set ylim dependent on hight of boxes taking the stats functions first and fifth entry ()
+ylim1 = boxplot.stats(m_df_ratios$value)$stats[c(1, 5)]
+p1 + geom_boxplot(outlier.size=NA) +  coord_cartesian(ylim = ylim1*1.05) + 
+    theme_bw() +
+    labs(title="Boxplots of ratio between CDS/5'UTR expression \nin tissues and mTECs", x ="", y ="Ratio CDS/(CDS+5'UTR) expression") +
+    scale_fill_manual(values = c('#74add1','#4575b4')) +
+    guides(fill=FALSE)
+#dev.off()
+
+```
+
+#### Table of all genes
+A table of all genes was created with the following characteristics for each gene:
+
+* ratio of (CDS/CDS + 5'UTR) counts between mTECs and tissues
+* p-value of independence of count distribution in 5'UTR and CDS between mTECs and tissues 
+* counts in 5'UTR and CDS for tissues and mTECs
+* whether gene is a TRA gene and expressed Aire or Fezf2 dependent
+
+Sort table by p-value and ratio and slice TRAs and Aire-dep TRAs
+
+```{r dataframe}
+#1. Significane
+filt_fisher <- sapply(list_fisher, function(x) x$p.value)
+filt_fisher <- p.adjust(filt_fisher, method = "BH") 
+#2. Shift into CDS
+##calculate ratios between tissues and mtecs cds vs. upstream each
+filt_ratios <- sapply(list_genes, function(x) (x[2,2]/(x[2,1]+x[2,2]))/(x[1,2] / (x[1,1] + x[1,2])) )
+#3. expression levels mTECs, tisssues
+tissues_upstream <- sapply(list_genes, function(x) x[1,1])
+tissues_cds <- sapply(list_genes, function(x) x[1,2])
+mTECs_upstream <- sapply(list_genes, function(x) x[2,1])
+mTECs_cds <- sapply(list_genes, function(x) x[2,2])
+##geneIDs and values to data.frame 
+df <- data.frame("geneID"=as.character(names(filt_ratios)), 
+                 "ratio"= filt_ratios, "p.value"=filt_fisher,
+                 "tissues_upstream"= tissues_upstream,"tissues_cds"=tissues_cds,
+                 "mTECs_upstream"= mTECs_upstream, "mTECs_cds"=mTECs_cds)
+##add TRAs
+df$tra <- match(df$geneID, tra_entrez$entrezgene)
+df[!is.na(df$tra),]$tra<- 'tra'
+df[is.na(df$tra),]$tra <- 'non_tra'
+
+df$aire <- match(df$geneID, aire_dep_tras$entrezgene )
+df[!is.na(df$aire),]$aire<- 'yes'
+df[is.na(df$aire),]$aire <- 'no'
+
+df$fezf2 <- match(df$geneID, fezf2_dep_tras$entrezgene )
+df[!is.na(df$fezf2),]$fezf2<- 'yes'
+df[is.na(df$fezf2),]$fezf2 <- 'no'
+
+##add gene names
+genes <- getBM(attributes = c('entrezgene', 'ensembl_gene_id','external_gene_name'), 
+                        filters = 'entrezgene',
+                        values = df$geneID, 
+                        mart=ensembl)
+genes <- genes[!duplicated(genes$entrezgene),]
+
+df_export <- merge(df, genes, by.x="geneID", by.y="entrezgene")
+
+top_genes <- df_export[with(df_export, order(p.value, -ratio)),]
+top_tras <- top_genes[top_genes$tra == "tra",]
+top_aire_tras <- top_tras[top_tras$aire == "yes",]
+
+##save tables with columns in wanted order
+write.table(df_export[,c(1,12,11,2:7,8:10)], file="/home/stroemic/hiwi_16/analysis/shifted_TSS/protein_coding_genes_shifted_tss.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")
+write.table(top_genes[,c(1,12,11,2:7,8:10)], file="/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_protein_coding_genes_shifted_tss.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")
+write.table(top_tras[,c(1,12,11,2:7,8:10)], file="/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_tras_protein_coding_genes_shifted_tss.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")
+write.table(top_aire_tras[,c(1,12,11,2:7,8:10)], file="/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_aire_tras_protein_coding_genes_shifted_tss.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")
+ 
+
+```
+
+#### Plot 2
+Create volcano plot of p-value over ratio to visualize distribution of genes. Also mark the number of genes with a significant shift between mTECs and tissues and the shift direction. 
+Marked in blue are genes of interest from literature. (somehow not shown in html)
+```{r volcano plot}
+#pdf(file="/home/stroemic/hiwi_16/analysis/shifted_TSS/plots/all_genes_p.value_vs_ratio.pdf")
+gene_ids = c("MUC6","MLANA","INS")
+ggplot(df, aes(x=log(ratio), y=-log10(p.value))) +
+        geom_point(size=0.5) +
+        geom_point(data=df[df$external_gene_name %in% gene_ids,], colour="blue", size=2) +
+        geom_vline(xintercept = 0, linetype=2, colour= "red") +
+        labs(title="Genewise significance of shifted expression pattern \nbetween tissues and mTECs", x ="log(ratio of CDS/5'UTR expression between tissues and mTECs)", y ="-log10(p.value)") +
+        annotate("text", x=2.5, y=370, label=paste(nrow(df[df$p.value < 0.05 & df$ratio > 1, ])," sig. genes",sep=""), fontface =2) + 
+        annotate("text", x=-2.5, y=370, label =paste(nrow(df[df$p.value < 0.05 & df$ratio < 1, ])," sig. genes",sep=""), fontface =2) +
+        theme_bw()
+
+#dev.off()
+```
+
+
+
+
