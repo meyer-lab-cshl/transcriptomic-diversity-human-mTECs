@@ -132,7 +132,7 @@ list_uncounted_pos <- list()
 list_matrices <- list()
 list_counts_classes <- list()
 
-for (i in c(20000) ) {
+for (i in c(250, 1000, 20000) ) {
   name <- as.character(i)
   if (i == 250) {
     thres=-250
@@ -212,62 +212,66 @@ for (i in c(20000) ) {
   list_counts_classes[[name]] <- counts_classes
 }
 
-saveRDS(list_uncounted_pos, file =paste("/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_uncounted_positions_human_filt_",name,".rds",sep=""))
-saveRDS(list_matrices, file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_counts_matrices_human_filt_",name,".rds",sep=""))
-saveRDS(list_counts_classes, file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_counts_classes_human_filt_",name,".rds",sep=""))
+saveRDS(list_uncounted_pos, file ="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_uncounted_positions_human_filt.rds")
+saveRDS(list_matrices, file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_counts_matrices_human_filt.rds")
+saveRDS(list_counts_classes, file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_counts_classes_human_filt.rds")
 
-###when loaded
- counts_250 <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt_250.rds")
- counts_1000 <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt_1000.rds")
- counts_20000 <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt_20000.rds")
- list_counts_classes <- c(counts_250, counts_1000, counts_20000)
+# saveRDS(list_uncounted_pos, file =paste("/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_uncounted_positions_human_filt_",name,".rds",sep=""))
+# saveRDS(list_matrices, file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_counts_matrices_human_filt_",name,".rds",sep=""))
+# saveRDS(list_counts_classes, file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_rel_pos_to_annotation_list_counts_classes_human_filt_",name,".rds",sep=""))
 
-
-#### plotting ####
-for (i in c(250)) {
-  name <- as.character(i)
-  m_counts_classes_tra_m <- melt(list_counts_classes[[name]][c(1,2,3),])
-  m_counts_classes_tra_m <- m_counts_classes_tra_m %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
-  m_counts_classes_aire_tra <- melt(list_counts_classes[[name]][c(1,8),])
-  m_counts_classes_aire_tra <- m_counts_classes_aire_tra %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
-  m_counts_classes_fezf2_tra <- melt(list_counts_classes[[name]][c(2,9),])
-  m_counts_classes_fezf2_tra <- m_counts_classes_fezf2_tra %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
-  m_counts_classes_other_tra <- melt(list_counts_classes[[name]][c(3,10),])
-  m_counts_classes_other_tra <- m_counts_classes_other_tra%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
-  m_counts_classes_hk <- melt(list_counts_classes[[name]][c(4,7),])
-  m_counts_classes_hk <- m_counts_classes_hk %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
-  m_counts_classes_tra_hk_m <- melt(list_counts_classes[[name]][c(1:4),])
-  m_counts_classes_tra_hk_m <- m_counts_classes_tra_hk_m%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
-  m_counts_classes_m_t_m <- melt(list_counts_classes[[name]][c(5,6),])
-  m_counts_classes_m_t_m <- m_counts_classes_m_t_m%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
-  
-
-  pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_",name,"_40.pdf",sep=""))
-  print(plot <- plot_range(m_counts_classes_tra_m))
-  print(plot <- plot_range(m_counts_classes_aire_tra))
-  print(plot <- plot_range(m_counts_classes_fezf2_tra))
-  print(plot <- plot_range(m_counts_classes_other_tra))
-  print(plot <- plot_range(m_counts_classes_hk))
-  print(plot <- plot_range(m_counts_classes_tra_hk_m))
-  print(plot <- plot_range(m_counts_classes_m_t_m))
-  dev.off()
-  pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_line_",name,"_40.pdf",sep=""))
-  print(plot <- plot_range_line(m_counts_classes_tra_m))
-  print(plot <- plot_range_line(m_counts_classes_aire_tra))
-  print(plot <- plot_range_line(m_counts_classes_fezf2_tra))
-  print(plot <- plot_range_line(m_counts_classes_other_tra))
-  print(plot <- plot_range_line(m_counts_classes_hk))
-  print(plot <- plot_range_line(m_counts_classes_tra_hk_m))
-  print(plot <- plot_range_line(m_counts_classes_m_t_m))
-  dev.off()
-  pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_line_only_",name,"_40.pdf",sep=""))
-  print(plot <- plot_range_line_only(m_counts_classes_tra_m))
-  print(plot <- plot_range_line_only(m_counts_classes_aire_tra))
-  print(plot <- plot_range_line_only(m_counts_classes_fezf2_tra))
-  print(plot <- plot_range_line_only(m_counts_classes_other_tra))
-  print(plot <- plot_range_line_only(m_counts_classes_hk))
-  print(plot <- plot_range_line_only(m_counts_classes_tra_hk_m))
-  print(plot <- plot_range_line_only(m_counts_classes_m_t_m))
-  dev.off()
-}
- 
+# ###when loaded
+#  counts_250 <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt_250.rds")
+#  counts_1000 <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt_1000.rds")
+#  counts_20000 <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt_20000.rds")
+#  list_counts_classes <- c(counts_250, counts_1000, counts_20000)
+# 
+# 
+# #### plotting ####
+# for (i in c(250)) {
+#   name <- as.character(i)
+#   m_counts_classes_tra_m <- melt(list_counts_classes[[name]][c(1,2,3),])
+#   m_counts_classes_tra_m <- m_counts_classes_tra_m %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+#   m_counts_classes_aire_tra <- melt(list_counts_classes[[name]][c(1,8),])
+#   m_counts_classes_aire_tra <- m_counts_classes_aire_tra %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+#   m_counts_classes_fezf2_tra <- melt(list_counts_classes[[name]][c(2,9),])
+#   m_counts_classes_fezf2_tra <- m_counts_classes_fezf2_tra %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+#   m_counts_classes_other_tra <- melt(list_counts_classes[[name]][c(3,10),])
+#   m_counts_classes_other_tra <- m_counts_classes_other_tra%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+#   m_counts_classes_hk <- melt(list_counts_classes[[name]][c(4,7),])
+#   m_counts_classes_hk <- m_counts_classes_hk %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+#   m_counts_classes_tra_hk_m <- melt(list_counts_classes[[name]][c(1:4),])
+#   m_counts_classes_tra_hk_m <- m_counts_classes_tra_hk_m%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+#   m_counts_classes_m_t_m <- melt(list_counts_classes[[name]][c(5,6),])
+#   m_counts_classes_m_t_m <- m_counts_classes_m_t_m%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+#   
+# 
+#   pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_",name,"_40.pdf",sep=""))
+#   print(plot <- plot_range(m_counts_classes_tra_m))
+#   print(plot <- plot_range(m_counts_classes_aire_tra))
+#   print(plot <- plot_range(m_counts_classes_fezf2_tra))
+#   print(plot <- plot_range(m_counts_classes_other_tra))
+#   print(plot <- plot_range(m_counts_classes_hk))
+#   print(plot <- plot_range(m_counts_classes_tra_hk_m))
+#   print(plot <- plot_range(m_counts_classes_m_t_m))
+#   dev.off()
+#   pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_line_",name,"_40.pdf",sep=""))
+#   print(plot <- plot_range_line(m_counts_classes_tra_m))
+#   print(plot <- plot_range_line(m_counts_classes_aire_tra))
+#   print(plot <- plot_range_line(m_counts_classes_fezf2_tra))
+#   print(plot <- plot_range_line(m_counts_classes_other_tra))
+#   print(plot <- plot_range_line(m_counts_classes_hk))
+#   print(plot <- plot_range_line(m_counts_classes_tra_hk_m))
+#   print(plot <- plot_range_line(m_counts_classes_m_t_m))
+#   dev.off()
+#   pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_line_only_",name,"_40.pdf",sep=""))
+#   print(plot <- plot_range_line_only(m_counts_classes_tra_m))
+#   print(plot <- plot_range_line_only(m_counts_classes_aire_tra))
+#   print(plot <- plot_range_line_only(m_counts_classes_fezf2_tra))
+#   print(plot <- plot_range_line_only(m_counts_classes_other_tra))
+#   print(plot <- plot_range_line_only(m_counts_classes_hk))
+#   print(plot <- plot_range_line_only(m_counts_classes_tra_hk_m))
+#   print(plot <- plot_range_line_only(m_counts_classes_m_t_m))
+#   dev.off()
+# }
+#  

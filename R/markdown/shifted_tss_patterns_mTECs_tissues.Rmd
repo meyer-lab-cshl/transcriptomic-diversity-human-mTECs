@@ -45,8 +45,10 @@ preprocess_df <- function(x, keep) {
 ### Read in data
 Data Tables containing positions
 ```{r data tables, eval=FALSE}
+## gene_lists in Transfer/gene_lists/Filtered
 #tra_genes n=5800
 tra_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_tra_genes_sansom.csv", header=TRUE, sep=",")
+## TSS in Transfer/tss_data
 # all mTEC positions after randomForest filtering
 mTEC_pos_fil <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all_mTECs.filtered.csv", header=TRUE, sep=",")
 # all tissues (excluding thymus) positions after randomForest filtering

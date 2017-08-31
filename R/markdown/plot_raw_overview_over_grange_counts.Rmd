@@ -94,6 +94,7 @@ plot_range_line_only <- function(m_df) {
 #### Read in data 
 
 ```{r read in, eval = FALSE}
+## gene_lists in Transfer/gene_lists
 ##table with tras
 tra_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_tra_genes_sansom.csv", header=TRUE, sep=",")
 ##table with aire dep genes 
@@ -120,7 +121,7 @@ other_tras <- merge(other_tras, fezf2_dep_genes, ny="entrezgene", all.x = TRUE)
 other_tras <- other_tras[is.na(other_tras$ensembl_gene_id),]
 
 
-###filtered
+###filtered ---> Transfer/tss_data/raw_positions
 ##mtec all positions
 mTEC_pos_fil <- read.table("/home/stroemic/hiwi_16/data/raw_positions/all_mTECs.positions.csv", header=TRUE, sep=",")
 ##tissue (wo thymus) all positions

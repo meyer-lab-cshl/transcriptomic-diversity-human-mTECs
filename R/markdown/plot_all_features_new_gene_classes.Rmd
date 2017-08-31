@@ -24,16 +24,15 @@ Script to calculate distribution of tags over gene body. Each TSS is counted to 
     j. antisense
     k. downstream
 
-2. Add count of TSS to gene class the gene of the found feature range belongs to. 
+2. Add count of TSS to the gene class, the gene of the found feature range, belongs to. 
 
-3. 
 These steps are performed for TSS in mTECs and tissues seperately. The resulting matrices are merged later and used for plotting TSS distribution in different gene classes. 
 
 Input: Gene body genomic ranges, Gene classes, Filtered positions in mTECs and tissues
 
 Output: Tag count matrices with gene classes as rows and Positions as columns
 
-Running time:
+Running time: ~6h for filtered datasets, ~7h for unfiltered dataset
 
 ## Prerequisites
 #### Load libraries
@@ -52,6 +51,7 @@ library(GenomicRanges)
 #### Read in data 
 
 ```{r read in, eval = FALSE}
+## gene_lists in Transfer/gene_lists
 ##table with tras
 tra_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_tra_genes_sansom.csv", header=TRUE, sep=",")
 ##table with aire dep genes 
@@ -62,12 +62,12 @@ fezf2_dep_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_
 hk_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/housekeeping_genes.csv", header=TRUE, sep=",")
 
 ##### human data points with features
-###filtered
+###filtered ---> Transfer/tss_data/Filtered
 ##mtec all positions
 mTEC_pos_fil <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all_mTECs.filtered.csv", header=TRUE, sep=",")
 ##tissue (wo thymus) all positions
 tissues_pos_fil <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all.tissues.wo.thymus.filtered.csv", header = TRUE, sep = ",")
-###unfiltered
+###unfiltered ---> Transfer/tss_data/Unfiltered_features
 ##mtec features 
 mTEC_features_unfil <- read.table("/home/stroemic/hiwi_16/analysis/lars_perl/all_63/features/all_mTECs.features.csv", header=TRUE, sep=",")
 mTEC_pos_unfil <- mTEC_features_unfil[,c(1:6)]
@@ -75,6 +75,7 @@ mTEC_pos_unfil <- mTEC_features_unfil[,c(1:6)]
 tissues_features_unfil <- read.table("/home/stroemic/hiwi_16/analysis/lars_perl/all_63/features/all.tissues.wo.thymus.features.csv", header = TRUE, sep = ",")
 tissues_pos_unfil <- tissues_features_unfil[,c(1:6)]
 
+## put all dfs into one list to allow calculation for either filtered or unfiltered data
 features_dfs <- list(human_filt=list(mTEC_pos_fil, tissues_pos_fil), 
                      human_unfilt=list(mTEC_pos_unfil, tissues_pos_unfil))
 
@@ -144,12 +145,12 @@ other_exon = unlist(other_exon)
 TSS10_other_exon <- promoters(other_exon, upstream = 10, downstream = 10)
 TSS100_other_exon <- promoters(other_exon, upstream = 100, downstream = 100)
 
-#Introns
+#Introns --> Transfer/rds_objects   ##calculation takes over an hour
 # introns <- sapply(seq_along(exon), function(i) GenomicRanges::setdiff(tx_genes[names(exon[i])], exon[[i]]), USE.NAMES = TRUE)
 # names(introns) <- names(exon)
 # introns <- do.call(GRangesList, introns)
 # introns = unlist(introns)
-# saveRDS(introns, file="/home/stroemic/hiwi_16/analysis/gene_lists/introns.rds")
+# saveRDS(introns, file="/home/stroemic/hiwi_16/analysis/gene_lists/introns.rds") 
 introns <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/introns.rds")
 
 #TTS +-100

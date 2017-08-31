@@ -59,19 +59,20 @@ ensembl <- useMart(biomart="ENSEMBL_MART_ENSEMBL",
                    host="grch37.ensembl.org", 
                    dataset="hsapiens_gene_ensembl")
 
-##mtec all positions
+##mtec all positions --> Transfer/tss_data/Filtered
 mTEC_pos_fil <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all_mTECs.filtered.csv", header=TRUE, sep=",")
-##tissue (wo thymus) all positions
+##tissue (wo thymus) all positions --> Transfer/tss_data/Filtered
 tissues_pos_fil <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all.tissues.wo.thymus.filtered.csv", header = TRUE, sep = ",")
 ##get common genes for calculation
 keep <- intersect(mTEC_pos_fil$geneID, tissues_pos_fil$geneID)
 
 #### read in dataframe of genes with shifted TSS pattern
+## one of the final gene lists --> Transfer/gene_lists/Final_output_gene_lists
 df_genes <- read.table("/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_protein_coding_genes_shifted_tss.csv", header = TRUE, sep=",")
 
 
 #### read in txdb object and get CDS GRanges
-## txdb gene object
+## txdb gene object 
 my_chr = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14","chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrM", "chrX", "chrY")
 txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
 seqlevels(txdb)<- my_chr

@@ -124,7 +124,8 @@ $(document).ready(function () {
 </div>
 
 
-<p>Running time: between 2 to 14h depending on the genomic range to calculate over, for each matrix so in total ~20h list of matrices are stored as rsd and can be directly called before plotting</p>
+<p>This script is used to built two random forest classifiers. One on internal data and one on Fantom5 data. Both are 10x cross validated and performance plots are created.</p>
+<p>Running time: To built the randomForest classifiers can take up to 20min. So around 7h in total for complete script</p>
 <div id="prerequisites" class="section level2">
 <h2>Prerequisites</h2>
 <div id="load-libraries" class="section level4">
@@ -136,14 +137,14 @@ library(ggplot2)</code></pre>
 </div>
 <div id="read-in-data" class="section level4">
 <h4>Read in data</h4>
-<p>Data of mouse embryonic stem cells, all samples pooled. Data from internal sequencing protocol (=int) or Fantom5 database (=fa).</p>
+<p>Data of mouse embryonic stem cells, all samples pooled. Data from internal sequencing protocol (=int) or Fantom5 database (=fa). Feature tables are saved after random sampling to have reproducable datasets. So are the random forest classifiers.</p>
 <pre class="r"><code>total_int &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/r_random-forest/features_internal_data_mm9.csv&quot;, sep=&quot;,&quot;, header = TRUE)
-#randomly shuffle data and save to have reproductive data slices
+#randomly shuffle data and save to have reproducable data slices
 total_int &lt;- total_int[sample(nrow(total_int)),]
 write.table(total_int, file =&quot;/home/stroemic/hiwi_16/analysis/r_random-forest/features_internal_data_mm9_for_rf.csv&quot;, row.names=FALSE, na=&quot;&quot;, col.names=TRUE, quote=FALSE, sep=&quot;,&quot;)
 
 total_fa &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/r_random-forest/features_fantom5_data_mm9.csv&quot;, sep=&quot;,&quot;, header = TRUE)
-#randomly shuffle data and save to have reproductive data slices
+#randomly shuffle data and save to have reproducable data slices
 total_fa &lt;- total_fa[sample(nrow(total_fa)),]
 write.table(total_fa, file =&quot;/home/stroemic/hiwi_16/analysis/r_random-forest/features_fantom5_data_mm9_for_rf.csv&quot;, row.names=FALSE, na=&quot;&quot;, col.names=TRUE, quote=FALSE, sep=&quot;,&quot;)</code></pre>
 </div>
@@ -162,9 +163,10 @@ features_fa &lt;- total_fa[8:33]
 folds_int &lt;- cut(seq(1,nrow(total_int)),breaks=10,labels=FALSE)
 folds_fa &lt;- cut(seq(1,nrow(total_fa)),breaks=10,labels=FALSE)</code></pre>
 <p>Code comes in two sections, one for internal data set and one for Fantom5 data set</p>
-<ol style="list-style-type: decimal">
-<li>Internal data set</li>
-</ol>
+</div>
+</div>
+<div id="internal-data-set" class="section level2">
+<h2>1. Internal data set</h2>
 <ul>
 <li>Train randomforest classifier</li>
 <li>Determine feature importance and performance</li>
@@ -262,9 +264,9 @@ for (i in tpr_tnrs){
 legend(&quot;bottomleft&quot;, legend=c(&quot;Training data&quot;, &quot;10x cross validations&quot;),lwd = 2, col=c(2,4))
 
 #dev.off()</code></pre>
-<ol start="2" style="list-style-type: decimal">
-<li>Fantom5 data set</li>
-</ol>
+</div>
+<div id="fantom5-data-set" class="section level2">
+<h2>2. Fantom5 data set</h2>
 <ul>
 <li>Train randomforest classifier</li>
 <li>Determine feature importance and performance</li>
@@ -363,7 +365,6 @@ for (i in tpr_tnrs){
 legend(&quot;bottomleft&quot;, legend=c(&quot;Training data&quot;, &quot;10x cross validations&quot;),lwd = 2, col=c(2,4))
 
 #dev.off()</code></pre>
-</div>
 </div>
 
 

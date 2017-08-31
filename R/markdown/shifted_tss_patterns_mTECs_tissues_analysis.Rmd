@@ -31,6 +31,7 @@ ensembl <- useMart(biomart="ENSEMBL_MART_ENSEMBL",
                    host="grch37.ensembl.org", 
                    dataset="hsapiens_gene_ensembl")
 
+## gene lists in Transfer/gene_lists
 ###read in tra genes 
 tra_entrez <- read.table(file ="/home/stroemic/hiwi_16/analysis/gene_lists/human_tra_genes_sansom.csv", sep=",", header = TRUE)
 ##table with aire dep genes 
@@ -42,7 +43,7 @@ fezf2_dep_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_
 aire_dep_tras <- merge(tra_entrez, aire_dep_genes, by="entrezgene")
 fezf2_dep_tras <- merge(tra_entrez, fezf2_dep_genes, by="entrezgene")
 
-#### read in List of gene matrices
+#### read in List of gene matrices ---> Transfer/rds_objects
 list_genes <- readRDS(file="/home/stroemic/hiwi_16/analysis/shifted_TSS/list_genes_matrices_protein_coding.rds")
 
 ```
@@ -129,6 +130,7 @@ top_genes <- df_export[with(df_export, order(p.value, -ratio)),]
 top_tras <- top_genes[top_genes$tra == "tra",]
 top_aire_tras <- top_tras[top_tras$aire == "yes",]
 
+## final output lists in Transfer/gene_lists/Final_output_gene_lists
 ##save tables with columns in wanted order
 write.table(df_export[,c(1,12,11,2:7,8:10)], file="/home/stroemic/hiwi_16/analysis/shifted_TSS/protein_coding_genes_shifted_tss.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")
 write.table(top_genes[,c(1,12,11,2:7,8:10)], file="/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_protein_coding_genes_shifted_tss.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")

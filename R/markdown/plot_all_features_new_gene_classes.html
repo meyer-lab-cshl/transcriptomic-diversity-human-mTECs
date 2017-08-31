@@ -140,12 +140,12 @@ $(document).ready(function () {
 <li>antisense</li>
 <li>downstream</li>
 </ol></li>
-<li><p>Add count of TSS to gene class the gene of the found feature range belongs to.</p></li>
-<li><p>These steps are performed for TSS in mTECs and tissues seperately. The resulting matrices are merged later and used for plotting TSS distribution in different gene classes.</p></li>
+<li>Add count of TSS to the gene class, the gene of the found feature range, belongs to.</li>
 </ol>
+<p>These steps are performed for TSS in mTECs and tissues seperately. The resulting matrices are merged later and used for plotting TSS distribution in different gene classes.</p>
 <p>Input: Gene body genomic ranges, Gene classes, Filtered positions in mTECs and tissues</p>
 <p>Output: Tag count matrices with gene classes as rows and Positions as columns</p>
-<p>Running time:</p>
+<p>Running time: ~6h for filtered datasets, ~7h for unfiltered dataset</p>
 <div id="prerequisites" class="section level2">
 <h2>Prerequisites</h2>
 <div id="load-libraries" class="section level4">
@@ -161,7 +161,8 @@ library(GenomicRanges)</code></pre>
 </div>
 <div id="read-in-data" class="section level4">
 <h4>Read in data</h4>
-<pre class="r"><code>##table with tras
+<pre class="r"><code>## gene_lists in Transfer/gene_lists
+##table with tras
 tra_genes &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/gene_lists/human_tra_genes_sansom.csv&quot;, header=TRUE, sep=&quot;,&quot;)
 ##table with aire dep genes 
 aire_dep_genes &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/gene_lists/human_aire_dep_san_genes.csv&quot;, header=TRUE, sep=&quot;,&quot;)
@@ -171,12 +172,12 @@ fezf2_dep_genes &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/gene_list
 hk_genes &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/gene_lists/housekeeping_genes.csv&quot;, header=TRUE, sep=&quot;,&quot;)
 
 ##### human data points with features
-###filtered
+###filtered ---&gt; Transfer/tss_data/Filtered
 ##mtec all positions
 mTEC_pos_fil &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all_mTECs.filtered.csv&quot;, header=TRUE, sep=&quot;,&quot;)
 ##tissue (wo thymus) all positions
 tissues_pos_fil &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all.tissues.wo.thymus.filtered.csv&quot;, header = TRUE, sep = &quot;,&quot;)
-###unfiltered
+###unfiltered ---&gt; Transfer/tss_data/Unfiltered_features
 ##mtec features 
 mTEC_features_unfil &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/lars_perl/all_63/features/all_mTECs.features.csv&quot;, header=TRUE, sep=&quot;,&quot;)
 mTEC_pos_unfil &lt;- mTEC_features_unfil[,c(1:6)]
@@ -184,6 +185,7 @@ mTEC_pos_unfil &lt;- mTEC_features_unfil[,c(1:6)]
 tissues_features_unfil &lt;- read.table(&quot;/home/stroemic/hiwi_16/analysis/lars_perl/all_63/features/all.tissues.wo.thymus.features.csv&quot;, header = TRUE, sep = &quot;,&quot;)
 tissues_pos_unfil &lt;- tissues_features_unfil[,c(1:6)]
 
+## put all dfs into one list to allow calculation for either filtered or unfiltered data
 features_dfs &lt;- list(human_filt=list(mTEC_pos_fil, tissues_pos_fil), 
                      human_unfilt=list(mTEC_pos_unfil, tissues_pos_unfil))
 
@@ -250,12 +252,12 @@ other_exon = unlist(other_exon)
 TSS10_other_exon &lt;- promoters(other_exon, upstream = 10, downstream = 10)
 TSS100_other_exon &lt;- promoters(other_exon, upstream = 100, downstream = 100)
 
-#Introns
+#Introns --&gt; Transfer/rds_objects   ##calculation takes over an hour
 # introns &lt;- sapply(seq_along(exon), function(i) GenomicRanges::setdiff(tx_genes[names(exon[i])], exon[[i]]), USE.NAMES = TRUE)
 # names(introns) &lt;- names(exon)
 # introns &lt;- do.call(GRangesList, introns)
 # introns = unlist(introns)
-# saveRDS(introns, file=&quot;/home/stroemic/hiwi_16/analysis/gene_lists/introns.rds&quot;)
+# saveRDS(introns, file=&quot;/home/stroemic/hiwi_16/analysis/gene_lists/introns.rds&quot;) 
 introns &lt;- readRDS(file=&quot;/home/stroemic/hiwi_16/analysis/gene_lists/introns.rds&quot;)
 
 #TTS +-100

@@ -27,15 +27,17 @@ library(ggplot2)
 
 #### Read in data 
 Data of mouse embryonic stem cells, all samples pooled. Data from internal sequencing protocol (=int) or Fantom5 database (=fa).
+Feature tables are saved after random sampling to have reproducable datasets. So are the random forest classifiers. 
 
 ```{r read in, eval = FALSE}
+
 total_int <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/features_internal_data_mm9.csv", sep=",", header = TRUE)
-#randomly shuffle data and save to have reproductive data slices
+#randomly shuffle data and save to have reproducable data slices
 total_int <- total_int[sample(nrow(total_int)),]
 write.table(total_int, file ="/home/stroemic/hiwi_16/analysis/r_random-forest/features_internal_data_mm9_for_rf.csv", row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
 
 total_fa <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/features_fantom5_data_mm9.csv", sep=",", header = TRUE)
-#randomly shuffle data and save to have reproductive data slices
+#randomly shuffle data and save to have reproducable data slices
 total_fa <- total_fa[sample(nrow(total_fa)),]
 write.table(total_fa, file ="/home/stroemic/hiwi_16/analysis/r_random-forest/features_fantom5_data_mm9_for_rf.csv", row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
 
