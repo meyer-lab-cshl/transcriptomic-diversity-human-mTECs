@@ -1,0 +1,146 @@
+---
+title: "Plot feature distribution in murine datasets before filtering"
+author: "Léonie Strömich"
+date: "August 28, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Script to calculate distribution of tags over gene body. Each TSS is counted to a certain gene body feature class exactely once. 
+
+Script runs on murine data
+
+## Prerequisites
+#### Load libraries
+
+```{r libraries, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(RColorBrewer)
+```
+
+#### Read in data 
+
+```{r read in, eval = TRUE}
+##read in list of TSS in internal or Fantom5 datasets with features defined
+total_int <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/features_internal_data_mm9.csv", sep=",", header = TRUE)
+total_fa <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/features_fantom5_data_mm9.csv", sep=",", header = TRUE)
+
+
+```
+
+## Analysis
+
+Pre-processing
+built dataframes of TSS present in both, internal set only, Fantom5 set only
+```{r pre_processing, eval=TRUE}
+#filter for positions only present in Internal set
+total_int_only <- total_int[total_int$Fantom5 == 'no',]
+total_int_only <- total_int_only[,-6]
+total_int_only$source <- "Internal_only"
+#filter for positions only present in Fantom5 set
+total_fa_only <- total_fa[total_fa$Internal == 'no',]
+total_fa_only <- total_fa_only[,-6]
+total_fa_only$source <- "Fantom5_only"
+
+#merge sets and filter for TSS present in both datasets
+total_both <- merge(total_int, total_fa, by=c("geneID","chrom","strand", "start", "end") )
+total_both <- total_both[,-c(6,34)]
+total_both_int <- total_both[, -grep(".y$", colnames(total_both))]
+colnames(total_both_int) <- sub(".x$", "", colnames(total_both_int))
+total_both_int$source <- "Both"
+
+
+#bind all three dfs together, column source defines which dataset the TSS is one
+massive <- rbind(total_int_only, total_fa_only,  total_both_int)
+
+```
+
+
+### Plotting three plot classes:
+
+1. Plotting of Base frequencies around TSS in boxplots (n thesis)
+2. Plotting of TRUE/FALSE values for each TSS for a certain positional feature
+3. Plotting of stacked positional features to see distribution in different samples (in thesis)
+
+### 1. Base frequencies 10 and 50 bp windows
+(shows exemplary plots)
+```{r plot1, eval= TRUE}
+#Freq of bases
+#pdf(file="/home/stroemic/hiwi_16/analysis/r_random-forest/plots/features_Freq_bases.pdf")
+my.x.labs <- list("Both","Fantom5 only","Internal only")
+##plot Freq10 and 50 seperately for label names
+for (i in grep("Freq10",colnames(massive))[1] ) { ##only first object taken for example plot
+  #print(colnames(massive)[i])
+  print(ggplot(massive, aes(x=source, y=massive[[i]], fill=source)) + 
+          theme_bw() +
+          geom_boxplot() + 
+          labs(title=paste("Feature \"",colnames(massive)[i],"\" in different datasets", sep = ""), x ="", y =paste("Counts of base ",tail(strsplit(colnames(massive)[i],"")[[1]], n=1)," in 10bp window",sep="") ) +
+          scale_fill_manual(values = c('#2171b5','#2171b5','#2171b5','#2171b5'), guide=FALSE) +
+          scale_x_discrete(labels = my.x.labs) )
+}
+for (i in grep("Freq50",colnames(massive))[1] ) {
+  #print(colnames(massive)[i])
+  print(ggplot(massive, aes(x=source, y=massive[[i]], fill=source)) + 
+          theme_bw() +
+          geom_boxplot() + 
+          labs(title=paste("Feature \"",colnames(massive)[i],"\" in different datasets", sep = ""), x ="", y =paste("Counts of base ",tail(strsplit(colnames(massive)[i],"")[[1]], n=1)," in 50bp window",sep="")) +
+          scale_fill_manual(values = c('#2171b5','#2171b5','#2171b5','#2171b5'), guide=FALSE) +
+          scale_x_discrete(labels = my.x.labs) )
+}
+#dev.off()
+```
+### 2. Barplots over all TSS whether they belong to a feature or not
+(shows exemplary plots)
+```{r plot2, eval= TRUE}
+#pdf(file="/home/stroemic/hiwi_16/analysis/r_random-forest/plots/features_absolut_positions.pdf")
+for (i in (10)) { ##only first object taken for example plot (all features: set to 10:23 == colnumbers) 
+  #print(colnames(massive)[i])
+  print(ggplot(massive, aes(x=massive$source)) + 
+          theme_bw() +
+          geom_bar(aes(fill=massive[[i]]), position='fill') +
+          labs(title=paste("Feature \"",colnames(massive)[i],"\" in different datasets", sep = ""), x ="", y =colnames(massive)[i] ) +
+          scale_fill_manual(values = c('#2171b5','#084594')) +
+          scale_x_discrete(labels = my.x.labs) +
+          guides(fill=guide_legend(title=NULL))
+        )
+  
+}
+#dev.off()
+
+```
+### 3. Overview over positional features in sample classes
+
+```{r plot3, eval= TRUE}
+#create longer colour palette
+mycolors = c(brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 6))
+
+#define df
+positions_all <- massive[,c(10:23,33)]
+m_pos_all <- melt(positions_all, id.vars = "source")
+###aggregate false and true values to counts
+m_pos_all <- aggregate(m_pos_all$value, by=list(m_pos_all$source, m_pos_all$variable), FUN=sum )
+
+#pdf(file="/home/stroemic/hiwi_16/analysis/r_random-forest/plots/features_absolute_positions_counts_proportions.pdf")
+my.x.labs <- list("Both","Fantom5 only","Internal only")
+my.labs <- list("TSS \u00B1 10 genes","TSS \u00B1 10 transcripts","TSS \u00B1 100 genes","TSS \u00B1 100 transcripts","First exon",
+                "Other exon","Intron","TTS \u00B1 100 genes","TTS + 200 genes", "TTS \u00B1 100 transcripts","TTS + 200 transcripts",
+                "1kb downstream","1kb upstream","Antisense")
+print(ggplot(m_pos_all, aes(x=Group.1,y=x,fill=Group.2)) + 
+        theme_bw() +
+        geom_bar(position="fill",stat = "identity") +
+        labs(title="Proportion of positions belonging to each feature in different datasets", x ="", y ="Proportion") +
+        #scale_fill_manual(values = c('#eff3ff','#c6dbef','#9ecae1','#6baed6','#3182bd','#08519c')) +
+        scale_fill_discrete(labels = my.labs) +
+        scale_x_discrete(labels = my.x.labs) +
+        guides(fill=guide_legend(title="Feature"))
+)
+#dev.off()
+
+```
+
+

@@ -1,0 +1,259 @@
+---
+title: "Split up plots of gene body features in different gene classes"
+author: "Léonie Strömich"
+date: "August 28, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Script to plot single plots of gene body feature distribution over gene classes. 
+Takes as input the matrix calculated in "plot_all_features_new_gene_classes.Rmd" and slices it. 
+
+
+## Prerequisites
+#### Load libraries
+
+```{r libraries, message=FALSE}
+library(ggplot2)
+library(raster)
+library(reshape2)
+library(scales)
+library(RColorBrewer)
+```
+
+#### Read in data 
+
+```{r read in, eval = TRUE}
+
+##read in count matrices
+counts_mTECs <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/new_classes_tss_oe_tra_san_aire_san_counts_mTECs_matrix_human_filt.rds")
+counts_tissues <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/new_classes_tss_oe_tra_san_aire_san_counts_tissues_matrix_human_filt.rds")
+
+
+```
+
+## Analysis
+
+
+Matrix with the following set up is taken as basis for all plots:
+12 rows:
+
+1. TSS_10
+2. TSS_100
+3. first_exon
+4. TSS_10_other_exons
+5. TSS_100_other_exons
+6. TTS_100
+7. upstream
+8. other_exon
+9. intron
+10. antisense
+11. downstream
+12. intergenic
+
+12 columns:
+
+1. aire_dep_tras_mTECs
+2. fezf2_dep_tras_mTECs
+3. other_tras_mTECs
+4. hk_mTECs
+5. other_genes_mTECs
+6. rest_mTECs
+7. aire_dep_tras_tissues
+8. fezf2_dep_tras_tissues
+9. other_tras_tissues
+10. hk_tissues
+11. other_genes_tissues
+12. rest_tissues
+
+Pre-processing
+```{r pre_processing, eval=TRUE}
+
+#bind matrices together
+counts <- cbind(counts_mTECs, counts_tissues)
+#discard last row and columns
+counts_trunc <- counts[-12,-c(6,12)]
+# calculate a percentage matrix
+counts_trunc <- t(t(counts_trunc)/rowSums(t(counts_trunc)))
+
+```
+
+
+#### Plot 1 
+Pattern around TSS in mTECs
+Distribution of tags to features: TSS10, TS100, First exon
+second half of the plot are features in tissues
+
+```{r plot1, eval=TRUE}
+###1. TSS pattern 
+#A comparison mTECs / tissues
+
+#take relevant columns and rows 
+counts_TSS <- counts[c(1:3),c(1:4,7:10)] ####change here
+#melt for plotting
+m_counts_TSS <- melt(counts_TSS)
+#keep ordering of factors
+m_counts_TSS <- transform(m_counts_TSS, feature_class = factor(Var1, rownames(counts_TSS)),
+                      gene_class = factor(Var2, colnames(counts_TSS)))
+
+#pdf(file ="/home/stroemic/hiwi_16/analysis/gene_lists/plots/Final/TSS_patterns_mTECs_vs_tissues_final.pdf")
+my.labs <- list("TSS \u00B1 10","TSS \u00B1 100","First exon")
+my.x.labs <- list("Aire TRAs","Fezf2 TRAs","Other TRAs","Housekeeping","Aire TRAs","Fezf2 TRAs","Other TRAs","Housekeeping")
+print(ggplot(m_counts_TSS, aes(x=gene_class,y=value,fill=feature_class)) + 
+        geom_bar(position = "fill", stat = "identity") +
+        labs(title="Porportion of tags belonging to each feature in different gene sets", x ="", y ="Proportion") +
+        theme_bw() +
+        theme(axis.text.x=element_text(angle=60, hjust=1, size=10)) +
+        scale_x_discrete(labels = my.x.labs) +
+        #scale_fill_brewer(palette="Blues") +
+        scale_fill_manual(values = c('#abd9e9','#74add1','#4575b4'), labels = my.labs) +
+        guides(fill=guide_legend(title=NULL))
+)
+#dev.off()
+
+#B comparison of gene classes in mTECs only
+counts_TSS <- counts[c(1:3),c(1:4)] ####change here
+#melt for plotting
+m_counts_TSS <- melt(counts_TSS)
+#keep ordering of factors
+m_counts_TSS <- transform(m_counts_TSS, feature_class = factor(Var1, rownames(counts_TSS)),
+                          gene_class = factor(Var2, colnames(counts_TSS)))
+
+#pdf(file ="/home/stroemic/hiwi_16/analysis/gene_lists/plots/Final/TSS_patterns_mTECs_only_final.pdf")
+my.labs <- list("TSS \u00B1 10","TSS \u00B1 100","First exon")
+my.x.labs <- list("Aire TRAs","Fezf2 TRAs","Other TRAs","Housekeeping")
+print(ggplot(m_counts_TSS, aes(x=gene_class,y=value,fill=feature_class)) + 
+        geom_bar(position = "fill", stat = "identity") +
+        labs(title="Porportion of tags belonging to each feature in different gene sets", x ="", y ="Proportion") +
+        theme_bw() +
+        theme(axis.text.x=element_text(angle=60, hjust=1, size=10)) +
+        scale_x_discrete(labels = my.x.labs) +
+        #scale_fill_brewer(palette="Blues") +
+        scale_fill_manual(values = c('#abd9e9','#74add1','#4575b4'), labels = my.labs) +
+        guides(fill=guide_legend(title=NULL))
+      
+)
+#dev.off()
+
+
+
+```
+#### Plot 2
+Intronic and antisense tags in different gene classes
+second half of the plot are features in tissues
+
+```{r plot2, eval=TRUE}
+###2. Intronic/Antisense high in Aire regulated TRAs
+#take relevant columns and rows of percentage matrix
+perc_intron_anti <- counts_trunc[c(9:10),c(1:4,6:9)] ####change here
+#melt for plotting
+m_perc_intron_anti <- melt(perc_intron_anti)
+#keep ordering of factors
+m_perc_intron_anti <- transform(m_perc_intron_anti, feature_class = factor(Var1, rownames(perc_intron_anti)),
+                          gene_class = factor(Var2, colnames(perc_intron_anti)))
+
+#pdf(file ="/home/stroemic/hiwi_16/analysis/gene_lists/plots/Final/intronic_antisense_mTECs_tissues_final.pdf")
+my.labs <- list("Intronic","Antisense")
+my.x.labs <- list("Aire TRAs","Fezf2 TRAs","Other TRAs","Housekeeping","Aire TRAs","Fezf2 TRAs","Other TRAs","Housekeeping")
+print(ggplot(m_perc_intron_anti, aes(x=gene_class,y=value,fill=feature_class)) + 
+        geom_bar(stat = "identity") +
+        labs(title="Porportion of tags belonging to each feature in different gene sets", x ="", y ="Proportion") +
+        theme_bw() +
+        theme(axis.text.x=element_text(angle=60, hjust=1, size=10)) +
+        #scale_fill_brewer(palette="Blues") +
+        scale_fill_manual(values = c('#fdae61','#d73027'), labels = my.labs) +
+        scale_x_discrete(labels = my.x.labs) +
+        guides(fill=guide_legend(title=NULL)) +
+        scale_y_continuous(labels = percent)
+      
+)
+#dev.off()
+
+```
+
+#### Plot 3 
+Tags at Intron/Exon boundaries
+second half of the plot are features in tissues
+
+
+```{r plot3, eval=TRUE}
+###3. TSS at other exons 
+#A comparison mTECs / tissues as whole with newly calculated percentages --> real data 
+#built dataframe with sum up of tra columns
+df_tss_oe <- data.frame("feature"=rownames(counts), "tras_mTECs"=(counts[,1]+counts[,2]+counts[,3]),
+                        "hk_mTECs"=counts[,4],
+                        "tras_tissues"=(counts[,7]+counts[,8]+counts[,9]),
+                        "hk_tissues"=counts[,10])
+
+#dataframe to matrix
+tss_oe <- data.matrix(df_tss_oe[,2:5])
+#calculate percentages over columns
+perc_tss_oe <- t(t(tss_oe)/rowSums(t(tss_oe)))
+#take relevant rows with information on TSS around other exons
+perc_tss_oe <- perc_tss_oe[4:5,]
+#melt for plotting
+m_perc_tss_oe <- melt(perc_tss_oe)
+#keep ordering of factors
+m_perc_tss_oe<- transform(m_perc_tss_oe, feature_class = factor(Var1, rownames(perc_tss_oe)),
+                          gene_class = factor(Var2, colnames(perc_tss_oe)))
+
+#pdf(file ="/home/stroemic/hiwi_16/analysis/gene_lists/plots/Final/tss_oe_mTECs_tissues_final.pdf")
+my.labs <- list("Downstream exon start \u00B1 10","Downstream exon start \u00B1 100")
+my.x.labs <- list("TRAs","Housekeeping","TRAs","Housekeeping")
+print(ggplot(m_perc_tss_oe, aes(x=gene_class,y=value,fill=feature_class)) + 
+        geom_bar(stat = "identity") +
+        labs(title="Porportion of tags belonging to each feature in different gene sets", x ="", y ="Proportion") +
+        theme_bw() +
+        theme(axis.text.x=element_text(angle=60, hjust=1, size=10)) +
+        #scale_fill_brewer(palette="Blues") +
+        scale_fill_manual(values = c('#a6d96a','#1a9641'), labels = my.labs) +
+        scale_x_discrete(labels = my.x.labs) +
+        guides(fill=guide_legend(title=NULL)) +
+        scale_y_continuous(labels = percent)
+      
+)
+#dev.off()
+
+
+#B comparison mTECs / tissues as whole with newly calculated percentages --> real data with protein coding
+#built dataframe with sum up of tra columns include other protein coding genes
+df_tss_oe <- data.frame("feature"=rownames(counts), "tras_mTECs"=(counts[,1]+counts[,2]+counts[,3]),
+                        "hk_mTECs"=counts[,4], 
+                        "others_mTECs"=counts[,5],
+                        "tras_tissues"=(counts[,7]+counts[,8]+counts[,9]),
+                        "hk_tissues"=counts[,10],
+                        "others_tissues"=counts[,11])
+
+#dataframe to matrix
+tss_oe <- data.matrix(df_tss_oe[,2:7])
+#calculate percentages over columns
+perc_tss_oe <- t(t(tss_oe)/rowSums(t(tss_oe)))
+#take relevant rows with information on TSS around other exons
+perc_tss_oe <- perc_tss_oe[4:5,]
+#melt for plotting
+m_perc_tss_oe <- melt(perc_tss_oe)
+#keep ordering of factors
+m_perc_tss_oe<- transform(m_perc_tss_oe, feature_class = factor(Var1, rownames(perc_tss_oe)),
+                          gene_class = factor(Var2, colnames(perc_tss_oe)))
+
+#pdf(file ="/home/stroemic/hiwi_16/analysis/gene_lists/plots/Final/tss_oe_mTECs_tissues_final_protein_coding_genes.pdf")
+my.labs <- list("Downstream exon start \u00B1 10","Downstream exon start \u00B1 100")
+my.x.labs <- list("TRAs","Housekeeping","Other protein\ncoding genes","TRAs","Housekeeping","Other protein\ncoding genes")
+print(ggplot(m_perc_tss_oe, aes(x=gene_class,y=value,fill=feature_class)) + 
+         geom_bar(stat = "identity") +
+        labs(title="Porportion of tags belonging to each feature in different gene sets", x ="", y ="Proportion") +
+        theme_bw() +
+        theme(axis.text.x=element_text(angle=60, hjust=1, size=10)) +
+        #scale_fill_brewer(palette="Blues") +
+        scale_fill_manual(values = c('#a6d96a','#1a9641'), labels = my.labs) +
+        scale_x_discrete(labels = my.x.labs) +
+        guides(fill=guide_legend(title=NULL)) +
+        scale_y_continuous(labels = percent)
+      
+)
+#dev.off()
+
+```

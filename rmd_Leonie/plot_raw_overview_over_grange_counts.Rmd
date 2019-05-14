@@ -1,0 +1,394 @@
+---
+title: "Plot overview over genomic range of raw counts"
+author: "Léonie Strömich"
+date: "August 16, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Script to calculate peaks around TSSs in different genomic ranges. The code below was written for peaks around the main TSS, defined by the highest peak, for each gene in a certain gene class. Only protein coding genes were considered. (Can also be used for calculations around annotated TSS: change code for rel_pos in function preprocess_df) 
+
+Input: Gene classes, Filtered positions in mTECs and tissues
+
+Output: Tag count matrices with gene classes as rows and Positions as columns
+
+Running time: between 2 to 14h depending on the genomic range to calculate over, for each matrix so in total ~20h 
+list of matrices are stored as rsd and can be directly called before plotting
+
+## Prerequisites
+#### Load libraries
+
+```{r libraries, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(biomaRt)
+library(reshape2)
+library(TTR)
+```
+#### Load functions
+
+```{r functions, message=FALSE}
+
+preprocess_df <- function(x) {
+  x <- x[x$geneID %in% names(tx_genes),]
+  x <- droplevels(x)
+  x <- x[with(x, order(chrom, geneID, start)),]
+  filt <- x %>% group_by(geneID) %>% mutate(the_rank  = rank(-BarcodeCount, ties.method = "first")) %>% filter(the_rank == 1)
+  
+  x$geneID <- as.character(x$geneID)
+  
+  x_plus <- x[x$strand == "+",]
+  x_minus <- x[x$strand == "-",]
+  
+  x_plus$rel_pos <- with(x_plus, (x_plus$start - filt$start[match(x_plus$geneID, filt$geneID)]))
+  x_minus$rel_pos <- with(x_minus, ( filt$start[match(x_minus$geneID, filt$geneID)] - x_minus$start))
+  
+  ## calculation to annotated peak
+  #x_plus$rel_pos <- with(x_plus, (x_plus$start - start(tx_genes[x_plus$geneID])))
+  #x_minus$rel_pos <- with(x_minus, ( end(tx_genes[x_minus$geneID]) - x_minus$start))
+  
+  x <- rbind(x_plus, x_minus)
+  x$rel_pos <- as.character(x$rel_pos)
+  return(x)
+}
+
+### plotting functions
+plot_range <- function(m_df) {
+  plot <- ggplot(m_df, aes(x=Var2, y=value, group =Var1, colour=Var1 )) + 
+                  geom_point(size=0.5) +
+                  theme_bw() +
+                  #scale_x_continuous(limits = c(-40, 40)) +
+                  labs(title="Distribution of tags over genomic range for different gene classes", x ="bp around annotated TSS", y ="", colour="")
+  return(plot)
+}
+
+plot_range_line <- function(m_df) {
+  plot <- ggplot(m_df, aes(x=Var2, y=value, group =Var1, colour=Var1 )) + 
+                  geom_point(size=0.5) +
+                  theme_bw() +
+                  geom_line(aes(y=roll)) +
+                  #scale_x_continuous(limits = c(-40, 40)) +
+                  #geom_smooth(method="loess", se=F, span=0.05) +
+                  labs(title="Distribution of tags over genomic range for different gene classes", x ="bp around annotated TSS", y ="", colour="")
+  return(plot)
+}
+
+plot_range_line_only <- function(m_df) {
+  plot <- ggplot(m_df, aes(x=Var2, y=value, group =Var1, colour=Var1 )) + 
+                  #geom_point(size=0.5) +
+                  theme_bw() +
+                  geom_line(aes(y=roll)) +
+                  #scale_x_continuous(limits = c(-40, 40)) +
+                  #geom_smooth(method="loess", se=F, span=0.05) +
+                  labs(title="Distribution of tags over genomic range for different gene classes", x ="bp around annotated TSS", y ="", colour="")
+  return(plot)
+}
+
+
+```
+
+#### Read in data 
+
+```{r read in, eval = FALSE}
+##table with tras
+tra_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_tra_genes_sansom.csv", header=TRUE, sep=",")
+##table with aire dep genes 
+aire_dep_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_aire_dep_san_genes.csv", header=TRUE, sep=",")
+##table with fezf2 dep genes 
+fezf2_dep_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/human_fezf2_dep_genes.csv", header=TRUE, sep=",")
+##table with thymus specific genes 
+thymus_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/thymus_specific_genes.csv", header=TRUE, sep=",")
+thymus_genes <- data.frame("entrezgene" =thymus_genes[!grepl("inter", thymus_genes$entrezgene),])
+##table with mTEC specific genes
+mTEC_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/mTEC_specific_genes.csv", header=TRUE, sep=",")
+mTEC_genes <- data.frame("entrezgene" = mTEC_genes[!grepl("inter", mTEC_genes$entrezgene),])
+##table with housekeeping genes defined on all tissues
+hk_genes <- read.table("/home/stroemic/hiwi_16/analysis/gene_lists/housekeeping_genes.csv", header=TRUE, sep=",")
+
+### Define gene classes ###
+aire_dep_tras <- merge(tra_genes, aire_dep_genes, by="entrezgene")
+fezf2_dep_tras <- merge(tra_genes, fezf2_dep_genes, by="entrezgene")
+
+# other tras
+other_tras <- merge(tra_genes, aire_dep_genes, by="entrezgene", all.x = TRUE)
+other_tras <- other_tras[is.na(other_tras$ensembl_gene_id.y),]
+other_tras <- merge(other_tras, fezf2_dep_genes, ny="entrezgene", all.x = TRUE)
+other_tras <- other_tras[is.na(other_tras$ensembl_gene_id),]
+
+
+###filtered
+##mtec all positions
+mTEC_pos_fil <- read.table("/home/stroemic/hiwi_16/data/raw_positions/all_mTECs.positions.csv", header=TRUE, sep=",")
+##tissue (wo thymus) all positions
+tissues_pos_fil <- read.table("/home/stroemic/hiwi_16/data/raw_positions/all.tissues.wo.thymus.positions.csv", header = TRUE, sep = ",")
+
+
+##### BioMart object
+ensembl <- useMart(biomart="ENSEMBL_MART_ENSEMBL", 
+                   host="grch37.ensembl.org", 
+                   dataset="hsapiens_gene_ensembl")
+
+##### txdb gene object
+my_chr = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14","chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrM", "chrX", "chrY")
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+seqlevels(txdb)<- my_chr
+tx_genes <- genes(txdb)
+### only keep protein coding genes in analysis
+mart_gene_type <- getBM(attributes = c('entrezgene', 'gene_biotype'), 
+                        filters = 'entrezgene',
+                        values = names(tx_genes), 
+                        mart=ensembl)
+mart_gene_type <- mart_gene_type[grepl("protein_coding", mart_gene_type$gene_biotype, ignore.case = TRUE),]
+tx_genes <- tx_genes[(elementMetadata(tx_genes)$gene_id %in% mart_gene_type$entrezgene)]
+### sort by geneID
+o <- order(as.numeric(tx_genes$gene_id))
+tx_genes <- tx_genes[o]
+
+```
+
+## Analysis
+
+Pre-processing
+```{r pre_processing, eval=FALSE}
+## built list of genes in different classes
+genes_entrez_mTECs <- list(aire_dep_tras$entrezgene, fezf2_dep_tras$entrezgene, other_tras$entrezgene, hk_genes$entrezgene ,mTEC_genes$entrezgene, thymus_genes$entrezgene)
+genes_entrez_tissues <- list(hk_genes$entrezgene, aire_dep_tras$entrezgene, fezf2_dep_tras$entrezgene, other_tras$entrezgene)
+
+## built lists with names of gene classes
+gene_classes_mTECs <- c("aire_dep_tras_mTECs", "fezf2_dep_tras_mTECs", "other_tras_mTECs", "hk_mTECs", "mTEC_spec_mTECs", "thymus_spec_mTECs")
+gene_classes_tissues <- c("hk_tissues", "aire_dep_tras_tissues", "fezf2_dep_tras_tissues", "other_tras_tissues")
+
+## preprocess mTEC and tissue TSSs
+mTEC_pos_fil <- preprocess_df(mTEC_pos_fil)
+tissues_pos_fil <- preprocess_df(tissues_pos_fil)
+
+## initialize empty lists
+list_uncounted_pos <- list()
+list_matrices <- list()
+list_counts_classes <- list()
+
+```
+First step:
+
+Calculate two matrices (mTECs and tissues) with each gene as row and the positional range as columns (e.g. -250..250). Script calculates for each found TSS in mTECs or tissues the relative position to the main peak and saves tag count at that relative position for the gene the TSS belongs to. 
+
+Second step:
+
+Slices the first matrices rowwise by geneIDs belonging to different gene classes. Then sums up all counts over the range which results in a vector of the genomic range (e.g. -250..250) with tag counts at each position. These vectors are taken together into a second matrix with gene classes as rows and genomic range as columns. 
+
+
+Stores genomic-range-over-genes-matrices and number of uncounted positions in lists with the following set up:
+
+* name of range 1
+    + mTECs
+        - object in mTECs
+    + tissues
+        - object in tissues
+* name of range 2
+    + mTECs
+        - object in mTECs
+    + tissues
+        - object in tissues
+
+Stores genomic-range-over-gene-classes-matrices in list with the following set up:
+
+* name of range 1
+    + matrix
+* name of range 2
+    + matrix
+
+
+```{r gene matrices, eval=FALSE}
+
+for (i in c(250, 1000, 20000) ) { ## add here if more genomic ranges should be calculated
+  name <- as.character(i)
+  #depending on genomic range, start was either -250 or -1000
+  if (i == 250) {
+    #set threshold for later calculation
+    thres=-250
+    #implement matrices filled with 0
+    counts_mTECs <- matrix(0, nrow = length(unique(mTEC_pos_fil$geneID)), ncol = (i+251), 
+                           dimnames = list(unique(mTEC_pos_fil$geneID), as.character(c(-250:i))))
+    
+    counts_tissues <- matrix(0, nrow = length(unique(tissues_pos_fil$geneID)), ncol = (i+251),
+                             dimnames = list(unique(tissues_pos_fil$geneID), as.character(c(-250:i))))
+  } else {
+    #set threshold for later calculation
+    thres= -1000
+    #implement matrices filled with 0
+    counts_mTECs <- matrix(0, nrow = length(unique(mTEC_pos_fil$geneID)), ncol = (i+1001), 
+                           dimnames = list(unique(mTEC_pos_fil$geneID), as.character(c(-1000:i))))
+    
+    counts_tissues <- matrix(0, nrow = length(unique(tissues_pos_fil$geneID)), ncol = (i+1001),
+                             dimnames = list(unique(tissues_pos_fil$geneID), as.character(c(-1000:i))))
+  }
+
+  uncounted_pos_m = 0
+  start.time <- Sys.time()
+  print("calculating mTEC matrix")
+  #loop over all TSS in mTECs
+  for (x in 1:nrow(mTEC_pos_fil)) {
+    #save rel_position and geneID of TSS
+    rel_position <- mTEC_pos_fil[x,]$rel_pos
+    gene <- mTEC_pos_fil[x,]$geneID
+    #if rel_pos beyond genomic range of interest just add to uncounted_pos_m
+    if (as.integer(rel_position) > i | as.integer(rel_position) < thres) {
+      uncounted_pos_m = uncounted_pos_m + 1
+    } else  {
+      #add tag count to count in matrix at postion of geneID and rel_pos
+      counts_mTECs[gene, rel_position] <- (counts_mTECs[gene, rel_position] + mTEC_pos_fil[x,]$BarcodeCount)
+    }
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  print(time.taken)
+  
+  
+  uncounted_pos_t = 0
+  start.time <- Sys.time()
+  #loop over all TSS in tissues
+  for (y in 1:nrow(tissues_pos_fil)) {
+    #save rel_position and geneID of TSS
+    rel_position <- tissues_pos_fil[y,]$rel_pos
+    gene <- tissues_pos_fil[y,]$geneID
+    #if rel_pos beyond genomic range of interest just add to uncounted_pos_m
+    if (as.integer(rel_position) > i | as.integer(rel_position) < thres) {
+      uncounted_pos_t = uncounted_pos_t + 1
+    } else  {
+      #add tag count to count in matrix at postion of geneID and rel_pos
+      counts_tissues[gene, rel_position] <- (counts_tissues[gene, rel_position] + tissues_pos_fil[y,]$BarcodeCount)
+    }
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  time.taken
+  
+  ##store uncounted postions in 
+  list_uncounted_pos[[name]] <-list("uncounted_pos_m"=uncounted_pos_m, "uncounted_pos_t"=uncounted_pos_t) 
+  ##store matrices in 
+  list_matrices[[name]] <-list("counts_mTECs"=counts_mTECs, "counts_tissues"=counts_tissues)
+
+
+  #Slice matrices depending on gene class in mTECs or tissues
+  #emtpy list mTECs
+  list_mTECs <- list()
+  
+  for (j in 1:6) { #6 entries in mTEC gene classes, compare pre processing step
+    print(gene_classes_mTECs[j])
+    #subset of matrix depending on geneIDs in gene classes
+    counts_j <- subset(list_matrices[[name]][[1]], rownames(list_matrices[[name]][[1]]) %in% genes_entrez_mTECs[[j]])
+    print(dim(counts_j))
+    #rowwise sum up all counts of genes over range
+    sums <- colSums(counts_j)
+    #normalize counts to be between 0 and 1
+    sums_norm <- (sums-min(sums))/(max(sums)-min(sums))
+    list_mTECs[[gene_classes_mTECs[j]]] <- sums_norm
+  }
+  
+  #empty list tissues
+  list_tissues <- list()
+  
+  for (k in 1:4) { #4 entries in tissue gene classes, compare pre processing step
+    print(gene_classes_tissues[k])
+    #subset of matrix depending on geneIDs in gene classes
+    counts_k <- subset(list_matrices[[name]][[2]], rownames(list_matrices[[name]][[2]]) %in% genes_entrez_tissues[[k]])
+    print(dim(counts_k))
+    #rowwise sum up all counts of genes over range
+    sums <- colSums(counts_k)
+    #normalize counts to be between 0 and 1
+    sums_norm <- (sums-min(sums))/(max(sums)-min(sums))
+    list_tissues[[gene_classes_tissues[k]]] <- sums_norm
+  }
+  
+  # take gene classes in mTECs and tissues together, creating one big matrix with genomic range over gene classes
+  list_both <- c(list_mTECs, list_tissues)
+  counts_classes <- do.call(rbind, list_both)
+  #store matrix in list 
+  list_counts_classes[[name]] <- counts_classes
+}
+
+```
+Save all lists as rds objects for later loading.
+
+```{r save rds, eval=FALSE}
+saveRDS(list_uncounted_pos, file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_uncounted_positions_human_filt.rds")
+saveRDS(list_matrices, file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_matrices_human_filt.rds")
+saveRDS(list_counts_classes, file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt.rds")
+
+```
+
+### Plotting of genomic ranges around TSS
+Matrices with ten rows:
+
+1. aire_dep_tras_mTECs
+2. fezf2_dep_tras_mTECs
+3. other_tras_mTECs
+4. hk_mTECs
+5. mTEC_spec_mTECs
+6. thymus_spec_mTECs
+7. hk_tissues
+8. aire_dep_tras_tissues
+9. fezf2_dep_tras_tissues
+10. other_tras_tissues
+
+Slice rowwise to obtain different comparative plots.
+
+```{r plotting, eval= FALSE}
+#load list rds
+list_counts_classes <- readRDS(file="/home/stroemic/hiwi_16/analysis/gene_lists/raw_data_list_counts_classes_human_filt.rds")
+
+#loop over ranges to create plots automatically
+for (i in c(250, 1000, 20000)) {
+  name <- as.character(i)
+  #creat melted dataframes and calculate rolling averages for curve smoothing
+  m_counts_classes_tra_m <- melt(list_counts_classes[[name]][c(1,2,3),])
+  m_counts_classes_tra_m <- m_counts_classes_tra_m %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+  m_counts_classes_aire_tra <- melt(list_counts_classes[[name]][c(1,8),])
+  m_counts_classes_aire_tra <- m_counts_classes_aire_tra %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+  m_counts_classes_fezf2_tra <- melt(list_counts_classes[[name]][c(2,9),])
+  m_counts_classes_fezf2_tra <- m_counts_classes_fezf2_tra %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+  m_counts_classes_other_tra <- melt(list_counts_classes[[name]][c(3,10),])
+  m_counts_classes_other_tra <- m_counts_classes_other_tra%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+  m_counts_classes_hk <- melt(list_counts_classes[[name]][c(4,7),])
+  m_counts_classes_hk <- m_counts_classes_hk %>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+  m_counts_classes_tra_hk_m <- melt(list_counts_classes[[name]][c(1:4),])
+  m_counts_classes_tra_hk_m <- m_counts_classes_tra_hk_m%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+  m_counts_classes_m_t_m <- melt(list_counts_classes[[name]][c(5,6),])
+  m_counts_classes_m_t_m <- m_counts_classes_m_t_m%>% group_by(Var1) %>% mutate("roll" =SMA(value, n=5))
+  
+  #call different functions depending on plot type (points only, points and line, line only)
+  pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_",name,".pdf",sep=""))
+  print(plot <- plot_range(m_counts_classes_tra_m))
+  print(plot <- plot_range(m_counts_classes_aire_tra))
+  print(plot <- plot_range(m_counts_classes_fezf2_tra))
+  print(plot <- plot_range(m_counts_classes_other_tra))
+  print(plot <- plot_range(m_counts_classes_hk))
+  print(plot <- plot_range(m_counts_classes_tra_hk_m))
+  print(plot <- plot_range(m_counts_classes_m_t_m))
+  dev.off()
+  pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_line_",name,".pdf",sep=""))
+  print(plot <- plot_range_line(m_counts_classes_tra_m))
+  print(plot <- plot_range_line(m_counts_classes_aire_tra))
+  print(plot <- plot_range_line(m_counts_classes_fezf2_tra))
+  print(plot <- plot_range_line(m_counts_classes_other_tra))
+  print(plot <- plot_range_line(m_counts_classes_hk))
+  print(plot <- plot_range_line(m_counts_classes_tra_hk_m))
+  print(plot <- plot_range_line(m_counts_classes_m_t_m))
+  dev.off()
+  pdf(file=paste("/home/stroemic/hiwi_16/analysis/gene_lists/plots/raw_data_gene_range_analysis_line_only_",name,".pdf",sep=""))
+  print(plot <- plot_range_line_only(m_counts_classes_tra_m))
+  print(plot <- plot_range_line_only(m_counts_classes_aire_tra))
+  print(plot <- plot_range_line_only(m_counts_classes_fezf2_tra))
+  print(plot <- plot_range_line_only(m_counts_classes_other_tra))
+  print(plot <- plot_range_line_only(m_counts_classes_hk))
+  print(plot <- plot_range_line_only(m_counts_classes_tra_hk_m))
+  print(plot <- plot_range_line_only(m_counts_classes_m_t_m))
+  dev.off()
+}
+```
+
+
