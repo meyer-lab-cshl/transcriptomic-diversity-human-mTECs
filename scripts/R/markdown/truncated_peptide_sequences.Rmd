@@ -1,0 +1,206 @@
+---
+title: "Truncated Peptide Sequences of Protein Coding Genes in mTECs"
+author: "Léonie Strömich"
+date: "August 23, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+This script is used to retrieve the amino acid sequence of the truncated peptide when considering the main TSS (highest tag count) as true TSS in mTECs. 
+The peptide sequence as well as the length are stored as additional information to characterise protein coding genes in mTECs. The truncation length can also be used as additional filter to obtain top candidate genes.
+
+Running time: all together ~1h; establishing peptide list ~40 min
+
+## Prerequisites
+#### Load libraries
+
+```{r libraries, message=FALSE}
+library(reshape)
+library(LSD)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(BSgenome)
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(biomaRt)
+
+```
+#### Load functions
+
+```{r functions, message=FALSE}
+preprocess_df <- function(x, keep) {
+  #filter out genes which are not protein coding and only present in one dataset
+  x <- x[x$geneID %in% names(cds),]
+  x <- x[x$geneID %in% keep,]
+  #drop factor levels and order df
+  x <- droplevels(x)
+  x <- x[with(x, order(chrom, geneID, start)),]
+  #built new dataframe with main TSS (highest count) only
+  filt <- x %>% group_by(geneID) %>% mutate(the_rank  = rank(-BarcodeCount, ties.method = "first")) %>% filter(the_rank == 1)
+  
+  filt$geneID <- as.character(filt$geneID)
+  return(filt)
+}
+
+```
+
+
+#### Read in data 
+
+
+```{r read in, eval = TRUE}
+####Genome sequence
+genome <- BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19
+###BioMart object
+ensembl <- useMart(biomart="ENSEMBL_MART_ENSEMBL", 
+                   host="grch37.ensembl.org", 
+                   dataset="hsapiens_gene_ensembl")
+
+##mtec all positions --> Transfer/tss_data/Filtered
+mTEC_pos_fil <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all_mTECs.filtered.csv", header=TRUE, sep=",")
+##tissue (wo thymus) all positions --> Transfer/tss_data/Filtered
+tissues_pos_fil <- read.table("/home/stroemic/hiwi_16/analysis/r_random-forest/filtered_data/all.tissues.wo.thymus.filtered.csv", header = TRUE, sep = ",")
+##get common genes for calculation
+keep <- intersect(mTEC_pos_fil$geneID, tissues_pos_fil$geneID)
+
+#### read in dataframe of genes with shifted TSS pattern
+## one of the final gene lists --> Transfer/gene_lists/Final_output_gene_lists
+df_genes <- read.table("/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_protein_coding_genes_shifted_tss.csv", header = TRUE, sep=",")
+
+
+#### read in txdb object and get CDS GRanges
+## txdb gene object 
+my_chr = c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14","chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrM", "chrX", "chrY")
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+seqlevels(txdb)<- my_chr
+tx_genes <- genes(txdb)
+
+## mart object
+## keep only protein coding genes 
+mart_gene_type <- getBM(attributes = c('entrezgene', 'gene_biotype'), 
+                        filters = 'entrezgene',
+                        values = names(tx_genes), 
+                        mart=ensembl)
+mart_gene_type <- mart_gene_type[grepl("protein_coding", mart_gene_type$gene_biotype, ignore.case = TRUE),]
+
+## Coding regions of protein coding genes present in mTECs and tissues
+cds <- cdsBy(txdb, by="gene")
+cds <- cds[names(cds) %in% mart_gene_type$entrezgene]
+cds <- cds[names(cds) %in% keep]
+oc <- order(as.numeric(names(cds)))
+cds <- cds[oc]
+
+
+```
+
+## Analysis
+
+#### Pre-processing
+
+```{r pre processing, eval=TRUE}
+mTEC_pos_fil <- preprocess_df(mTEC_pos_fil, keep)
+tissues_pos_fil <- preprocess_df(tissues_pos_fil, keep)
+
+# initialize empty list to write truncated peptides into
+list_genes_names <- names(cds)
+list_peptides <- vector("list", length(list_genes_names))
+names(list_peptides) <- list_genes_names
+```
+
+#### Loop over genes
+
+For each gene, retrieve truncated peptide sequence in a strand specific manner. 
+
+1. Get CDS GRanges of gene
+2. Reduce overlapping CDS GRanges to have continuous GRanges
+3. Restrict GRanges to end with main TSS in mTECs
+4. Get DNA sequences of GRanges and put them together
+5. Translate to peptide
+
+```{r loop, eval=TRUE, warning=FALSE}
+for (i in names(list_peptides)) {
+  #print(i)
+  
+  cds_ranges <- cds[[i]]
+  cds_ranges <- reduce(cds_ranges)
+  main_peak <- mTEC_pos_fil[mTEC_pos_fil$geneID == i,]$start
+  
+  if(unique(as.character(strand(cds_ranges))) == "+") { # positive strand
+    if(main_peak <= start(cds_ranges)[1]) { #main peak before cds
+      peptide = "no truncation"
+      #print(peptide)
+    } else if(main_peak >= end(cds_ranges)[length(cds_ranges)]) { #main peak behind cds
+      peptide = "fully truncated"
+      #print(peptide)
+    } else {
+      cds_ranges <- restrict(cds_ranges, start = start(cds_ranges)[1], end = main_peak)
+      sequences <- getSeq(genome, cds_ranges)
+      sequence <- do.call(paste0, sequences)
+      peptide <- translate(DNAString(sequence))
+      #print(peptide)
+    }
+    
+  } else { #negative strand
+    if(main_peak >= end(cds_ranges)[length(cds_ranges)]) {  #main peak before cds
+      peptide = "no truncation"
+      #print(peptide)
+    } else if(main_peak <= start(cds_ranges)[1]) {#main peak behind cds
+      ppeptide = "fully truncated"
+      #print(peptide)
+    } else {
+      cds_ranges <- restrict(cds_ranges, start = main_peak, end = end(cds_ranges)[length(cds_ranges)])
+      sequences <- getSeq(genome, cds_ranges)
+      sequence <- do.call(paste0, rev(sequences))
+      peptide <- translate(DNAString(sequence))
+      #print(peptide)
+    }
+  }
+  list_peptides[[i]] <- as.character(peptide) 
+}
+
+#save as rds
+saveRDS(list_peptides, file="/home/stroemic/hiwi_16/analysis/shifted_TSS/list_truncated_peptides_protein_coding_genes.rds")
+
+``` 
+Add information on truncated peptides to gene datalist. 
+
+```{r update df, eval=TRUE}
+### make peptide dataframe to merge with gene list
+peptides <- data.frame("truncated_peptide"=unlist(list_peptides), "geneID" = names(list_peptides))
+df_genes <- merge(df_genes, peptides, by="geneID")
+
+#calculate truncation length, for fully truncated or not truncated ones length=0
+df_genes$truncation_length <- 0
+df_genes[!grepl("trunca",df_genes$truncated_peptide),]$truncation_length <- nchar(as.character(df_genes[!grepl("trunca",df_genes$truncated_peptide),]$truncated_peptide))
+
+#reorder list and save
+#top_genes <- df_genes[with(df_genes, order(p.value, -ratio, -truncation_length)),]
+#top_tras <- top_genes[top_genes$tra == "tra",]
+#write.table(top_genes, file="/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_protein_coding_genes_shifted_tss_plus_truncation.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")
+#write.table(top_tras, file="/home/stroemic/hiwi_16/analysis/shifted_TSS/sorted_tras_protein_coding_genes_shifted_tss_plus_truncation.csv", quote = FALSE, row.names = FALSE, col.names = TRUE, na = "", sep = ",")
+
+```
+
+###Plotting
+
+Plotted is the Fisher's exact test p.value of tag distribution between tissues and mTECs for each gene against the truncation length of the gene in mTECs.
+
+```{r plotting, eval=TRUE}
+
+#pdf(file="/home/stroemic/hiwi_16/analysis/shifted_TSS/plots/all_genes_p.value_vs_truncation.pdf")
+gene_ids = c("MUC6","MLANA")
+ggplot(df_genes, aes(x=log10(truncation_length), y=-log10(p.value))) +
+  geom_point(size=0.5) +
+  geom_point(data=df_genes[df_genes$external_gene_name %in% gene_ids,], colour="blue", size=2) +
+  labs(title="Genewise significance of shifted expression pattern between tissues and \nmTECs over truncated gene expression in mTECs", x ="log10(length of protein truncation to main TSS in mTECs)", y ="-log10(p.value)") +
+  theme_bw()
+
+#dev.off()
+
+```
+
+
+

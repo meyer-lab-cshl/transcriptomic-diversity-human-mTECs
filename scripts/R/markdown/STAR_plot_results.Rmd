@@ -1,0 +1,61 @@
+---
+title: "Plot STAR alignment results overview"
+author: "Léonie Strömich"
+date: "August 28, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Script to plot uniquely, unmapped and multiply mapped read after STAR mapping of 5PSeq samples. 
+
+## Prerequisites
+#### Load libraries
+
+```{r libraries, message=FALSE}
+library(ggplot2)
+library(plyr)
+library(reshape2)
+library(ggthemes)
+```
+
+#### Read in data 
+
+```{r read in, eval = TRUE}
+## in Transfer/alignments
+complete_sorted = read.csv("~/hiwi_16/documentation/STAR_hg19_processed_complete_sorted.csv")
+
+```
+
+## Analysis
+
+Pre-processing
+```{r pre_processing, eval=TRUE}
+
+#optional -- only plot 5Seq samples
+complete_sorted=complete_sorted[complete_sorted$seq_method == '5Seq',]
+#make new column with sample identifiers from other columns 
+complete_sorted$identifier<- paste(complete_sorted$patient, complete_sorted$mtec_pop, sep = "_") #without RNASeq
+
+#make patient as factor for grouping in plots
+complete_sorted$patient= factor(complete_sorted$patient, levels = c('87','212','214','221','226','Liver'))
+```
+
+Barplot of read percentages
+```{r plot, eval=TRUE}
+dfm <- melt(complete_sorted[,c('identifier', 'percentage_uniquely_mapped', 'percentage_multiple_mapped', 'percentage_unmapped')],id.vars = 1)
+plot=ggplot(dfm, aes(x= identifier, y=value, fill=variable)) + 
+            geom_bar(stat='identity', position='dodge') +  
+            theme_bw() +
+            theme(axis.text.x=element_text(angle=70,hjust=1,vjust=1)) +
+            labs(x ="Patient sample", y ="Percentage of reads [%]" ) +
+            scale_fill_hue(labels = c('uniquely mapped', 'multiply mapped', 'unmapped')) +
+            guides(fill=guide_legend(title=NULL))
+print(plot)
+#ggsave("final_STAR_hg19_5Seq_bar_plot.png", plot = plot3, path = "~/hiwi_16/documentation/")
+
+```
+
+
