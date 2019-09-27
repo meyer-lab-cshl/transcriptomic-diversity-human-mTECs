@@ -1,13 +1,10 @@
 # how to run from ./:
-# snakemake -s alignment_human_thymus.smk --jobs 5000 --latency-wait 90 --cluster-config config/cluster.json --cluster 'qsub -N {cluster.name}  -l {cluster.resources}
+# snakemake -s alignment_human_thymus.smk --jobs 5000 --latency-wait 90 --cluster-config config/cluster.json --cluster 'qsub {cluster.nodes} -N {cluster.name}  -l {cluster.resources}
 # -o {cluster.output} -e {cluster.error} -cwd' --keep-going --rerun-incomplete --use-conda
 
 configfile: "config/config_alignment.yml"
 
-PARENT=['mTec-multiplexed']
 SAMPLE=['pt87-hi', 'pt87-lo', 'pt212-hi', 'pt212-lo', 'pt214-hi', 'pt214-lo',
-        'pt221-hi', 'pt221-lo', 'pt226-hi', 'pt226-lo']
-SAMPLE2=['pt87-hi', 'pt87-lo', 'pt212-hi', 'pt212-lo', 'pt214-hi', 'pt214-lo',
         'pt221-hi', 'pt221-lo', 'pt226-hi', 'pt226-lo']
 DIRECTORY='/mnt/grid/meyer/hpc/home/data/common/tss'
 
@@ -17,8 +14,12 @@ rule all:
             pdir=DIRECTORY,
             read=[1,2],
             sample=SAMPLE),
-        #expand("{genomedir}/STARINDEX/Genome",
-        #    genomedir=config['genomehuman'])
+        expand("{genomedir}/STARINDEX/Genome",
+            genomedir=config['genomehuman']),
+        expand("{pdir}/2_alignments/{sample}_{suffix}",
+            suffix=["Aligned.out.sam", "Log.final.out"],
+            pdir=DIRECTORY,
+            sample=SAMPLE),
 
 def aggregate_input(wildcards):
     checkpoint_output = checkpoints.demultiplexing.get(**wildcards).output[0]
@@ -48,16 +49,18 @@ rule demultiplexing_and_trim:
     params:
         sample_bc=6,
         molecular_bc=8,
+        info=lambda wildcards: "{}/1_raw_data/5Pseq_processed/fastq/mTEC-multiplexed.info".format(wildcards.dir)
     shell:
         """
-        python alignment/5seq_sort-and-trim-mbc.py \
+        python alignment/sort-and-trim-mbc.py \
             --forward {input.read1} \
             --reverse {input.read2} \
             --design {input.design} \
             --sample-barcode {params.sample_bc} \
             --molecular-barcode {params.molecular_bc} \
             --trim-molecular-barcode \
-            --multiplexed
+            --multiplexed \
+            --info {params.info}
         """
 
 rule trim:
@@ -68,6 +71,7 @@ rule trim:
     output:
         pt_1="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}_1.fastq",
         pt_2="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}_2.fastq",
+        info="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}.info",
     wildcard_constraints:
         sample="pt221-hi|pt221-lo|pt226-hi|pt226-lo"
     params:
@@ -75,13 +79,14 @@ rule trim:
         molecular_bc=8,
     shell:
         """
-        python alignment/5seq_sort-and-trim-mbc.py \
+        python alignment/sort-and-trim-mbc.py \
             --forward {input.read1} \
             --reverse {input.read2} \
             --design {input.design} \
             --sample-barcode {params.sample_bc} \
             --molecular-barcode {params.molecular_bc} \
             --trim-molecular-barcode \
+            --info {output.info}
         """
 rule qc:
     input:
@@ -109,7 +114,7 @@ rule generate_genome:
         genome="{genomedir}/STARINDEX/Genome"
     params:
         length=49,
-        thread=8,
+        thread=4,
     shell:
         """
         STAR --runThreadN {params.thread} \
@@ -118,4 +123,24 @@ rule generate_genome:
         --genomeFastaFiles {input.genome} \
         --sjdbGTFfile {input.gtf} \
         --sjdbOverhang {params.length}
+        """
+
+rule align:
+    input:
+        read1="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}_1.fastq",
+        read2="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}_2.fastq",
+    output:
+        "{dir}/2_alignments/{sample}_Aligned.out.sam",
+        "{dir}/2_alignments/{sample}_Log.final.out",
+    params:
+        thread=4,
+        genomedir=config['genomehuman']
+    shell:
+        """
+        STAR --runThreadN {params.thread} \
+        --runMode alignReads \
+        --genomeDir {params.genomedir}/STARINDEX \
+        --readFilesIn {input.read1} {input.read2} \
+        --outReadsUnmapped Fastq \
+        --outFileNamePrefix {wildcards.dir}/2_alignments/{wildcards.sample}_ \
         """
