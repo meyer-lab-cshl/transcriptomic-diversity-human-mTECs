@@ -56,6 +56,11 @@ parser.add_option('--info', dest = 'info', type="string", nargs = 1)
 
 options, args = parser.parse_args()
 
+required="info design sample_barcode molecular_barcode forward reverse".split()
+for r in required:
+    if options.__dict__[r] is None:
+            parser.error("Parameter %s required but not provided"%r)
+
 table = pd.read_csv(options.design, sep=" ")
 forward_file = HTSeq.FastqReader(options.forward)
 reverse_file = HTSeq.FastqReader(options.reverse)
@@ -95,19 +100,20 @@ for fwd, rev in zip(forward_file, reverse_file):
     rrev_name = rev.name.split(" ")[0]
     assert rfw_name == rrev_name
 
+    ## beginning of fwd reads corresponds to molecular (fwd) barcode
     bc_mol = fwd.seq.decode('utf-8')[0:options.molecular_barcode]
     if options.multiplexed :
-        ## beginnings of reads correspond to sample (rev) and molecular (fwd) bc
+        ## beginning of rev reads corresponds to sample (rev) barcode
         bc_sample = rev.seq.decode('utf-8')[0:options.sample_barcode]
         if bc_sample in ofiles_rev.keys():
             exact_match += 1
-            rev.write_to_fastq_file(ofiles_rev[bc_sample])
             if options.trim_molecular_barcode:
                 fwd[options.molecular_barcode:].write_to_fastq_file(
                         ofiles_fwd[bc_sample])
             else:
                 fwd.write_to_fastq_file(ofiles_fwd[bc_sample])
-            rev.write_to_fastq_file(ofiles_rev[bc_sample])
+            rev[options.sample_barcode:].write_to_fastq_file(
+                    ofiles_rev[bc_sample])
 
             ## Write out information about the molecular barcode
             bcfiles[bc_sample].write(rfw_name + '\t' + bc_mol + '\n' )
@@ -133,8 +139,10 @@ for fwd, rev in zip(forward_file, reverse_file):
                             ofiles_fwd[bc_matched])
                 else:
                     fwd.write_to_fastq_file(ofiles_fwd[bc_matched])
+                rev[options.sample_barcode:].write_to_fastq_file(
+                        ofiles_rev[bc_matched])
 
-                ## Write out information about the molecular barcode 
+                ## Write out information about the molecular barcode
                 bcfiles[bc_matched].write(rfw_name + '\t' + bc_mol + '\n' )
 
                 ## Keep count of reads per sample:
@@ -150,7 +158,8 @@ for fwd, rev in zip(forward_file, reverse_file):
                             ofiles_fwd[bc_sample])
                 else:
                     fwd.write_to_fastq_file(ofiles_fwd[bc_sample])
-                rev.write_to_fastq_file(ofiles_rev[bc_sample])
+                rev[options.sample_barcode:].write_to_fastq_file(
+                        ofiles_rev[bc_sample])
 
                 ## Write out information about the molecular barcode
                 bcfiles[bc_sample].write(rfw_name + '\t' + bc_mol + '\n' )
@@ -165,17 +174,17 @@ for fwd, rev in zip(forward_file, reverse_file):
         ## Write out information about the molecular barcode
         bcfiles.write(rfw_name + '\t' + bc_mol + '\n' )
 
-### Close output files
-for f in ofiles_fwd.values():
-   f.close()
-for f in ofiles_rev.values():
-   f.close()
-for f in bcfiles.values():
-   f.close()
 
 ### Write out info
 
 if options.multiplexed:
+    ### Close output files
+    for f in ofiles_fwd.values():
+        f.close()
+    for f in ofiles_rev.values():
+        f.close()
+    for f in bcfiles.values():
+        f.close()
     # Into an info file
     oinfo = open(options.info, 'w')
     oinfo.write(str(counter) + ' reads in total' + '\n' )
@@ -201,6 +210,10 @@ if options.multiplexed:
     for sample in sorted(readsPerSample.items(), key=lambda x: x[1]):
         sys.stdout.write( sample[0] + '\t' + str(sample[1]) + '\n' )
 else:
+    ofiles_fwd.close()
+    ofiles_rev.close()
+    bcfiles.close()
+
     # Into an info file
     oinfo = open(options.info, 'w')
     oinfo.write(str(counter) + ' reads in total' + '\n' )
