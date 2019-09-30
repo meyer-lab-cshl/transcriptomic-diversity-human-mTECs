@@ -14,6 +14,12 @@ rule all:
             read=['fwd', 'rev'],
             pdir=DIRECTORY,
             sample=SAMPLE),
+        expand("{pdir}/3_tss_data/raw_positions/single_samples/{sample}_fwd.positions.csv",
+            pdir=DIRECTORY,
+            sample=SAMPLE),
+        expand("{pdir}/3_tss_data/raw_positions/all_mTECs_fwd.positions.csv",
+            pdir=DIRECTORY,
+            sample=SAMPLE),
         expand("{pdir}/2_alignments/{sample}_Aligned.out.unique.mbc.collapsed.fwd.{strand}.bam",
             strand=['plus', 'minus'],
             pdir=DIRECTORY,
@@ -65,9 +71,9 @@ rule collapse_reads:
         sam="{dir}/2_alignments/{sample}_Aligned.out.unique.mbc.{read}.sam",
     output:
         collapsed="{dir}/2_alignments/{sample}_Aligned.out.unique.mbc.collapsed.{read}.sam",
-        mc_count="{dir}/2_alignements/collapsing_{read}/{sample}_collapsed_countsPerMol.tsv",
-        pos_count="{dir}/2_alignements/collapsing_{read}/{sample}_collapsed_countsPerPos.tsv",
-        info="{dir}/2_alignements/collapsing_{read}/{sample}_collapsed.info",
+        mc_count="{dir}/2_alignments/collapsing_{read}/{sample}_collapsed_countsPerMol.tsv",
+        pos_count="{dir}/2_alignments/collapsing_{read}/{sample}_collapsed_countsPerPos.tsv",
+        info="{dir}/2_alignments/collapsing_{read}/{sample}_collapsed.info",
     shell:
         """
         python processing_alignment/collapse_reads.py \
@@ -76,6 +82,36 @@ rule collapse_reads:
             --out-molecule-count {output.mc_count} \
             --out-position-count {output.pos_count} \
             --out-info {output.info}
+        """
+
+rule process_counts:
+    input:
+        counts="{dir}/2_alignments/collapsing_fwd/{sample}_collapsed_countsPerMol.tsv",
+    output:
+        bedgraph="{dir}/3_tss_data/bedgraphs/single_samples/{sample}_fwd.bedgraph",
+        counts="{dir}/3_tss_data/summary/single_samples/{sample}_fwd.summary.counts.csv",
+        positions="{dir}/3_tss_data/raw_positions/single_samples/{sample}_fwd.positions.csv",
+    shell:
+        """
+        Rscript processing_alignment/process_counts.r \
+            --ifile {input.counts} \
+            --odir {wildcards.dir}/3_tss_data \
+            --sample {wildcards.sample}_fwd
+        """
+
+rule combine_counts:
+    input:
+        positions=expand("{{dir}}/3_tss_data/raw_positions/single_samples/{sample}_fwd.positions.csv",
+            sample=SAMPLE),
+    output:
+        positions="{dir}/3_tss_data/raw_positions/all_mTECs_fwd.positions.csv",
+    shell:
+        """
+        Rscript processing_alignment/combine_counts.r \
+            --directory {wildcards.dir}/3_tss_data/raw_positions \
+            --suffix _fwd.positions.csv \
+            --ofile {output.positions} \
+            --verbose
         """
 
 rule strand_reads:
@@ -130,3 +166,4 @@ rule merge_bedgraph:
         echo 'track type=bedGraph name="" description="BedGraph format" visibility=full color=200,100,0' > {output.upload}
         cat {output.bedgraph} >> {output.upload}
         """
+

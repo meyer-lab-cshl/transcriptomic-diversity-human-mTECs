@@ -72,6 +72,20 @@
         "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
         "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
     },
+    "process_counts" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
+    },
+    "combine_counts" :
+    {
+        "resources" : "m_mem_free=10G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
     "strand_reads" :
     {
         "resources" : "m_mem_free=5G",

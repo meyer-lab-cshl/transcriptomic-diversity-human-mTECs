@@ -12,7 +12,7 @@ library(optparse)
 ## parameters and input data ####
 #################################
 option_list <- list(
-    make_option(c("-o", "--odir"), action="store", dest="outdir",
+    make_option(c("-o", "--odir"), action="store", dest="odir",
                type="character", help="Path to output directory
                [default: %default].", default=NULL),
     make_option(c("-s", "--sample"), action="store", dest="sample",
@@ -34,7 +34,7 @@ if (args$debug) {
     args$odir <- "~/data/common/tss/3_tss_data"
     args$sample <- "pt214-lo"
     args$ifile <- paste("~/data/common/tss/2_alignments/collapsing_fwd/",
-                        "pt221-lo_collapsed_countsPerMol.tsv", sep="")
+                        "pt221-hi_collapsed_countsPerMol.tsv", sep="")
 }
 
 ## Define chromosome IDs
@@ -81,14 +81,14 @@ dat_agg$count <- dat_agg$count/(sum(dat_agg$count))*10000000
 dat_bedgraph <- dat_agg
 minus_strand <- dat_bedgraph$strand == "-"
 dat_bedgraph$count[minus_strand] <- dat_bedgraph$count[minus_strand]*-1
-dat_bedgraph <- dat_bedgraph[order(dat_bedgraph$chr, dat_bedgraph$start),]
+dat_bedgraph <- dat_bedgraph[order(dat_bedgraph$chromosome, dat_bedgraph$start),]
 dat_bedgraph <- data.frame("chrom"=dat_bedgraph$chromosome,
                            "start"=dat_bedgraph$start,
                            "end"=dat_bedgraph$end,
                            "dataValue"=dat_bedgraph$count)
 dat_bedgraph <- dat_bedgraph[complete.cases(dat_bedgraph),]
 write.table(dat_bedgraph,
-            file=file.path(args$odir, "raw_positions", "bedgraphs",
+            file=file.path(args$odir, "bedgraphs", "single_samples",
                            paste(args$sample, ".bedgraph", sep="")),
             row.names=FALSE, na="", col.names=FALSE, quote=FALSE, sep="\t")
 
@@ -114,8 +114,8 @@ dat_summary <- data.frame("geneID"=dat_agg$regions, "Position"=dat_agg$start,
                          "ReadCount"=dat_agg$count, "PosFromAnno"=0, "Class"=0)
 dat_summary <- dat_summary[with(dat_summary, order(geneID, Position)),]
 write.table(dat_summary,
-            file=file.path(args$odir, "raw_positions", "single_samples",
-                           paste(args$sample, ".summary.counts",
+            file=file.path(args$odir, "summary", "single_samples",
+                           paste(args$sample, ".summary.counts.csv",
                                             sep="")),
             row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
 
