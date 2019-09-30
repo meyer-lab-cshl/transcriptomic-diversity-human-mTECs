@@ -20,6 +20,8 @@ rule all:
             suffix=["Aligned.out.sam", "Log.final.out"],
             pdir=DIRECTORY,
             sample=SAMPLE),
+        expand("{pdir}/2_alignments/STAR_summary.pdf",
+            pdir=DIRECTORY)
 
 def aggregate_input(wildcards):
     checkpoint_output = checkpoints.demultiplexing.get(**wildcards).output[0]
@@ -143,4 +145,19 @@ rule align:
         --readFilesIn {input.read1} {input.read2} \
         --outReadsUnmapped Fastq \
         --outFileNamePrefix {wildcards.dir}/2_alignments/{wildcards.sample}_ \
+        """
+
+rule overview_STAR_results:
+    input:
+        positions=expand("{{dir}}/2_alignments/{sample}_Log.final.out",
+            sample=SAMPLE),
+    output:
+        csv="{dir}/2_alignments/STAR_summary.csv",
+        pdf="{dir}/2_alignments/STAR_summary.pdf",
+    shell:
+        """
+        Rscript alignment/STAR-alignment-results.r \
+            --directory {wildcards.dir}/2_alignments \
+            --suffix _Log.final.out \
+            --verbose
         """
