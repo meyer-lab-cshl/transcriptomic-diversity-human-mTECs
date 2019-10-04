@@ -14,14 +14,19 @@ option_list <- list(
                type="character", help="Path to input directory
                [default: %default].", default=NULL),
     make_option(c("-o", "--odir"), action="store", dest="odir",
-               type="character", help="Path to output directory
+               type="character", help="Path to output directory; instead output
+               file name can be provided via --ofile; only one accepted
+               [default: %default].", default=NULL),
+    make_option(c("-f", "--ofile"), action="store", dest="ofile",
+               type="character", help="Path to output file; if --fantom, please
+               specify outdir instead as more than one output file;
                [default: %default].", default=NULL),
     make_option(c("-s", "--suffix"), action="store", dest="suffix",
                type="character", help="common suffix of files to read
                [default: %default].", default=NULL),
-    make_option(c("-f", "--fantom"), action="store_true", dest="verbose",
-               type="logical", help="Fantom data; process thymus separately
-               [default: %default].", default=FALSE),
+    make_option(c("-F", "--fantom"), action="store_true", dest="fantom",
+               type="logical", help="Set if processing human fantom data;
+               process thymus separately [default: %default].", default=FALSE),
     make_option(c("-v", "--verbose"), action="store_true", dest="verbose",
                type="logical", help="Print progress to stdout
                [default: %default].", default=FALSE),
@@ -37,11 +42,16 @@ if (args$debug) {
     args <- list()
     args$indir <- "~/data/human/tss/3_tss_data/raw_positions"
     args$odir <- "~/data/common/tss/3_tss_data/raw_positions"
-    args$suffix <- "_fwd.positions.csv"
+    args$ofile <- NULL
+    args$suffix <- "_hg19.ctss.positions.csv"
     args$fantom <- TRUE
     args$verbose <- TRUE
 }
-samplefiles <- list.files(path=args$directory, pattern=args$suffix,
+
+if (!is.null(args$ofile) & !is.null(args$odir)) {
+    stop("Only one of ofile or odir can be provided")
+}
+samplefiles <- list.files(path=args$indir, pattern=args$suffix,
                           full.names=TRUE)
 
 # Iterate over all counts files in directory
@@ -67,10 +77,13 @@ dat_agg_all <- dat_all[,lapply(.SD, sum),
                        by=.(chrom, geneID, strand, start, end),
                        .SDcols=c("BarcodeCount")]
 
+if (is.null(args$ofile)) {
+    args$ofile=file.path(args$odir, paste("all_tissues", args$suffix, sep=""))
+}
+
 if (args$verbose) message("writing out")
-write.table(setDF(dat_agg_all),
-            file=file.path(args$odir, paste("all_tissues", args$suffix, sep="")),
-            row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
+write.table(setDF(dat_agg_all), file=args$ofile, row.names=FALSE, na="",
+            col.names=TRUE, quote=FALSE, sep=",")
 
 if(args$fantom) {
     if (args$verbose) message("aggregating w/o thymus samples")
