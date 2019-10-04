@@ -111,7 +111,7 @@ rule combine_counts:
         """
         Rscript ~/analysis/tss/common-scripts/combine_counts.r \
             --indir {wildcards.dir}/human/3_tss_data/raw_positions \
-            --odir {wildcards.dir}/combined/3_tss_data/raw_positions \
+            --ofile {output.positions} \
             --suffix _fwd.positions.csv \
             --verbose
         """
