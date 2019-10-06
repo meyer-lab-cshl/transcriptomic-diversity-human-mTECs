@@ -1,0 +1,12 @@
+genomehuman: "/mnt/grid/meyer/hpc/home/data/common/public/annotations/human/genome"
+genomemouse: "/mnt/grid/meyer/hpc/home/data/common/public/annotations/mouse/genome"
+multiplexed:
+  mTEC-multiplexed: "--multiplexed \ "
+  pt221-hi: ""
+  pt221-lo: ""
+  pt226-hi: ""
+  pt226-lo: ""
+spikeins:
+  - "THR"
+  - "LYS"
+  - "PHE"

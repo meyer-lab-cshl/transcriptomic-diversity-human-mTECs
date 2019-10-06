@@ -1,0 +1,165 @@
+---
+title: "Estimating TRAs from GTex"
+author: "Hannah Meyer"
+date: "15/05/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup variables and R, message=FALSE}
+library(tidyverse)
+library(tidyr)
+library(dendextend)
+
+datadir <- "~/data/tra/geo"
+```
+
+
+## Download files from GTex
+
+```{bash download files, eval=FALSE}
+geo=https://www.ncbi.nlm.nih.gov/sites/GDSbrowser?acc=
+datadir=~/data/tra/geo
+
+mouse_acc <- 'GDS592'
+human_acc <- 'GDS596'
+
+
+cd $datadir
+wget $geo$mouse_acc -O $datadir/20190520_mouse_gene_atlas_GDS592_full.soft.gzip
+wget $geo$human_acc -O $datadir/20190520_human_gene_atlas_GDS596_full.soft.gzip
+```
+
+```{bash unzip files, eval=FALSE}
+gunzip $datadir/20190520_mouse_gene_atlas_GDS592_full.soft.gzip
+gunzip $datadir/20190520_human_gene_atlas_GDS592_full.soft.gzip
+```
+
+   
+```{r load data, cache=TRUE, message=FALSE}
+
+
+readGEOdataset <- function(filename) {
+    geo <- read_lines(filename)
+
+    dataset_info <- geo[grepl("^!dataset", geo)]
+    dataset_info <- gsub("!", "", dataset_info) %>%
+        enframe %>%
+        separate(value, into = c("id", "description"), sep=" = ",
+                 fill="right") %>%
+        type_convert
+
+    subset_info <- geo[grepl("^!subset", geo)]
+    subset_info <- gsub("!subset_", "", subset_info) %>%
+        enframe %>%
+        separate(value, into = c("id", "description"), sep=" = ",
+                 fill="right") %>%
+        mutate(name = cumsum(id == "dataset_id")) %>%
+        pivot_wider(names_from = id, values_from = description) %>%
+        mutate(description=gsub(" ", "_", description)) %>% 
+        separate(sample_id, into=c("sample_id_rep1", "sample_id_rep2")) %>%
+        type_convert
+
+    dataset_pos <- which(grepl("^!dataset_table", geo))
+    dataset_names <- unlist(strsplit(geo[(dataset_pos[1] + 1)], "\t"))
+    dataset <- geo[(dataset_pos[1]+2):(dataset_pos[2]-1)] %>% enframe %>% 
+        separate(value, into=dataset_names, sep="\t") %>%
+        map(~na_if(.,"null")) %>% 
+        as_tibble %>% 
+        type_convert
+    
+    return(list(dataset=dataset, info=dataset_info, samples=subset_info))
+}
+
+mouse <- readGEOdataset(file.path(datadir,
+                                "20190520_mouse_gene_atlas_GDS592_full.soft"))
+human <-  readGEOdataset(file.path(datadir,
+                                "20190520_human_gene_atlas_GDS596_full.soft"))
+```
+
+```{r process data}
+processGEO <- function(GEOlist) {
+    tmp <- sapply(1:nrow(GEOlist$samples), function(x) {
+        exp <- GEOlist$samples[x,]
+        tmp <- GEOlist$dataset %>%
+            select(exp$sample_id_rep1, exp$sample_id_rep2) %>%
+            #transmute(tmp=log2(rowMeans(.))) %>%
+            transmute(tmp=rowMeans(.)) %>%
+            rename(!! exp$description :=tmp)
+    })
+    alltissues <- do.call(rbind, tmp)
+    colnames(alltissues) <- GEOlist$dataset$ID_REF
+    alltissues <- as_tibble(alltissues) %>%
+        mutate(tissue=names(tmp))
+    return(alltissues)
+    
+}
+
+mouse_tissues <- processGEO(mouse)
+
+tissue_matrix <- as.matrix(select(mouse_tissues, -tissue))
+rownames(tissue_matrix) <- mouse_tissues$tissue
+
+dend <- tissue_matrix %>%  
+    dist %>% hclust %>% as.dendrogram
+
+k=35
+dend %>% plot
+dend %>% rect.dendrogram(k=k, border = 8, lty = 5, lwd = 2)
+
+tissue_groups <- cutree(dend, k=k) %>% enframe(name='tissue', value='group')
+group_expression <- sapply(1:k, function(x) {
+    cat(x)
+    tg <- tissue_groups %>%
+        filter(group == x) %>%
+        select(tissue)
+    tmp <- mouse_tissues %>% filter(tissue %in% tg$tissue) %>%
+        select(-tissue)
+    #tmp<- colMeans(tmp)  
+    tmp <- apply(tmp, 2, max)  
+})
+
+group_expression <- group_expression %>%
+    t %>%
+    as_tibble
+
+```
+
+B) After ranking groups by expression level, the dynamic step method calls tissue specific genes as those with expression levels in a few (j) groups that are exponentially higher than that in the next highest group (n-jth) group. (C) The dynamic step function sets a threshold based on a moderated exponential jump. (D) The overlap between tissue specific genes called using the dynamic step method and a previously used thresholding method (Gardner et al. 2008). The data indicate a higher sensitivity for the dynamic step method. (E) Comparison between genes called as tissue specific by only one of the two methods. Genes unique to the threshold method (green) show only weakly higher expression in 1-5 tissues whereas genes unique to the dynamic step method (blue) show a large step up in expression in 1-5 tissues.
+
+To identify tissue-restricted expression, we used a novel dynamic step method. Because microarray background levels are probe-specific, we tested each probe separately for tissue-restricted expression. Guided by thresholds typically chosen for microarray data analysis, we define tissue restricted probes as those with a minimum normalised expression value of 50 that showed a moderated exponential step-up in expression, such that expression was substantially higher in 1-5 tissue groups than in the 6th highest tissue group
+
+
+```{r plots}
+dynamic_step <- function(x, thr=50, j=5) {
+    x <- rev(sort(x))
+    y <- x[j+1]^2/thr + x[j+1] + thr
+    x[1] > y
+}
+
+tra <- group_expression %>%
+     map_lgl(~dynamic_step(.))
+
+tra_genes <- mouse$dataset %>% filter(ID_REF %in% names(tra[which(tra)])) %>%
+    select(IDENTIFIER) %>%
+    unique
+
+
+tre <- read.table("~/data/tss/4_gene_lists/input/TRE_genes.csv", sep=",") %>%
+    as_tibble
+
+
+tra_expression <- group_expression[, tra] %>% mutate(group=1:k)
+tt <- tra_expression  %>% arrange(`gnf1m00286_a_at`)
+p <- ggplot(tt,
+            aes(x=factor(group,levels=as.character(tt$group)),
+                y=`gnf1m00286_a_at`))#y=ENSG00000130940.10))
+p + geom_point() +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=90))
+
+
+```

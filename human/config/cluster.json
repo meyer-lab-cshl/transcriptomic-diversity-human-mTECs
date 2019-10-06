@@ -1,0 +1,117 @@
+{
+    "__default__" :
+    {
+        "resources" : "m_mem_free=5G",
+        "nodes" : "",
+        "name" : "{rule}.{wildcards}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "demultiplexing_and_trim" :
+    {
+        "resources" : "m_mem_free=30G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "trim" :
+    {
+        "resources" : "m_mem_free=20G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "qc" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}.{wildcards.read}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
+    },
+    "generate_genome" :
+    {
+        "resources" : "m_mem_free=20G",
+        "nodes" : "-pe threads 4",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "align" :
+    {
+        "resources" : "m_mem_free=10G",
+        "nodes" : "-pe threads 4",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "add_feature" :
+    {
+        "resources" : "m_mem_free=55G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "unique_reads" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "split_reads" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "collapse_reads" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
+    },
+    "process_counts" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
+    },
+    "combine_counts" :
+    {
+        "resources" : "m_mem_free=10G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "strand_reads" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "convert_bam" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}.{wildcards.strand}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.err"
+    },
+    "make_bedgraph" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}.{wildcards.strand}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.err"
+    },
+    "merge_bedgraph" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+}

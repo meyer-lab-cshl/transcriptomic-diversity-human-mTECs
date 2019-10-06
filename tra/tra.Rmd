@@ -1,0 +1,250 @@
+---
+title: "Estimating TRAs from GTex"
+author: "Hannah Meyer"
+date: "15/05/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup variables and R}
+library(tidyverse)
+datadir <- "~/data/tra/gtex"
+```
+
+
+```{r functions}
+###+++###
+#Function require a vector with expression of one gene in different tissues.
+#If expression for one tissue is not known, gene specificity for this gene is NA
+#Minimum 2 tissues
+tau <- function(x) {
+    if (all(!is.na(x))) {
+        if (min(x, na.rm = TRUE) >= 0) {
+            if (max(x) != 0) {
+                x <- (1 - (x / max(x)))
+                res <- sum(x, na.rm = TRUE)
+                res <- res / (length(x) - 1)
+            } else {
+                res <- 0
+            }
+        } else {
+            res <- NA
+            #print("Expression values have to be positive!")
+        }
+    } else {
+        res <- NA
+        #print("No data for this gene avalable.")
+    }
+    return(res)
+}
+```
+
+
+## Download files from GTex
+
+```{bash download files, eval=FALSE}
+gtex=https://storage.googleapis.com/gtex_analysis_v7/annotations
+datadir=~/data/tra/gtex
+
+cd $datadir
+wget $gtex/GTEx_v7_Annotations_SampleAttributesDS.txt
+wget $gtex/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_reads.gct.gz
+```
+
+```{bash unzip files, eval=FALSE}
+tar -zxvf  $gtex/GTEx_Analysis_v7_eQTL_expression_matrices.tar
+cd GTEx_Analysis_v7_eQTL_expression_matrices
+
+for file in *.gz; do
+    gunzip $file
+done
+
+
+```
+The following description of the  Quality Control and gene expression analysis
+is taken 1:1 from the [GTEx website](https://gtexportal.org/home/documentationPage#staticTextAnalysisMethods)
+
+### RNA-seq Alignment
+Alignment to the human reference genome hg19/GRCh37 was performed using STAR
+v2.4.2a, based on the GENCODE v19 annotation. Unaligned reads were kept in the
+final BAM file. Among multi-mapping reads, one read is flagged as the primary
+alignment by STAR.
+
+### Quantification
+
+Gene-level quantifications: read counts and TPM values were produced with
+RNA-SeQC v1.1.8 (DeLuca et al., Bioinformatics, 2012 ), using the following
+read-level filters:
+
+1. Reads were uniquely mapped (corresponding to a mapping quality of 255 for
+   START BAMs).
+1. Reads were aligned in proper pairs.
+1. The read alignment distance was <=6 (i.e., alignments must not contain more
+   than six non-reference bases).
+1. Reads were fully contained within exon boundaries. Reads overlapping introns
+   were not counted.
+These filters were applied using the “-strictMode” flag in RNA-SeQC.
+
+### QC and Sample Exclusion Process
+
+1. RNA-seq expression outliers were identified and excluded using a
+   multidimensional extension of the statistic described in (Wright et al.,
+   Nat. Genet. 2014 ). Briefly, for each tissue, read counts from each sample
+   were normalized using size factors calculated with DESeq2 and log-transformed
+   with an offset of 1; genes with a log-transformed value >1 in >10% of samples
+   were selected, and the resulting read counts were centered and unit-
+   normalized. The resulting matrix was then hierarchically clustered (based on
+   average and cosine distance), and a chi2 p-value was calculated based on
+   Mahalanobis distance. Clusters with ≥60% samples with Bonferroni-corrected
+   p-values <0.05 were marked as outliers, and their samples were excluded.
+1. Samples with <10 million mapped reads were removed.
+1. For samples with replicates, the replicate with the greatest number of reads
+   was selected.
+   
+### Expression analysis
+
+Gene expression values for all samples from a given tissue were normalized using
+the following procedure:
+
+1. Genes were selected based on expression thresholds of >0.1 TPM in at least
+   20% of samples and ≥6 reads in at least 20% of samples.
+1. Expression values were normalized between samples using TMM as implemented in
+   edgeR (Robinson & Oshlack, Genome Biology, 2010 ).
+1. For each gene, expression values were normalized across samples using an
+   inverse normal transform.
+   
+```{r load data, cache=TRUE}
+description_attr <- data.table::fread(file.path(datadir,
+                                "GTEx_v7_Annotations_SampleAttributesDS.txt"),
+                                data.table=FALSE) %>%
+                    as_tibble
+
+samples_tpm <- data.table::fread(file.path(datadir,
+                                "GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_tpm.gct"),
+                                data.table=FALSE) %>%
+                  as_tibble
+
+```
+
+```{r filter data}
+methods <- description_attr %>% 
+    distinct(SMGEBTCHT)
+knitr::kable(methods)
+```
+
+```{r tissues}
+tissues <- description_attr %>%
+    filter(SMGEBTCHT == "TruSeq.v1") %>%
+    group_keys(SMTSD) %>%
+    mutate(parsable=gsub("- ", "", SMTSD)) %>%
+    transmute(parsable=gsub(" ", "_", parsable)) %>%
+    transmute(parsable=gsub("\\(", "", parsable)) %>% 
+    transmute(parsable=gsub("\\)", "", parsable))
+
+knitr::kable(tissues)
+```
+
+```{r load tpms, cache=TRUE}
+
+tpm <- do.call(rbind, apply(tissues, 1, function(x) {
+    tpm_file <- file.path(datadir,
+                          'GTEx_Analysis_v7_eQTL_expression_matrices',
+                          paste(x, ".v7.normalized_expression.bed", sep=""))
+    if (file.exists(tpm_file)) {
+        tissue_tpm <- data.table::fread(tpm_file, data.table=FALSE,
+                          stringsAsFactors=FALSE) %>%
+            as_tibble
+        colnames(tissue_tpm) <- gsub("-", "_", colnames(tissue_tpm))
+        colnames(tissue_tpm) <- gsub("#", "", colnames(tissue_tpm))
+        tissue_mean_tpm <- tissue_tpm  %>%
+            mutate(mean=rowMeans(select(., starts_with('GTEX')))) %>%
+            mutate(tissue= as.character(x)) %>%
+            select(-starts_with('GTEX'))
+    }
+}))
+
+
+median_tpm <- data.table::fread(file.path(datadir,
+                                          "GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_median_tpm.gct"),
+                                data.table=FALSE) %>%
+                as_tibble
+
+median_tpm_gt1 <- median_tpm[apply(median_tpm[, -c(1,2)], 1, function(x) all(x > 1)),]
+
+```
+
+
+```{r annotate counts}
+tpm_attr <- samples_tpm %>% select(Name, Description)
+
+tpm_annotated <- samples_tpm %>%
+    select(-Description, -Name) %>%
+    t %>%
+    magrittr::set_colnames(tpm_attr$Name) %>%
+    as_tibble %>% 
+    mutate(SAMPID=colnames(samples_tpm)[-c(1:2)]) %>% 
+    inner_join(select(description_attr, SAMPID, SMTS), by = "SAMPID")
+
+```
+
+```{r mean expression}
+mean_expression <- tpm_annotated %>%
+    select(-SAMPID) %>%
+    group_by(SMTS) %>%
+    summarise_all(mean, na.rm=TRUE)
+
+tse <- apply(log10(as.matrix(median_tpm_gt1[,-c(1:2)])), 2, tau)
+plot(density(tse))
+
+mean_expression_norm <- mean_expression %>%
+     mutate_at(vars(-SMTS), funs(./ max(.)))
+
+
+
+fTS <- function(orgExpression,
+                rpkm,
+                add,
+                tNames,
+                tNamesNew,
+                RNAseq) {
+    orgExpression <- orgExpression[regexpr("ENS", orgExpression$Ensembl.Gene.ID) > 0 |
+                          regexpr("FBgn", orgExpression$Ensembl.Gene.ID) > 0 |
+                          regexpr("PPAG", orgExpression$Ensembl.Gene.ID) > 0,]
+    orgExpression <- na.omit(orgExpression)
+    print(summary(orgExpression))
+    if (RNAseq == "log_QN") {
+        x <- orgExpression[, c(-1)]
+        x[x < rpkm] <- 1
+        x <- log2(x)
+        rpkm <- log2(rpkm)
+        orgExpression[, c(-1)] <- fQN(x)
+    } else if (RNAseq == "QN")  {
+        x <- orgExpression[, c(-1)]
+        x[x < rpkm] <- 0
+        orgExpression[, c(-1)] <- fQN(x)
+    } else if (RNAseq == "log")  {
+        x <- orgExpression[, -c(1, 29)]
+        x[x < rpkm] <- 1
+        orgExpression[, c(-1)] <- log2(x)
+        rpkm <- log2(rpkm)
+    } else {
+        x <- orgExpression[, c(-1)]
+        x[x < rpkm] <- 0
+        orgExpression[, c(-1)] <- x
+    }
+    orgExpression$Max <- apply(orgExpression[, c(-1)], c(1), fmax)
+    orgExpression <- orgExpression[orgExpression$Max > rpkm, ]
+    orgExpression <-
+        orgExpression[, c(-length(colnames(orgExpression)))]
+}
+
+    
+```
+
+```{r plots}
+
+
+```
