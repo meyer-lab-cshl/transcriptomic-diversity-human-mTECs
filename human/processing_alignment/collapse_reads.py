@@ -18,14 +18,12 @@ Usage:
         --samfile /g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/alignment/46C-2_uniquelyAligned_molbc.sam
         --out-renamed /g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/alignment/46C-2_uniquelyAligned_molbc_renamed.sam
         --out-collapsed /g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_uniquelyAligned_molbc_collapsed.sam
-        --out-molecule-count /g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_collapsed.tsv
         --out-position-count /g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_collapsed.tsv
         --out-info /g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_collapsed.info
 
 samfile = '/g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/alignment/46C-2_uniquelyAligned_molbc.sam'
 out_renamed = '/g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/alignment/46C-2_uniquelyAligned_molbc_renamed.sam'
 out_collapsed = '/g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_uniquelyAligned_molbc_collapsed.sam'
-out_molecule_count = '/g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_collapsed_countPerMol.tsv'
 out_position_count = '/g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_collapsed_countPerPos.tsv'
 out_info = '/g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collapsing/46C-2_collapsed.info'
 
@@ -33,7 +31,7 @@ out_info = '/g/steinmetz/project/TSES/mouse/run/5Seq_2013-10-08-C2GY2ACXX/collap
 
 
 import sys, re, HTSeq, optparse
-
+import pdb
 ###############################################################
 #### READ INPUT
 ###############################################################
@@ -45,8 +43,6 @@ parser.add_option('--out-renamed', action="store", dest="out_renamed",
         type="string", nargs = 1, default = None)
 parser.add_option('--out-collapsed', action="store", dest="out_collapsed",
         type="string", nargs = 1, default = None)
-parser.add_option('--out-molecule-count', action="store",
-        dest="out_molecule_count", type="string", nargs = 1, default = None)
 parser.add_option('--out-position-count', action="store",
         dest="out_position_count", type="string", nargs = 1, default = None)
 parser.add_option('--out-info', action="store", dest="out_info", type="string",
@@ -94,6 +90,7 @@ uniquePositions = {}
 sam = HTSeq.SAM_Reader(options.samfile)
 
 for read in sam:
+    #pdb.set_trace()
     readCounter += 1
     if readCounter % 100000 == 0:
         sys.stdout.write(str(readCounter) + " reads processed\n")
@@ -105,13 +102,12 @@ for read in sam:
         read.iv.chrom = re.sub('\|', '-', read.iv.chrom)
         #
     # Get collapse position
-    molbc = read.optional_field('XM')
     if read.iv.strand == '+':
         newName = '_'.join((read.iv.chrom, read.iv.strand,
-            str(read.iv.start + 1), molbc))
+            str(read.iv.start + 1)))
     else:
         newName = '_'.join((read.iv.chrom, read.iv.strand,
-            str(read.iv.end), molbc))
+            str(read.iv.end)))
 
     newSamLine = read.original_sam_line.split('\t')
     newSamLine[0] = newName
@@ -129,26 +125,11 @@ for read in sam:
     else:
         uniqueReads[newName] += 1
 
-    if '_'.join(newName.split('_')[:-1]) not in uniquePositions:
+    if newName not in uniquePositions:
         nUniquePositions += 1
-        uniquePositions['_'.join( newName.split('_')[:-1])] = 1
+        uniquePositions[newName] = 1
     else:
-        uniquePositions['_'.join( newName.split('_')[:-1])] += 1
-
-#######################
-# OUTPUT TABLE:
-#######################
-# If writing the table, go through the uniqueReads dict.
-
-if options.out_molecule_count is not None:
-    outT = open(options.out_molecule_count, 'w')
-    outT.write('chr\tstrand\tpos\tmolbc\tcount\n')
-    for newName in sorted(uniqueReads.keys()):
-        outT.write('\t'.join((newName.split('_')[0], newName.split('_')[1],
-            newName.split('_')[2],
-            newName.split('_')[3],
-            str(uniqueReads[newName]))) + '\n' )
-    outT.close()
+        uniquePositions[newName] += 1
 
 #######################
 # POSITION SUM TABLE:
