@@ -66,10 +66,10 @@ tx_genes <- tx_genes[order(as.numeric(tx_genes$gene_id))]
 ################
 ## Analysis ####
 ################
-if (args$type == "molbc"){
+if (args$type == "pos"){
     dat <- data.table::fread(args$ifile, header=TRUE, data.table=FALSE,
                              stringsAsFactors=FALSE)
-    colnames(dat) <- c("chromosome", "strand", "pos", "molbc", "count")
+    colnames(dat) <- c("chromosome", "strand", "start", "count")
 } else if (args$type == "bedgraph") {
     dat <- data.table::fread(args$ifile, header=FALSE, data.table=FALSE,
                             stringsAsFactors=FALSE)
@@ -85,20 +85,7 @@ if (args$type == "molbc"){
 # drop non-standard chromosomes and IVT
 dat_agg <- dat[grepl("^chr", dat$chromosome),]
 
-if (args$type == 'molbc') {
-    # drop molbc and counts
-    dat_agg <- dplyr::select(dat, -molbc, -count)
-    dat_agg$poscount <-  1
-
-    # calculate real count based on positions
-    dat_agg <- aggregate(dat_agg$poscount,
-                         by=list(dat_agg$chromosome, dat_agg$pos,
-                                 dat_agg$strand),
-                         FUN=sum)
-
-    # rename columns
-    dat_agg <- rename(dat_agg, c("Group.1"="chromosome", "Group.2"="start",
-                                 "Group.3"="strand", "x"="count"))
+if (args$type == 'pos') {
     dat_agg$end <- as.integer(dat_agg$start + 1)
     data_agg <- dplyr::select(dat_agg, chromosome, start, strand, end, count)
 }
@@ -106,7 +93,7 @@ if (args$type == 'molbc') {
 # normalise counts based on total read count
 dat_agg$count <- dat_agg$count/(sum(abs(dat_agg$count)))*10000000
 
-if (args$type == "molbc" || args$type == "bed") {
+if (args$type == "pos" || args$type == "bed") {
     ## Format into bedgraph ####
     dat_bedgraph <- dat_agg
     minus_strand <- dat_bedgraph$strand == "-"
