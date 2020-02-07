@@ -1,12 +1,12 @@
 # how to run from ./:
-# snakemake -s alignment_thymus.smk --jobs 5000 --latency-wait 90 --cluster-config config/cluster.json --cluster 'qsub {cluster.nodes} -N {cluster.name}  -l {cluster.resources}
+# snakemake -s alignment_5p.smk --jobs 5000 --latency-wait 90 --cluster-config config/cluster.json --cluster 'qsub {cluster.nodes} -N {cluster.name}  -l {cluster.resources}
 # -o {cluster.output} -e {cluster.error} -cwd' --keep-going --rerun-incomplete --use-conda
 
 configfile: "config/config_alignment.yml"
 
 SAMPLE=['pt87-hi', 'pt87-lo', 'pt212-hi', 'pt212-lo', 'pt214-hi', 'pt214-lo',
         'pt221-hi', 'pt221-lo', 'pt226-hi', 'pt226-lo']
-DIRECTORY='/mnt/grid/meyer/hpc/home/data/tss/human'
+DIRECTORY='/sonas-hs/meyer/hpc/home/hmeyer/data/tss/human'
 
 rule all:
     input:
@@ -88,9 +88,13 @@ rule qc:
     input:
         "{dir}/1_raw_data/5Pseq_processed/fastq/{sample}-{read}.fastq",
     output:
-        "{dir}/1_raw_data/5Pseq_processed/fastq/{sample}-{read}-htseq-qc.pdf",
+        htseq="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}-{read}-htseq-qc.pdf",
+        ngsutils="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}-{read}-ngsutils.txt",
     shell:
-        "htseq-qa --type=fastq --outfile={output} {input}"
+        """
+        htseq-qa --type=fastq --outfile={output.htseq} {input}
+        ngsutilsj fastq-stats --output {output.ngsutils} {input}
+        """
 
 rule add_spikeins_genome:
     input:
@@ -125,6 +129,8 @@ rule align:
     input:
         read1="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}_1.fastq",
         read2="{dir}/1_raw_data/5Pseq_processed/fastq/{sample}_2.fastq",
+        genome=expand("{genomedir}/STARINDEX/Genome",
+            genomedir=config['genomehuman'])
     output:
         "{dir}/2_alignments/{sample}_Aligned.out.sam",
         "{dir}/2_alignments/{sample}_Log.final.out",
@@ -138,6 +144,7 @@ rule align:
         --genomeDir {params.genomedir}/STARINDEX \
         --readFilesIn {input.read1} {input.read2} \
         --outReadsUnmapped Fastq \
+        --quantMode GeneCounts \
         --outFileNamePrefix {wildcards.dir}/2_alignments/{wildcards.sample}_ \
         """
 
