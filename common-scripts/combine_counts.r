@@ -4,6 +4,7 @@
 
 library(data.table)
 library(optparse)
+library(plyr)
 
 
 #################################
@@ -40,11 +41,11 @@ args <- parse_args(OptionParser(option_list=option_list))
 
 if (args$debug) {
     args <- list()
-    args$indir <- "~/data/human/tss/3_tss_data/raw_positions"
-    args$odir <- "~/data/common/tss/3_tss_data/raw_positions"
+    args$indir <- "~/data/tss/human/5Pseq/tss/raw_positions"
+    args$odir <- "~/data/tss/human/5Pseq/tss/raw_positions"
     args$ofile <- NULL
-    args$suffix <- "_hg19.ctss.positions.csv"
-    args$fantom <- TRUE
+    args$suffix <- "_fwd.positions.csv"
+    args$fantom <- FALSE
     args$verbose <- TRUE
 }
 
