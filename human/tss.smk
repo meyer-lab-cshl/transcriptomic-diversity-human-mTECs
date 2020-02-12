@@ -26,12 +26,12 @@ rule consensus_sites:
     shell:
         """
         perl ~/analysis/tss/common-scripts/collapse_tss_consensus.pl\
-            --dir {wildcards.dir}/tss/raw_positions \
+            --dir {wildcards.dir}/tss/summary \
             --collapsed {output.collapsed} \
             --summarised {output.summary} \
             --maxdist 12\
             --minbc 10\
-            --suffix _fwd.summary.counts \
+            --suffix _fwd.summary.counts.csv \
         """
 
 rule map_sample_sites:
