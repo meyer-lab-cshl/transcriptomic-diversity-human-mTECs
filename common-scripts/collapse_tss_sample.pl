@@ -16,7 +16,6 @@ sub usage {
     print "\t--iniso:\tFile with consensus positions";
     print "\t--outiso:\tFile for sample-specific isoform output file";
     print "\t--outgene:\tFile for sample-specific gene output file";
-    print "\t--h:\t";
     exit;
 }
 
@@ -76,22 +75,20 @@ my ($iniso, $insummary, $outiso, $outgenes);
 if (@ARGV <  1 or ! GetOptions ("iniso=s" => \$iniso,
         "insummary=s" => \$insummary,
         "outiso=s" => \$outiso,
-        "outgene=s" => \$outgene,
-        "h=s" => \$h)) {
-    usage()
+        "outgene=s" => \$outgenes)) {
+    usage();
 }
 
 GetOptions ("iniso=s" => \$iniso,
     "insummary=s" => \$insummary,
     "outiso=s" => \$outiso,
-    "outgene=s" => \$outgene,
-    "h=s" => \$h)
+    "outgene=s" => \$outgenes);
 
 # command line parameters
 print "Sample-specific summary file of tss: $insummary\n";
 print "File with consensus positions: $iniso\n";
 print "Path to file for sample-specific isoform output file: $outiso\n";
-print "Path to file for sample-specific gene output file: $geneiso\n";
+print "Path to file for sample-specific gene output file: $outgenes\n";
 
 ################
 ## analysis ####
