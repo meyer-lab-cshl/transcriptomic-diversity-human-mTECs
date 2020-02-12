@@ -23,8 +23,7 @@ sub usage {
            --summarised:\t
            --maxdist:\tmaximum peak distance
            --minbc:\tminimum number of counts per position
-           --suffix:\tsuffix of count files to be read
-           --h"
+           --suffix:\tsuffix of count files to be read";
     exit;
 }
 
@@ -89,7 +88,7 @@ my ($line, $file, $add, $cell, $header);
 my ($dir, $collapsed, $summarised);
 
 # command line arguments defaults
-my $suffix = "summary.counts"
+my $suffix = "summary.counts";
 my $maxdist = 12;
 my $minbc = 10;
 
@@ -98,25 +97,24 @@ my $minbc = 10;
 ################
 
 if (@ARGV <  1 or ! GetOptions ("dir=s" => \$dir,
-        "collpased=s" => \$collapsed,
+        "collapsed=s" => \$collapsed,
         "summarised=s" => \$summarised,
         "suffix=s" => \$suffix,
         "maxdist=i" => \$maxdist,
-        "minbc=i" => \$minbc,
-        "h=s" => \$h)) {
-    usage()
+        "minbc=i" => \$minbc)) {
+    usage();
 }
 
-GetOptions ("dir=s" => \$dir,
-    "collpased=s" => \$collapsed,
+GetOptions (
+    "dir=s" => \$dir,
+    "collapsed=s" => \$collapsed,
     "summarised=s" => \$summarised,
     "suffix=s" => \$suffix,
     "maxdist=i" => \$maxdist,
-    "minbc=i" => \$minbc,
-    "h=s" => \$h)
+    "minbc=i" => \$minbc);
 
 # command line parameters
-print "Directery with count files: $dir\n";
+print "Directory with count files: $dir\n";
 print "$collapsed\n";
 print "$summarised\n";
 print "Maximum peak distance: $maxdist\n";
@@ -124,7 +122,7 @@ print "Minimum counts per position: $minbc\n";
 print "Suffix of counts files: $suffix\n";
 
 # collect all count files
-my @files = glob($dir . "*". $suffix);
+my @files = glob($dir . "/" . "*". $suffix);
 
 foreach $file (@files) {
     print "Now working on $file \n";
@@ -135,7 +133,7 @@ foreach $file (@files) {
     while ($line = <READER>) {
         chomp $line;
         # creates a pointer to the line.
-        $add = [split(",",$line) ];
+        $add = [split(",",$line)];
         push(@lines, $add);
     }
     close(READER)
