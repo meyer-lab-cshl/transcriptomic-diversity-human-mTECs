@@ -129,6 +129,8 @@ rule fastq_screen:
         2
     shell:
         """
+        # Filter: human reads, first position in filter string
+        # unique+multi mappers (3)
         fastq_screen \
             --force \
             --threads {threads} \
