@@ -1,6 +1,5 @@
-genomehuman: "/sonas-hs/meyer/hpc/home/hmeyer/data/common/public/annotations/genome/human/GRCh37"
-genomemouse: "/sonas-hs/meyer/hpc/home/hmeyer/data/common/public/annotations/genome/mouse"
-refflat: "/sonas-hs/meyer/hpc/home/hmeyer/data/common/public/annotations/genome/human/GRCh37/human.GRCh37.p13.refFlat"
+genomehuman: "/sonas-hs/meyer/hpc/home/hmeyer/data/common/public/annotations/genome/human/GRCh38"
+refflat: "/sonas-hs/meyer/hpc/home/hmeyer/data/common/public/annotations/genome/human/GRCh38/human.GRCh38.refFlat"
 multiplexed:
   mTEC-multiplexed: "--multiplexed \ "
   pt221-hi: ""
