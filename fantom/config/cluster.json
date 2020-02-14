@@ -7,97 +7,32 @@
         "output" : "log/{rule}.out",
         "error" : "log/{rule}.err"
     },
-    "qc" :
-    {
-        "resources" : "m_mem_free=5G",
-        "name" : "{rule}.{wildcards.sample}.{wildcards.read}",
-        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
-        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
-    },
-    "generate_genome" :
-    {
-        "resources" : "m_mem_free=20G",
-        "nodes" : "-pe threads 4",
-        "name" : "{rule}",
-        "output" : "log/{rule}.out",
-        "error" : "log/{rule}.err"
-    },
-    "align" :
-    {
-        "resources" : "m_mem_free=10G",
-        "nodes" : "-pe threads 4",
-        "name" : "{rule}.{wildcards.sample}.{wildcards.replicate}",
-        "output" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.out",
-        "error" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.err"
-    },
-    "add_feature" :
-    {
-        "resources" : "m_mem_free=55G",
-        "name" : "{rule}.{wildcards.sample}",
-        "output" : "log/{rule}.{wildcards.sample}.out",
-        "error" : "log/{rule}.{wildcards.sample}.err"
-    },
-    "unique_reads" :
-    {
-        "resources" : "m_mem_free=5G",
-        "name" : "{rule}.{wildcards.sample}",
-        "output" : "log/{rule}.{wildcards.sample}.out",
-        "error" : "log/{rule}.{wildcards.sample}.err"
-    },
-    "split_reads" :
-    {
-        "resources" : "m_mem_free=2G",
-        "name" : "{rule}.{wildcards.sample}",
-        "output" : "log/{rule}.{wildcards.sample}.out",
-        "error" : "log/{rule}.{wildcards.sample}.err"
-    },
-    "collapse_reads" :
-    {
-        "resources" : "m_mem_free=2G",
-        "name" : "{rule}.{wildcards.sample}",
-        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
-        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
-    },
-    "process_counts" :
+    "process_counts_human" :
     {
         "resources" : "m_mem_free=2G",
         "name" : "{rule}.{wildcards.sample}.{wildcards.replicate}",
         "output" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.out",
         "error" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.err"
     },
-    "combine_counts" :
+    "combine_counts_human" :
     {
         "resources" : "m_mem_free=10G",
         "name" : "{rule}",
         "output" : "log/{rule}.out",
         "error" : "log/{rule}.err"
     },
-    "strand_reads" :
+    "process_counts_mouse" :
     {
-        "resources" : "m_mem_free=5G",
-        "name" : "{rule}.{wildcards.sample}",
-        "output" : "log/{rule}.{wildcards.sample}.out",
-        "error" : "log/{rule}.{wildcards.sample}.err"
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}.{wildcards.replicate}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.err"
     },
-    "convert_bam" :
+    "combine_counts_mouse" :
     {
-        "resources" : "m_mem_free=15G",
-        "name" : "{rule}.{wildcards.sample}.{wildcards.strand}.{wildcards.replicate}",
-        "output" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.{wildcards.replicate}.out",
-        "error" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.{wildcards.replicate}.err"
-    },
-    "make_bedgraph" :
-    {
-        "resources" : "m_mem_free=5G",
-        "name" : "{rule}.{wildcards.sample}.{wildcards.strand}",
-        "output" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.out",
-        "error" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.err"
-    },
-    "merge_bedgraph" :
-    {
-        "resources" : "m_mem_free=5G",
-        "name" : "{rule}.{wildcards.sample}",
-        "output" : "log/{rule}.{wildcards.sample}.out",
-        "error" : "log/{rule}.{wildcards.sample}.err"
+        "resources" : "m_mem_free=10G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
     },
 }
