@@ -1,4 +1,4 @@
-snakemake -s alignment_mouse.smk \
-    --dag ~/data/tss/mouse/2_alignments/mESC1_1_Aligned.out.sam \
-    ~/data/tss/mouse/2_alignments/STAR_summary.pdf \
-    ~/data/common/public/annotations/mouse/genome/NCBI37_mm9/STARINDEX/Genome|  dot -Tpdf > alignment_mouse_dag.pdf
+snakemake -s alignment.smk \
+    --dag ~/data/tss/mouse/5Pseq/alignments/mESC1_1_Aligned.sortedByCoord.out.bam \
+    ~/data/tss/mouse/5Pseq/multiqc/multiqc_report.html \
+    ~/data/tss/mouse/5Pseq/alignment_qc/multiqc_report.html | dot -Tpng > dag/alignment_dag.png
