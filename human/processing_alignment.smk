@@ -14,7 +14,7 @@ rule all:
             reads=['fwd', 'rev'],
             pdir=DIRECTORY,
             sample=SAMPLE),
-        expand("{pdir}/tss/raw_positions/all_samples_fwd.positions.csv",
+        expand("{pdir}/tss/combined/all_samples_fwd.positions.csv",
             pdir=DIRECTORY),
         expand("{pdir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.{reads}.sam",
             reads=['fwd', 'rev'],
@@ -84,7 +84,7 @@ rule combine_counts:
         positions=expand("{{dir}}/tss/raw_positions/{sample}_fwd.positions.csv",
             sample=SAMPLE),
     output:
-        positions="{dir}/tss/raw_positions/all_samples_fwd.positions.csv",
+        positions="{dir}/tss/combined/all_samples_fwd.positions.csv",
     shell:
         """
         Rscript ~/analysis/tss/common-scripts/combine_counts.r \
