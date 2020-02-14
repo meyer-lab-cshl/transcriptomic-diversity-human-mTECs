@@ -1,1 +1,2 @@
-genome: "/mnt/grid/meyer/hpc/home/data/common/public/annotations/mouse/genome/NCBI37_mm9"
+genome: "/mnt/grid/meyer/hpc/home/data/common/public/annotations/genome/mouse/GRCm38"
+refflat: "/sonas-hs/meyer/hpc/home/hmeyer/data/common/public/annotations/genome/mouse/GRCm38/mouse.GRCm38.refFlat"
