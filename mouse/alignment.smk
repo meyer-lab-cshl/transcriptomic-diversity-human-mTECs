@@ -98,7 +98,7 @@ rule multiqc_raw:
 rule align:
     input:
         read="{dir}/fastq_filtered/{sample}_{replicate}.fastq",
-        genome=expand("{genomedir}/GRCm38/STARINDEX/Genome",
+        genome=expand("{genomedir}/STARINDEX/Genome",
             genomedir=config['genome'])
     output:
         bam="{dir}/alignments/{sample}_{replicate}_Aligned.sortedByCoord.out.bam",
