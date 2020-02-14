@@ -14,7 +14,7 @@ rule all:
             replicate=[1, 2],
             pdir=DIRECTORY,
             sample=SAMPLE),
-        expand("{pdir}/tss/raw_positions/all_mESCs.positions.csv",
+        expand("{pdir}/tss/combined/all_mESCs.positions.csv",
             pdir=DIRECTORY)
 
 rule unique_reads:
@@ -105,7 +105,7 @@ rule combine_counts:
             sample=SAMPLE,
             replicate=[1,2]),
     output:
-        positions="{dir}/tss/raw_positions/all_mESCs.positions.csv",
+        positions="{dir}/tss/combined/all_mESCs.positions.csv",
     shell:
         """
         Rscript ~/analysis/tss/common-scripts/combine_counts.r \
