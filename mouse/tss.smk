@@ -31,7 +31,7 @@ rule consensus_sites:
             --summarised {output.summary} \
             --maxdist 12\
             --minbc 10\
-            --suffix _fwd.summary.counts.csv \
+            --suffix .summary.counts.csv \
         """
 
 rule map_sample_sites:
