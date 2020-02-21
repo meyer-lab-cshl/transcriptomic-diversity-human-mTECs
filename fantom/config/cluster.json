@@ -7,12 +7,19 @@
         "output" : "log/{rule}.out",
         "error" : "log/{rule}.err"
     },
+    "liftover_counts_human" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
     "process_counts_human" :
     {
         "resources" : "m_mem_free=2G",
-        "name" : "{rule}.{wildcards.sample}.{wildcards.replicate}",
-        "output" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.out",
-        "error" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.err"
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
     },
     "combine_counts_human" :
     {
@@ -21,12 +28,19 @@
         "output" : "log/{rule}.out",
         "error" : "log/{rule}.err"
     },
+    "liftover_counts_mouse" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
     "process_counts_mouse" :
     {
         "resources" : "m_mem_free=2G",
-        "name" : "{rule}.{wildcards.sample}.{wildcards.replicate}",
-        "output" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.out",
-        "error" : "log/{rule}.{wildcards.sample}.{wildcards.replicate}.err"
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
     },
     "combine_counts_mouse" :
     {
