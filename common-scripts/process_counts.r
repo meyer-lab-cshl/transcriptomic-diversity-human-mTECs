@@ -46,13 +46,13 @@ if (args$debug) {
 }
 
 if (args$species == "human") {
-    library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    library(TxDb.Hsapiens.UCSC.hg38.knownGene)
     chr <- paste ("chr", c(1:22, "M", "X", "Y"), sep="")
-    txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+    txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 } else if(args$species == "mouse") {
-    library(TxDb.Mmusculus.UCSC.mm9.knownGene)
+    library(TxDb.Mmusculus.UCSC.mm10.knownGene)
     chr <- paste ("chr", c(1:19, "M", "X", "Y"), sep="")
-    txdb <- TxDb.Mmusculus.UCSC.mm9.knownGene
+    txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene
     seqlevels(txdb) <- chr
 } else {
     stop("Species", args$species, "unknown")
