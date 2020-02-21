@@ -256,6 +256,7 @@ rule umi_group:
 rule dedup:
     input:
         bam="{readsdir}/alignments/{sample}_Aligned.sortedByCoord.out.bam",
+        index="{readsdir}/alignments/{sample}_Aligned.sortedByCoord.out.bam.bai",
     output:
         bam="{readsdir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.bam",
         #stats="{readsdir}/deduplicated/{sample}_Aligned.sortedByCoord.stats_per_umi.tsv"
@@ -285,7 +286,7 @@ rule rnaseq_metrics_raw:
             REF_FLAT={input.refflat:q} \
             STRAND_SPECIFICITY=FIRST_READ_TRANSCRIPTION_STRAND \
             ASSUME_SORTED=false \
-            INPUT={input.bam:q}
+            INPUT={input.bam:q} \
             OUTPUT={output.metrics:q}
         """
 
