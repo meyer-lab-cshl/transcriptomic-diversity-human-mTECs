@@ -5,6 +5,7 @@
 library(dplyr)
 library(GenomicRanges)
 library(optparse)
+library(AnnotationHub)
 
 #################################
 ## parameters and input data ####
@@ -39,29 +40,40 @@ if (args$debug) {
     args <- list()
     args$type <- "bed"
     args$species <- "mouse"
-    args$odir <- "~/data/tss/fantom/mouse/3_tss_data"
-    args$sample <- "ES-46C_embryonic_stem_cells_neuronal_differentiation_day00_biol_rep1.CNhs14104.14357-155I1.mm9.ctss"
-    args$ifile <- paste("~/data/tss/fantom/mouse/",
-                        "ES-46C_embryonic_stem_cells_neuronal_differentiation_day00_biol_rep1.CNhs14104.14357-155I1.mm9.ctss.bed.gz", sep="")
+    args$odir <- "~/data/tss/mouse/fantom/tss"
+    args$sample <- "ES-46C_embryonic_stem_cells_neuronal_differentiation_day00_biol_rep1.CNhs14104.14357-155I1"
+    args$ifile <- paste("~/data/tss/mouse/fantom/bed/GRCm38/",
+                        "ES-46C_embryonic_stem_cells_neuronal_differentiation_day00_biol_rep1.CNhs14104.14357-155I1.bed", sep="")
 }
 
+hub <- AnnotationHub()
 if (args$species == "human") {
-    library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+    # |Organism: Homo sapiens
+    # |taxonomy_id: 9606
+    # |genome_build: GRCh38
+    # |DBSCHEMAVERSION: 2.1
+    # | No. of genes: 67998.
+    # | No. of transcripts: 250641.
+    anno <- hub[["AH78783"]]
     chr <- paste ("chr", c(1:22, "M", "X", "Y"), sep="")
-    txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 } else if(args$species == "mouse") {
-    library(TxDb.Mmusculus.UCSC.mm10.knownGene)
+    # |Organism: Mus musculus
+    # |taxonomy_id: 10090
+    # |genome_build: GRCm38
+    # |DBSCHEMAVERSION: 2.1
+    # | No. of genes: 56289.
+    # | No. of transcripts: 144726.
+    anno <- hub[["AH78811"]]
     chr <- paste ("chr", c(1:19, "M", "X", "Y"), sep="")
-    txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene
-    seqlevels(txdb) <- chr
 } else {
     stop("Species", args$species, "unknown")
 }
 
-# get gene ids, expand range by 100, order by gene_id
-tx_genes <- genes(txdb)
-tx_genes <- tx_genes + 100
-tx_genes <- tx_genes[order(as.numeric(tx_genes$gene_id))]
+# get gene ids, expand range by 100
+anno_genes <- genes(anno)
+anno_genes <- anno_genes + 100
+seqlevelsStyle(anno_genes) <- "UCSC"
+ann0_genes <- subset(anno_genes, seqnames %in% chr)
 
 ################
 ## Analysis ####
@@ -124,10 +136,10 @@ if (args$type == "pos" || args$type == "bed") {
 
 ## find Overlaps with genes by comparing genomic ranges ####
 dat_ranges <- makeGRangesFromDataFrame(dat_agg, keep.extra.columns = TRUE)
-dat_agg$overlaps  <- findOverlaps(dat_ranges, tx_genes, select = 'first')
+dat_agg$overlaps  <- findOverlaps(dat_ranges, anno_genes, select = 'first')
 
 # lookup entrezId with overlap number
-dat_agg$regions= with(dat_agg, names(tx_genes)[overlaps])
+dat_agg$regions <- with(dat_agg, names(anno_genes)[overlaps])
 
 # set intergenic_$start/1000 instead of NA, to prevent loosing information
 na.region <- dplyr::select(dat_agg, regions) %>% is.na
@@ -136,7 +148,7 @@ dat_agg$regions[na.region] <- paste("intergenic", dat_agg$chromosome[na.region],
                                     as.integer(dat_agg$start[na.region]/1000),
                                     sep="_")
 # Keep rows with no missing values only
-dat_agg <- dat_agg[complete.cases(dat_agg),]
+dat_agg <- dat_agg[complete.cases(dplyr::select(dat_agg, -overlaps)),]
 
 # format summary counts
 dat_summary <- data.frame("geneID"=dat_agg$regions, "Position"=dat_agg$start,
@@ -160,7 +172,3 @@ write.table(dat_positions,
             file=file.path(args$odir, "raw_positions",
                            paste(args$sample, ".positions.csv", sep="")),
             row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
-
-
-
-
