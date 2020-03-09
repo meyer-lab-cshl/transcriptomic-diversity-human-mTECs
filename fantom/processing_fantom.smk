@@ -13,10 +13,14 @@ SAMPLE_HUMAN, = glob_wildcards("/sonas-hs/meyer/hpc/home/hmeyer/data/tss/human/f
 
 rule all:
     input:
-        expand("{pdir}/mouse/fantom/tss/combined/all_mESC_46C.positions.csv",
-            pdir=DIRECTORY),
-        #expand("{pdir}/human/fantom/tss/combined/all_tissues.positions.csv",
+        #expand("{pdir}/mouse/fantom/tss/combined/all_mESC_46C.positions.csv",
         #    pdir=DIRECTORY),
+        expand("{pdir}/mouse/fantom/bed/GRCm38/all_mESC_46C.count.unmapped.txt",
+            pdir=DIRECTORY),
+        expand("{pdir}/human/fantom/bed/GRCh38/all_tissues.count.unmapped.txt",
+            pdir=DIRECTORY),
+        expand("{pdir}/human/fantom/tss/combined/all_tissues.positions.csv",
+            pdir=DIRECTORY),
 
 rule liftover_counts_mouse:
     input:
@@ -26,6 +30,7 @@ rule liftover_counts_mouse:
     output:
         liftover="{dir}/mouse/fantom/bed/GRCm38/{sample}.bed",
         unmapped="{dir}/mouse/fantom/bed/GRCm38/{sample}.unmapped.bed",
+        count_unmapped="{dir}/mouse/fantom/bed/GRCm38/{sample}.count.unmapped.txt",
     shell:
         """
         liftOver {input.positions} {input.chain} \
@@ -34,7 +39,25 @@ rule liftover_counts_mouse:
             > {output.liftover}
         awk -v OFS="\\t" '{{print $1,$2,$3,$1":"$2".."$3","$6,$5,$6}}' {output.unmapped}.tmp \
             > {output.unmapped}
-        rm {output.liftover}.tmp {output.unmapped}.tmp
+        echo "{wildcards.sample}" > {output.count_unmapped}.tmp
+        wc -l {output.liftover}  | cut -d " " -f 1 \
+            > {output.count_unmapped}.mapped.tmp
+        grep "#" -v {output.unmapped} | wc -l | \
+            paste {output.count_unmapped}.tmp {output.count_unmapped}.mapped.tmp - \
+            > {output.count_unmapped}
+        rm {output.liftover}.tmp {output.unmapped}.tmp \
+            {output.count_unmapped}.tmp {output.count_unmapped}.mapped.tmp
+        """
+
+rule summarise_liftover_mouse:
+    input:
+        expand("{{dir}}/mouse/fantom/bed/GRCm38/{sample}.count.unmapped.txt",
+            sample=SAMPLE_MOUSE)
+    output:
+        "{dir}/mouse/fantom/bed/GRCm38/all_mESC_46C.count.unmapped.txt",
+    shell:
+        """
+        cat {input} > {output}
         """
 
 rule process_counts_mouse:
@@ -79,6 +102,7 @@ rule liftover_counts_human:
     output:
         liftover="{dir}/human/fantom/bed/GRCh38/{sample}.bed",
         unmapped="{dir}/human/fantom/bed/GRCh38/{sample}.unmapped.bed",
+        count_unmapped="{dir}/human/fantom/bed/GRCh38/{sample}.count.unmapped.txt",
     shell:
         """
         liftOver {input.positions} {input.chain} \
@@ -87,7 +111,25 @@ rule liftover_counts_human:
             > {output.liftover}
         awk -v OFS="\\t" '{{print $1,$2,$3,$1":"$2".."$3","$6,$5,$6}}' {output.unmapped}.tmp \
             > {output.unmapped}
-        rm {output.liftover}.tmp {output.unmapped}.tmp
+        echo "{wildcards.sample}" > {output.count_unmapped}.tmp
+        wc -l {output.liftover}  | cut -d " " -f 1 \
+            > {output.count_unmapped}.mapped.tmp
+        grep "#" -v {output.unmapped} | wc -l | \
+            paste {output.count_unmapped}.tmp {output.count_unmapped}.mapped.tmp - \
+            > {output.count_unmapped}
+        rm {output.liftover}.tmp {output.unmapped}.tmp \
+            {output.count_unmapped}.tmp {output.count_unmapped}.mapped.tmp
+        """
+
+rule summarise_liftover_human:
+    input:
+        expand("{{dir}}/human/fantom/bed/GRCh38/{sample}.count.unmapped.txt",
+            sample=SAMPLE_HUMAN)
+    output:
+        "{dir}/human/fantom/bed/GRCh38/all_tissues.count.unmapped.txt",
+    shell:
+        """
+        cat {input} > {output}
         """
 
 rule process_counts_human:
