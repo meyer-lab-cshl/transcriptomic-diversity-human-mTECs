@@ -32,6 +32,7 @@ sub collate {
     my $md = $_[1];
     # 2nd option: should output be written?
     my $write_out = $_[2];
+    my $bcfilter = $_[3];
     my @sorted;
     # return value: the collapsed array
     my @out;
@@ -51,10 +52,6 @@ sub collate {
                 last;
             }
         }
-        if ($current->[0] eq "ENSMUSG00000024816") {
-            $rem = $merge ? $merge->[1] : 0;
-            print "$current->[1], $rem \n";
-        }
         #if a potential candidate has been found (same gene, similar position)
         if ($merge) {
             $merge->[1] = int(($merge->[1] * $merge->[2] + $current->[1] * $current->[2]) / ($merge->[2] + $current->[2]) + 0.5);
@@ -63,7 +60,7 @@ sub collate {
             $merge->[2] += $current->[2];
             # add the read count to the parent
             $merge->[3] += $current->[3];
-        } elsif ($current->[2] >= $minbc) {
+        } elsif ($current->[2] >= $bcfilter) {
             # sufficient number of barcodes have been identifed that support it
             # write the corrected line
             print $write_out join(",", @{$current}) . "\n" if $write_out;
@@ -155,8 +152,8 @@ while ($current = shift @lines) {
             warn("$previous has too many entries, omitting\n")
         } else {
             # sumarise all previous lines - just over all cells count barcodes
-            $summary = collate(\@current_gene, 0,$summariseFH);
-            $final = collate($summary, $maxdist, $collapseFH);
+            $summary = collate(\@current_gene, 0, $summariseFH, $minbc);
+            $final = collate($summary, $maxdist, $collapseFH, $minbc);
         }
         # the result is now in %result. print it.
         @current_gene = ();
@@ -166,8 +163,8 @@ while ($current = shift @lines) {
 }
 
 # sumarise all previous lines - just over all cells count barcodes
-$summary = collate(\@current_gene, 0, $summariseFH);
-$final = collate($summary, $maxdist, $collapseFH);
+$summary = collate(\@current_gene, 0, $summariseFH, $minbc);
+$final = collate($summary, $maxdist, $collapseFH, $minbc);
 
 close($collapseFH);
 close($summariseFH);
