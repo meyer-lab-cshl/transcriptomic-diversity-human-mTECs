@@ -49,7 +49,7 @@ generate_features <- function(anno_exons, anno_genes, anno_transcripts) {
     features$TSS10_genes <- promoters(anno_genes, upstream=10, downstream=10)
 
     ## TSS anno_transcriptss +-10
-    features$TSS10_anno_transcriptss <- promoters(anno_transcripts, upstream=10,
+    features$TSS10_transcripts <- promoters(anno_transcripts, upstream=10,
                                             downstream=10)
 
     ## TSS +-100
@@ -154,23 +154,24 @@ generate_features <- function(anno_exons, anno_genes, anno_transcripts) {
 
 collect_features <- function(total, features, genome) {
     ## Rank genes by expression level ####
-    genes <- total[,c("geneID", "start", "BarcodeCount.x")]
-
     # sum up count from all positions of each gene
-    genes <- genes[,lapply(.SD, sum), by=.(geneID), .SDcols=c("BarcodeCount.x")]
-    setDF(genes)
+    # and define a rank for each gene based on overall expression level
+    genes <- total %>%
+        select(geneID, start, BarcodeCount) %>%
+        group_by(geneID) %>%
+        summarise(counts=sum(BarcodeCount)) %>%
+        ungroup %>%
+        mutate(rank = rank(counts, ties.method = "average"))
 
-    # define a rank for each gene based on overall expression level
-    genes$rank <- rank(genes$BarcodeCount.x, ties.method = "average")
     total$expr_rank_gene <- with(total, genes$rank[geneID])
 
-    ## Expressionlevel relativ to gene and to total for each peak ####
+    ## Expression level relativ to gene and to total for each peak ####
     total <- total %>%
         group_by(geneID) %>%
-        mutate(sumCount=sum(BarcodeCount.x)) %>%
-        mutate(relCount=BarcodeCount.x/sumCount) %>%
+        mutate(sumCount=sum(BarcodeCount)) %>%
+        mutate(relCount=BarcodeCount/sumCount) %>%
         group_by() %>%
-        mutate(relAllCount=as.numeric(BarcodeCount.x/sum(BarcodeCount.x))) %>%
+        mutate(relAllCount=as.numeric(BarcodeCount/sum(BarcodeCount))) %>%
         dplyr::select(-sumCount)
 
     ## Annotate features ####
@@ -232,7 +233,7 @@ collect_features <- function(total, features, genome) {
                                             (total$start+25)), "G")
     total$Freq50T <- letterFrequency(getSeq(genome, total$chrom,
                                             (total$start-25),
-                                            (total_int$start+25)), "T")
+                                            (total$start+25)), "T")
     return(total)
 }
 
@@ -283,13 +284,14 @@ anno <- hub[["AH78811"]]
 seqlevelsStyle(anno) <- "UCSC"
 chr <- paste ("chr", c(1:19, "M", "X", "Y"), sep="")
 
-# get gene ids, expand range by 100
+# get genes, transcripts and exons
 anno_genes <- genes(anno)
 anno_transcripts <- anno_transcripts(anno)
 anno_exons <- exonsBy(anno, by='gene')
 anno_genes <- subset(anno_genes, seqnames %in% chr)
 anno_transcripts <- subset(anno_transcripts, seqnames %in% chr)
 
+# get genmoe data
 genome <- BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10
 
 # read TSS data
@@ -308,10 +310,12 @@ saveRDS(features, file.path(args$odir, "features_mouse_mm10.rds"))
 
 ## Pre-process tss data ####
 total_m5pseq <- preprocess_feature_table(m5pseq, fantom, anno_genes)
-total_m5pseq <- dplyr::rename(total_m5pseq, start=Position, Fantom5=response)
+total_m5pseq <- dplyr::rename(total_m5pseq, start=Position, Fantom5=response,
+                       BarcodeCount=BarcodeCount.x)
 
 total_fantom <- preprocess_feature_table(fantom, m5pseq, anno_genes)
-total_fantom <- dplyr::rename(total_fantom, start=Position, m5pseq=response)
+total_fantom <- dplyr::rename(total_fantom, start=Position, m5pseq=response,
+                       BarcodeCount=BarcodeCount.x)
 
 ## Annotate tss data with features ####
 features_fantom <- collect_features(total_fantom, features, genome)
