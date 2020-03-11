@@ -2,6 +2,7 @@
 ## libraries and functions ####
 ###############################
 
+library(AnnotationHub)
 library(data.table)
 library(TxDb.Mmusculus.UCSC.mm9.knownGene)
 library(GenomicRanges)
@@ -24,10 +25,10 @@ preprocess_feature_table <- function(datx, daty) {
     dat_inter <- dat[grepl("intergenic", dat$geneID),]
     dat <- dat[!grepl("intergenic", dat$geneID),]
 
-    # for genes annotate chromosome and strand with tx_genes object
+    # for genes annotate chromosome and strand with anno_genes object
     dat$chrom <- with(dat,
-                      as.character(seqnames(tx_genes[as.character(dat$geneID)])))
-    dat$strand <- with(dat, as.character(strand(tx_genes[dat$geneID])))
+                      as.character(seqnames(anno_genes[as.character(dat$geneID)])))
+    dat$strand <- with(dat, as.character(strand(anno_genes[dat$geneID])))
 
     # for intergenic regions annotate chromosome from name and strand as plus
     dat_inter$chrom <- gsub(".*_(chr.{1,2})_.*", "\\1", dat_inter$geneID)
@@ -42,28 +43,27 @@ preprocess_feature_table <- function(datx, daty) {
     return(dat)
 }
 
-generate_features <- function(txdb, tx_genes, transcript) {
+generate_features <- function(anno_exons, anno_genes, anno_transcripts) {
     features <- list()
     # Define GRanges
     ## TSS +-10
-    features$TSS10_genes <- promoters(tx_genes, upstream=10, downstream=10)
+    features$TSS10_genes <- promoters(anno_genes, upstream=10, downstream=10)
 
-    ## TSS transcripts +-10
-    features$TSS10_transcripts <- promoters(transcript, upstream=10,
+    ## TSS anno_transcriptss +-10
+    features$TSS10_anno_transcriptss <- promoters(anno_transcripts, upstream=10,
                                             downstream=10)
 
     ## TSS +-100
-    features$TSS100_genes <- promoters(tx_genes, upstream=100, downstream=100)
+    features$TSS100_genes <- promoters(anno_genes, upstream=100, downstream=100)
 
-    ## TSS transcripts +-10
-    features$TSS100_transcripts <- promoters(transcript, upstream=100,
+    ## TSS transcrips +-10
+    features$TSS100_transcripts <- promoters(anno_transcripts, upstream=100,
                                              downstream=100)
 
     ## First Exon
     # exon is genomicranges list object, for each element of list take either
     # first or last entry, depending on strand
-    exon <- exonsBy(txdb, by='gene')
-    first_exon <- lapply(exon, function(x) {
+    first_exon <- lapply(anno_exons, function(x) {
                          if( unique(strand(x)) == '+') x[1] else x[length(x)]
                   })
     first_exon <- do.call(GRangesList, first_exon)
@@ -72,7 +72,7 @@ generate_features <- function(txdb, tx_genes, transcript) {
     ## Other Exons
     # same as first exon, except all exon ranges are taken except for first or
     # last entry, depending on strand
-    other_exon <- lapply(exon, function(x) {
+    other_exon <- lapply(anno_exon, function(x) {
                         if( unique(strand(x)) == '+') x[-1] else x[-length(x)]
                       })
     other_exon <- do.call(GRangesList, other_exon)
@@ -80,13 +80,13 @@ generate_features <- function(txdb, tx_genes, transcript) {
 
     ## Introns
     # later a different more correct definition was used
-    all_exons <- unlist(exon)
-    features$introns <- GenomicRanges::setdiff(tx_genes, all_exons)
+    all_exons <- unlist(anno_exon)
+    features$introns <- GenomicRanges::setdiff(anno_genes, all_exons)
 
     ## everything from here on has to be strand specific
     ## TTS +-100
-    plus <- tx_genes[strand(tx_genes) == '+']
-    minus <- tx_genes[strand(tx_genes) == '-']
+    plus <- anno_genes[strand(anno_genes) == '+']
+    minus <- anno_genes[strand(anno_genes) == '-']
     plus_tts <- GRanges(seqnames=seqnames(plus),
                         ranges=IRanges(start=(end(plus)-100),
                                        end=(end(plus)+100)),
@@ -105,8 +105,8 @@ generate_features <- function(txdb, tx_genes, transcript) {
     features$TTS200_genes <- c(plus_tts, minus_tts)
 
     ## TTS transcripts +-100
-    plus_trans <- transcript[strand(transcript) == '+']
-    minus_trans <- transcript[strand(transcript) == '-']
+    plus_trans <- anno_transcripts[strand(anno_transcripts) == '+']
+    minus_trans <- anno_transcripts[strand(anno_transcripts) == '-']
     plus_trans_tts <- GRanges(seqnames=seqnames(plus_trans),
                               ranges=IRanges(start=(end(plus_trans)-100),
                                              end=(end(plus_trans)+100)),
@@ -125,8 +125,8 @@ generate_features <- function(txdb, tx_genes, transcript) {
     features$TTS200_trans <- c(plus_trans_tts, minus_trans_tts)
 
     ## Downstream
-    plus <- tx_genes[strand(tx_genes) == '+']
-    minus <- tx_genes[strand(tx_genes) == '-']
+    plus <- anno_genes[strand(anno_genes) == '+']
+    minus <- anno_genes[strand(anno_genes) == '-']
     start(plus) <- end(plus)
     end(plus) <- end(plus) + 1000
     end(minus) <- start(minus)
@@ -134,8 +134,8 @@ generate_features <- function(txdb, tx_genes, transcript) {
     features$downstream_genes <- c(plus, minus)
 
     ## Upstream
-    plus <- tx_genes[strand(tx_genes) == '+']
-    minus <- tx_genes[strand(tx_genes) == '-']
+    plus <- anno_genes[strand(anno_genes) == '+']
+    minus <- anno_genes[strand(anno_genes) == '-']
     end(plus) <- start(plus)
     start(plus) <- start(plus) - 1000
     start(minus) <- end(minus)
@@ -144,8 +144,8 @@ generate_features <- function(txdb, tx_genes, transcript) {
 
     ## Antisense
     # later this object was extended by 1000
-    plus <- tx_genes[strand(tx_genes) == '+']
-    minus <- tx_genes[strand(tx_genes) == '-']
+    plus <- anno_genes[strand(anno_genes) == '+']
+    minus <- anno_genes[strand(anno_genes) == '-']
     strand(plus) <- '-'
     strand(minus) <- '+'
     features$antisense <- c(plus, minus)
@@ -178,9 +178,9 @@ collect_features <- function(total, feature_list) {
     ranges <- makeGRangesFromDataFrame(total, keep.extra.columns = TRUE)
 
     total$TSS_10_genes <- overlapsAny(ranges, TSS10_genes)
-    total$TSS_10_trans <- overlapsAny(ranges, TSS10_transcripts)
+    total$TSS_10_trans <- overlapsAny(ranges, TSS10_anno_transcriptss)
     total$TSS_100_genes <- overlapsAny(ranges, TSS100_genes)
-    total$TSS_100_trans <- overlapsAny(ranges, TSS100_transcripts)
+    total$TSS_100_trans <- overlapsAny(ranges, TSS100_anno_transcriptss)
     total$first_exon <- overlapsAny(ranges, first_exon)
     total$other_exon <- overlapsAny(ranges, other_exon)
     total$intron <- overlapsAny(ranges, introns)
@@ -263,9 +263,9 @@ args <- parse_args(OptionParser(option_list=option_list))
 
 if (args$debug) {
     args <- list()
-    args$fantom <- "~/data/tss/combined/3_tss_data/isoforms/all"
-    args$mouse <- "~/data/tss/combined/3_tss_data/isoforms/all"
-    args$odir <- "~/data/tss/combined/3_tss_data/isoforms"
+    args$fantom <- "~/data/tss/combined/tss/isoforms/all_mouse_ES_46C_fantoms.isoforms.csv"
+    args$mouse <- "~/data/tss/combined/tss/isoforms/all_mouse_mESC.isoforms.csv"
+    args$odir <- "~/data/tss/combined/tss/isoforms"
     args$suffix <- ".isoforms.csv"
 }
 
@@ -273,14 +273,24 @@ if (args$debug) {
 chr <- paste("chr", c(1:22, "M", "X", "Y"), sep="")
 
 ## Load annotations ####
-# Load genes; order by gene_id to make sure findOverlaps='first' uses smaller ID
-txdb <- TxDb.Mmusculus.UCSC.mm9.knownGene
-seqlevels(txdb) <- chr
-transcript <- transcripts(txdb)
-tx_genes <- genes(txdb)
-tx_genes <- tx_genes[order(as.numeric(tx_genes$gene_id))]
+hub <- AnnotationHub()
+# |Organism: Mus musculus
+# |taxonomy_id: 10090
+# |genome_build: GRCm38
+# |DBSCHEMAVERSION: 2.1
+# | No. of genes: 56289.
+# | No. of anno_transcriptss: 144726.
+anno <- hub[["AH78811"]]
+seqlevelsStyle(anno) <- "UCSC"
+chr <- paste ("chr", c(1:19, "M", "X", "Y"), sep="")
 
-# load genome sequence
+# get gene ids, expand range by 100
+anno_genes <- genes(anno)
+anno_transcripts <- anno_transcripts(anno)
+anno_exon <- exonsBy(anno, by='gene')
+anno_genes <- subset(anno_genes, seqnames %in% chr)
+anno_transcripts <- subset(anno_transcripts, seqnames %in% chr)
+
 genome <- BSgenome.Mmusculus.UCSC.mm9::BSgenome.Mmusculus.UCSC.mm9
 
 # read TSS data
@@ -294,10 +304,10 @@ fantom <- fread(args$fantom, sep=",", header = TRUE, stringsAsFactors=TRUE,
 ################
 
 ## Generate feature table for annotation ####
-features <- generate_features(txdb, tx_genes, transcript)
+features <- generate_features(anno_exons, anno_genes, anno_transcripts)
 
 ## Pre-process tss data ####
-total_m5pseq <- preprocess_feature_table(m5pseq, fantoms)
+total_m5pseq <- preprocess_feature_table(m5pseq, fantom)
 total_m5pseq <- dplyr::rename(total_m5pseq, start=Position, Fantom5=response)
 
 total_fantom <- preprocess_feature_table(fantom, internal)
