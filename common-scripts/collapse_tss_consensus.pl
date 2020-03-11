@@ -18,7 +18,7 @@
 sub usage {
     print "Unknown option: @_\n" if (@_);
     print "usage: Collapse tss sites across experiment into consensus tss";
-    print "\t--dir:\tDirectory with count files ending in --suffix
+    print "\t--dir:\tDirectory(ies) with count files ending in --suffix; if multiple directories specified, separate by commas, no space
            --collapsed:\t
            --summarised:\t
            --maxdist:\tmaximum peak distance
@@ -118,8 +118,12 @@ print "Maximum peak distance: $maxdist\n";
 print "Minimum counts per position: $minbc\n";
 print "Suffix of counts files: $suffix\n";
 
-# collect all count files
-my @files = glob($dir . "/" . "*". $suffix);
+# collect all count files from comma-separated directory list
+my @dir = split(",", $dir);
+my @files = ();
+foreach my $d (@dir) {
+    push(@files, glob($d . "/" . "*". $suffix));
+}
 
 foreach $file (@files) {
     print "Now working on $file \n";
