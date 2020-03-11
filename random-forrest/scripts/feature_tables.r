@@ -4,22 +4,21 @@
 
 library(AnnotationHub)
 library(data.table)
-library(TxDb.Mmusculus.UCSC.mm9.knownGene)
+library(TxDb.Mmusculus.UCSC.mm10.knownGene)
 library(GenomicRanges)
 library(BSgenome)
-library(BSgenome.Mmusculus.UCSC.mm9)
-library(dplyr)
+library(BSgenome.Mmusculus.UCSC.mm10)
+library(tidyverse)
 
-preprocess_feature_table <- function(datx, daty) {
+preprocess_feature_table <- function(datx, daty, anno_genes) {
     # merge dataframes to find non-overlapping positions
     dat <- merge(datx, daty, by=c("geneID","Position"), all.x = TRUE )
     dat <- subset(dat, select = -c(ReadCount.x, PosFromAnno.x, Class.x,
                                    ReadCount.y, PosFromAnno.y, Class.y))
 
     # define response value: In other data source? yes/no
-    dat$response<- "blub"
-    dat[is.na(dat$BarcodeCount.y),]$response<- 'no'
-    dat[!is.na(dat$BarcodeCount.y),]$response <- 'yes'
+    dat$response<- "yes"
+    dat[is.na(dat$BarcodeCount.y),]$response<- "no"
 
     # split into genes and intergenic regions
     dat_inter <- dat[grepl("intergenic", dat$geneID),]
@@ -153,7 +152,7 @@ generate_features <- function(anno_exons, anno_genes, anno_transcripts) {
     return(features)
 }
 
-collect_features <- function(total, feature_list) {
+collect_features <- function(total, features, genome) {
     ## Rank genes by expression level ####
     genes <- total[,c("geneID", "start", "BarcodeCount.x")]
 
@@ -177,20 +176,20 @@ collect_features <- function(total, feature_list) {
     ## Annotate features ####
     ranges <- makeGRangesFromDataFrame(total, keep.extra.columns = TRUE)
 
-    total$TSS_10_genes <- overlapsAny(ranges, TSS10_genes)
-    total$TSS_10_trans <- overlapsAny(ranges, TSS10_anno_transcriptss)
-    total$TSS_100_genes <- overlapsAny(ranges, TSS100_genes)
-    total$TSS_100_trans <- overlapsAny(ranges, TSS100_anno_transcriptss)
-    total$first_exon <- overlapsAny(ranges, first_exon)
-    total$other_exon <- overlapsAny(ranges, other_exon)
-    total$intron <- overlapsAny(ranges, introns)
-    total$TTS_100_genes <- overlapsAny(ranges, TTS100_genes)
-    total$TTS_200_genes <- overlapsAny(ranges, TTS200_genes)
-    total$TTS_100_trans <- overlapsAny(ranges, TTS100_trans)
-    total$TTS_200_trans <- overlapsAny(ranges, TTS200_trans)
-    total$downstream_gene <- overlapsAny(ranges, downstream_genes)
-    total$upstream_gene <- overlapsAny(ranges, upstream_genes)
-    total$antisense <- overlapsAny(ranges, antisense)
+    total$TSS_10_genes <- overlapsAny(ranges, features$TSS10_genes)
+    total$TSS_10_trans <- overlapsAny(ranges, features$TSS10_transcripts)
+    total$TSS_100_genes <- overlapsAny(ranges, features$TSS100_genes)
+    total$TSS_100_trans <- overlapsAny(ranges, features$TSS100_transcripts)
+    total$first_exon <- overlapsAny(ranges, features$first_exon)
+    total$other_exon <- overlapsAny(ranges, features$other_exon)
+    total$intron <- overlapsAny(ranges, features$introns)
+    total$TTS_100_genes <- overlapsAny(ranges, features$TTS100_genes)
+    total$TTS_200_genes <- overlapsAny(ranges, features$TTS200_genes)
+    total$TTS_100_trans <- overlapsAny(ranges, features$TTS100_trans)
+    total$TTS_200_trans <- overlapsAny(ranges, features$TTS200_trans)
+    total$downstream_gene <- overlapsAny(ranges, features$downstream_genes)
+    total$upstream_gene <- overlapsAny(ranges, features$upstream_genes)
+    total$antisense <- overlapsAny(ranges, features$antisense)
 
     ## Base content ####
     # getSeq to get actual sequence from genome object containing genomic
@@ -205,7 +204,7 @@ collect_features <- function(total, feature_list) {
                                             (total_minus$start - 2),
                                             (total_minus$start - 1),
                                             as.character=TRUE))
-    total <- rbind(total_plus,total_minus)
+    total <- rbind(total_plus, total_minus)
 
     ## Base content 10bp window
     total$Freq10A <- letterFrequency(getSeq(genome, total$chrom,
@@ -287,11 +286,11 @@ chr <- paste ("chr", c(1:19, "M", "X", "Y"), sep="")
 # get gene ids, expand range by 100
 anno_genes <- genes(anno)
 anno_transcripts <- anno_transcripts(anno)
-anno_exon <- exonsBy(anno, by='gene')
+anno_exons <- exonsBy(anno, by='gene')
 anno_genes <- subset(anno_genes, seqnames %in% chr)
 anno_transcripts <- subset(anno_transcripts, seqnames %in% chr)
 
-genome <- BSgenome.Mmusculus.UCSC.mm9::BSgenome.Mmusculus.UCSC.mm9
+genome <- BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10
 
 # read TSS data
 m5pseq <- fread(args$mouse, sep=",", header = TRUE, stringsAsFactors=TRUE,
@@ -305,21 +304,22 @@ fantom <- fread(args$fantom, sep=",", header = TRUE, stringsAsFactors=TRUE,
 
 ## Generate feature table for annotation ####
 features <- generate_features(anno_exons, anno_genes, anno_transcripts)
+saveRDS(features, file.path(args$odir, "features_mouse_mm10.rds"))
 
 ## Pre-process tss data ####
-total_m5pseq <- preprocess_feature_table(m5pseq, fantom)
+total_m5pseq <- preprocess_feature_table(m5pseq, fantom, anno_genes)
 total_m5pseq <- dplyr::rename(total_m5pseq, start=Position, Fantom5=response)
 
-total_fantom <- preprocess_feature_table(fantom, internal)
-total_fantom <- dplyr::rename(total_fantom, start=Position, Internal=response)
+total_fantom <- preprocess_feature_table(fantom, m5pseq, anno_genes)
+total_fantom <- dplyr::rename(total_fantom, start=Position, m5pseq=response)
 
 ## Annotate tss data with features ####
-features_fantom <- collect_features(total_fantom, features)
-features_m5pseq <- collect_features(total_m5pseq, features)
+features_fantom <- collect_features(total_fantom, features, genome)
+features_m5pseq <- collect_features(total_m5pseq, features, genome)
 
 write.table(features_m5pseq,
-            file=file.path(args$odir, "features_5pseq_mm9.csv"),
+            file=file.path(args$odir, "features_5pseq.csv"),
             row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
 write.table(features_fantom,
-            file=file.path(args$odir, "features_fantom5_mm9.csv"),
+            file=file.path(args$odir, "features_fantom5.csv"),
             row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
