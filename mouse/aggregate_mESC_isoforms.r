@@ -2,10 +2,12 @@
 ## libraries ####
 #################
 
+library(tidyverse)
 library(plyr)
+library(optparse)
 library(data.table)
-library(ggplot2)
-library(LSD)
+library(ggpointdensity)
+library(viridis)
 
 #################################
 ## parameters and input data ####
@@ -33,9 +35,9 @@ args <- parse_args(OptionParser(option_list=option_list))
 
 if (args$debug) {
     args <- list()
-    args$fantomdir <- "~/data/tss/fantom/3_tss_data/raw_positions"
-    args$mousedir <- "~/data/tss/mouse/3_tss_data/raw_positions"
-    args$odir <- "~/data/tss/combined/3_tss_data/isoforms"
+    args$fantomdir <- "~/data/tss/mouse/fantom/tss/isoforms"
+    args$mousedir <- "~/data/tss/mouse/5Pseq/tss/isoforms"
+    args$odir <- "~/data/tss/combined/tss/isoforms"
     args$suffix <- ".isoforms.csv"
 }
 
@@ -86,21 +88,29 @@ total <- merge(dat_mouse_agg, dat_fantom_agg, by=c("geneID", "Position"),
                all=TRUE)
 total <- subset(total, select = -c(ReadCount.x, PosFromAnno.x, Class.x,
                                    ReadCount.y, PosFromAnno.y, Class.y))
-total <- rename(total,c("BarcodeCount.x"="CountInternal",
-                        "BarcodeCount.y"="CountFantom"))
+total <- dplyr::rename(total,
+                       c("CountInternal"="BarcodeCount.x",
+                         "CountFantom"="BarcodeCount.y"))
+write_csv(total, file.path(args$odir, "combined_mouse_ESC_5Pseq_fantom.csv"))
 
-pdf(file.path(args$odir, "plots", "Counts_fantom_vs_5Pseq_per_position.pdf")
-heatscatter(total$CountInternal, total$CountFantom, log = "xy", 
-            main="Counts per position",
-            xlab="Count mESC 5Pseq data",
-            ylab="Count mESC Fantom5 data")
+summary_total <- total %>%
+    summarise(fantom_only=sum(is.na(CountInternal)),
+              internal_only=sum(is.na(CountFantom)),
+              both=sum(!(is.na(CountInternal) | is.na(CountFantom))))
+write_csv(summary_total, file.path(args$odir, "comparison_tss_5Pseq_fantom.csv"))
 
-ggplot(total, aes(x= CountInternal, y= CountFantom)) +
-  geom_point() +
-  labs(title="Counts per position",
-       x="Count mESC 5Pseq data",
+
+# For visualisation on log scale:
+total[is.na(total)] <- 1
+
+p <- ggplot(total, aes(x= CountInternal, y= CountFantom)) +
+  geom_pointdensity() +
+  scale_color_viridis() +
+  labs(x="Count mESC 5Pseq data",
        y= "Count mESC Fantom5 data") +
   scale_x_log10() +
-  scale_y_log10()
-dev.off()
+  scale_y_log10() +
+  theme_bw()
+ggsave(plot=p, file.path(args$odir, "plots",
+                         "counts_fantom_vs_5Pseq_per_position_density.pdf"))
 
