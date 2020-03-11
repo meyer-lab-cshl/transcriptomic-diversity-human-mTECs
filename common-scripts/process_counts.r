@@ -73,7 +73,7 @@ if (args$species == "human") {
 anno_genes <- genes(anno)
 anno_genes <- anno_genes + 100
 seqlevelsStyle(anno_genes) <- "UCSC"
-ann0_genes <- subset(anno_genes, seqnames %in% chr)
+anno_genes <- subset(anno_genes, seqnames %in% chr)
 
 ################
 ## Analysis ####
@@ -151,9 +151,10 @@ dat_agg$regions[na.region] <- paste("intergenic", dat_agg$chromosome[na.region],
 dat_agg <- dat_agg[complete.cases(dplyr::select(dat_agg, -overlaps)),]
 
 # format summary counts
-dat_summary <- data.frame("geneID"=dat_agg$regions, "Position"=dat_agg$start,
-                         "BarcodeCount"=dat_agg$count,
-                         "ReadCount"=dat_agg$count, "PosFromAnno"=0, "Class"=0)
+dat_summary <- data.frame(geneID=dat_agg$regions, Position=dat_agg$start,
+                          BarcodeCount=dat_agg$count,
+                          ReadCount=dat_agg$count, PosFromAnno=0, Class=0,
+                          stringsAsFactors=FALSE)
 dat_summary <- dat_summary[with(dat_summary, order(geneID, Position)),]
 write.table(dat_summary,
             file=file.path(args$odir, "summary",
@@ -162,9 +163,9 @@ write.table(dat_summary,
             row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
 
 # format summary positions
-dat_positions <- data.frame("chrom"=dat_agg$chromosome, "geneID"=dat_agg$regions,
-                            "strand"=dat_agg$strand, "start"=dat_agg$start,
-                            "end"=dat_agg$end, "BarcodeCount"=dat_agg$count,
+dat_positions <- data.frame(chrom=dat_agg$chromosome, geneID=dat_agg$regions,
+                            strand=dat_agg$strand, start=dat_agg$start,
+                            end=dat_agg$end, BarcodeCount=dat_agg$count,
                             stringsAsFactors=FALSE)
 
 dat_positions <- dat_positions[with(dat_positions, order(geneID, start)),]
