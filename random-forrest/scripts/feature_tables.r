@@ -10,33 +10,35 @@ library(tidyverse)
 
 preprocess_feature_table <- function(datx, daty, anno_genes) {
     # merge dataframes to find non-overlapping positions
-    dat <- merge(datx, daty, by=c("geneID","Position"), all.x = TRUE )
-    dat <- subset(dat, select = -c(ReadCount.x, PosFromAnno.x, Class.x,
-                                   ReadCount.y, PosFromAnno.y, Class.y))
-
     # define response value: In other data source? yes/no
-    dat$response<- "yes"
-    dat[is.na(dat$BarcodeCount.y),]$response<- "no"
+    dat <- left_join(datx, daty, by=c("geneID", "Position")) %>%
+        arrange(geneID, Position) %>%
+        dplyr::select(geneID, Position, BarcodeCount.x, BarcodeCount.y) %>%
+        mutate(response=case_when(is.na(BarcodeCount.y) ~ "no",
+                                        TRUE ~ "yes"))
 
     # split into genes and intergenic regions
     dat_inter <- dat[grepl("intergenic", dat$geneID),]
     dat <- dat[!grepl("intergenic", dat$geneID),]
 
     # for genes annotate chromosome and strand with anno_genes object
-    dat$chrom <- with(dat,
-                      as.character(seqnames(anno_genes[as.character(dat$geneID)])))
-    dat$strand <- with(dat, as.character(strand(anno_genes[dat$geneID])))
+    dat <- dat %>%
+        mutate(chrom=as.character(seqnames(anno_genes[geneID])),
+               strand=as.character(strand(anno_genes[geneID])))
 
     # for intergenic regions annotate chromosome from name and strand as plus
-    dat_inter$chrom <- gsub(".*_(chr.{1,2})_.*", "\\1", dat_inter$geneID)
-    dat_inter$strand <- gsub(".*_.*_(.)_.*", "\\1", dat_inter$geneID)
+    dat_inter <- dat_inter %>%
+        mutate(chrom=gsub(".*_(chr.{1,2})_.*", "\\1", geneID),
+               strand <- gsub(".*_.*_(.)_.*", "\\1", geneID))
 
     # merge dataframes again
-    dat <- rbind(dat, dat_inter)
+    dat <- bind_rows(dat, dat_inter)
 
     # define end
-    dat$end <- as.integer(dat$Position +1)
-    dat <- dat[c(1,6,7,2,8,5,3)]
+    # re-order columns
+    dat <- dat %>%
+        mutate(end=Position + 1) %>%
+        select(geneID, chrom, strand, Position, end, response, BarcodeCount.x)
     return(dat)
 }
 
