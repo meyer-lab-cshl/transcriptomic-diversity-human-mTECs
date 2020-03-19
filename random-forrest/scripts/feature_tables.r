@@ -3,8 +3,6 @@
 ###############################
 
 library(AnnotationHub)
-library(data.table)
-library(TxDb.Mmusculus.UCSC.mm10.knownGene)
 library(GenomicRanges)
 library(BSgenome)
 library(BSgenome.Mmusculus.UCSC.mm10)
@@ -157,7 +155,7 @@ collect_features <- function(total, features, genome) {
     # sum up count from all positions of each gene
     # and define a rank for each gene based on overall expression level
     genes <- total %>%
-        select(geneID, start, BarcodeCount) %>%
+        dplyr::select(geneID, start, BarcodeCount) %>%
         group_by(geneID) %>%
         summarise(counts=sum(BarcodeCount)) %>%
         ungroup %>%
@@ -270,7 +268,7 @@ if (args$debug) {
 }
 
 # define mouse chromosome ids
-chr <- paste("chr", c(1:22, "M", "X", "Y"), sep="")
+chr <- paste("chr", c(1:19, "M", "X", "Y"), sep="")
 
 ## Load annotations ####
 hub <- AnnotationHub()
@@ -282,23 +280,22 @@ hub <- AnnotationHub()
 # | No. of anno_transcriptss: 144726.
 anno <- hub[["AH78811"]]
 seqlevelsStyle(anno) <- "UCSC"
-chr <- paste ("chr", c(1:19, "M", "X", "Y"), sep="")
 
 # get genes, transcripts and exons
 anno_genes <- genes(anno)
-anno_transcripts <- anno_transcripts(anno)
+anno_transcripts <- transcripts(anno)
 anno_exons <- exonsBy(anno, by='gene')
 anno_genes <- subset(anno_genes, seqnames %in% chr)
 anno_transcripts <- subset(anno_transcripts, seqnames %in% chr)
 
-# get genmoe data
+# get genome data
 genome <- BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10
 
 # read TSS data
-m5pseq <- fread(args$mouse, sep=",", header = TRUE, stringsAsFactors=TRUE,
-                  data.table=FALSE)
-fantom <- fread(args$fantom, sep=",", header = TRUE, stringsAsFactors=TRUE,
-                  data.table=FALSE)
+m5pseq <- data.table::fread(args$mouse, sep=",", header = TRUE,
+                            stringsAsFactors=FALSE, data.table=FALSE)
+fantom <- data.table::fread(args$fantom, sep=",", header = TRUE,
+                            stringsAsFactors=FALSE, data.table=FALSE)
 
 ################
 ## analysis ####
