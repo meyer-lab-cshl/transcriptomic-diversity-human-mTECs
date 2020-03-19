@@ -281,14 +281,16 @@ hub <- AnnotationHub()
 # | No. of genes: 56289.
 # | No. of anno_transcriptss: 144726.
 anno <- hub[["AH78811"]]
+
+## Change seqlevels style to UCSC ie chr1 insted of 1; prevent warning by setting
+## option for missing names
+options(ensembldb.seqnameNotFound = "ORIGINAL")
 seqlevelsStyle(anno) <- "UCSC"
 
 # get genes, transcripts and exons
-anno_genes <- genes(anno)
-anno_transcripts <- transcripts(anno)
-anno_exons <- exonsBy(anno, by='gene')
-anno_genes <- subset(anno_genes, seqnames %in% chr)
-anno_transcripts <- subset(anno_transcripts, seqnames %in% chr)
+anno_genes <- genes(anno, filter=SeqNameFilter(chr))
+anno_transcripts <- transcripts(anno, filter=SeqNameFilter(chr))
+anno_exons <- exonsBy(anno, by='gene', filter=SeqNameFilter(chr))
 
 # get genome data
 genome <- BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10
