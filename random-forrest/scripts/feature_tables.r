@@ -29,7 +29,7 @@ preprocess_feature_table <- function(datx, daty, anno_genes) {
     # for intergenic regions annotate chromosome from name and strand as plus
     dat_inter <- dat_inter %>%
         mutate(chrom=gsub(".*_(chr.{1,2})_.*", "\\1", geneID),
-               strand <- gsub(".*_.*_(.)_.*", "\\1", geneID))
+               strand=gsub(".*_.*_(.)_.*", "\\1", geneID))
 
     # merge dataframes again
     dat <- bind_rows(dat, dat_inter)
@@ -38,7 +38,8 @@ preprocess_feature_table <- function(datx, daty, anno_genes) {
     # re-order columns
     dat <- dat %>%
         mutate(end=Position + 1) %>%
-        select(geneID, chrom, strand, Position, end, response, BarcodeCount.x)
+        dplyr::select(geneID, chrom, strand, Position, end, response,
+                      BarcodeCount.x)
     return(dat)
 }
 
@@ -163,14 +164,12 @@ collect_features <- function(total, features, genome) {
         ungroup %>%
         mutate(rank = rank(counts, ties.method = "average"))
 
-    total$expr_rank_gene <- with(total, genes$rank[geneID])
-
     ## Expression level relativ to gene and to total for each peak ####
     total <- total %>%
         group_by(geneID) %>%
         mutate(sumCount=sum(BarcodeCount)) %>%
         mutate(relCount=BarcodeCount/sumCount) %>%
-        group_by() %>%
+        ungroup %>%
         mutate(relAllCount=as.numeric(BarcodeCount/sum(BarcodeCount))) %>%
         dplyr::select(-sumCount)
 
@@ -208,31 +207,35 @@ collect_features <- function(total, features, genome) {
     total <- rbind(total_plus, total_minus)
 
     ## Base content 10bp window
+    start_m5 <- total$start - 5
+    start_m5[start_m5 < 1] <- 1
     total$Freq10A <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-5),
+                                            start_m5,
                                             (total$start+5)), "A")
     total$Freq10C <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-5),
+                                            start_m5,
                                             (total$start+5)), "C")
     total$Freq10G <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-5),
+                                            start_m5,
                                             (total$start+5)), "G")
     total$Freq10T <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-5),
+                                            start_m5,
                                             (total$start+5)), "T")
 
     ## Base content 50bp window
+    start_m25 <- total$start - 25
+    start_m25[start_m25 < 1] <- 1
     total$Freq50A <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-25),
+                                            start_m25,
                                             (total$start+25)), "A")
     total$Freq50C <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-25),
+                                            start_m25,
                                             (total$start+25)), "C")
     total$Freq50G <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-25),
+                                            start_m25,
                                             (total$start+25)), "G")
     total$Freq50T <- letterFrequency(getSeq(genome, total$chrom,
-                                            (total$start-25),
+                                            start_m25,
                                             (total$start+25)), "T")
     return(total)
 }
@@ -267,6 +270,37 @@ if (args$debug) {
     args$mouse <- "~/data/tss/combined/tss/isoforms/all_mouse_mESC.isoforms.csv"
     args$odir <- "~/data/tss/combined/tss/isoforms"
     args$suffix <- ".isoforms.csv"
+}
+
+extendRange <- function(annotation, offset=100) {
+    tmp <- tibble(chrom=as.character(seqnames(annotation)),
+                  gene=annotation$gene_id,
+           end_range=end(annotation),
+           start_range=start(annotation))
+    seqlen <- seqlengths(annotation) %>%
+        enframe(name="chrom", value="length")
+    tmp <- tmp %>%
+        left_join(seqlen, by="chrom") %>%
+        dplyr::filter(end_range + offset > length | start_range - offset < 0)
+
+    annotation[!annotation$gene_id %in% tmp$gene,] <-
+        annotation[!annotation$gene_id %in% tmp$gene,] + offset
+
+    close2start <- tmp %>% dplyr::filter(start_range - offset < 0)
+    if (nrow(close2start) != 0) {
+        start(annotation[annotation$gene_id %in% close2start$gene,]) <- 1
+        end(annotation[annotation$gene_id %in% close2start$gene,]) <-
+           end(annotation[annotation$gene_id %in% close2start$gene,]) + offset
+    }
+
+    close2end <- tmp %>% dplyr::filter(end_range + offset > length)
+    if (nrow(close2end) != 0) {
+        end(annotation[annotation$gene_id %in% close2end$gene,]) <-
+            close2end$length
+        start(annotation[annotation$gene_id %in% close2end$gene,]) <-
+            start(annotation[annotation$gene_id %in% close2end$gene,]) - offset
+    }
+    annotation
 }
 
 # define mouse chromosome ids
