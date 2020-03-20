@@ -341,8 +341,12 @@ fantom <- data.table::fread(args$fantom, sep=",", header = TRUE,
 ################
 
 ## Generate feature table for annotation ####
-features <- generate_features(anno_exons, anno_genes, anno_transcripts)
-saveRDS(features, file.path(args$odir, "features_mouse_mm10.rds"))
+if (!file.exists(file.path(args$odir, "features_mouse_mm10.rds"))) {
+    features <- generate_features(anno_exons, anno_genes, anno_transcripts)
+    saveRDS(features, file.path(args$odir, "features_mouse_mm10.rds"))
+} else {
+    features <- readRDS(file.path(args$odir, "features_mouse_mm10.rds"))
+}
 
 ## Pre-process tss data ####
 total_m5pseq <- preprocess_feature_table(m5pseq, fantom, anno_genes)
