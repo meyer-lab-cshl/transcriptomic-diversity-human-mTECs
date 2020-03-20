@@ -162,7 +162,7 @@ collect_features <- function(total, features, genome) {
         group_by(geneID) %>%
         summarise(counts=sum(BarcodeCount)) %>%
         ungroup %>%
-        mutate(rank = rank(counts, ties.method = "average"))
+        mutate(expr_rank_gene = rank(counts, ties.method = "average"))
 
     ## Expression level relativ to gene and to total for each peak ####
     total <- total %>%
@@ -171,7 +171,8 @@ collect_features <- function(total, features, genome) {
         mutate(relCount=BarcodeCount/sumCount) %>%
         ungroup %>%
         mutate(relAllCount=as.numeric(BarcodeCount/sum(BarcodeCount))) %>%
-        dplyr::select(-sumCount)
+        left_join(genes, by="geneID") %>%
+        dplyr::select(-sumCount, counts)
 
     ## Annotate features ####
     ranges <- makeGRangesFromDataFrame(total, keep.extra.columns = TRUE)
