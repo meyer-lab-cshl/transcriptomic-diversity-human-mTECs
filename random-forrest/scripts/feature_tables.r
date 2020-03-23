@@ -361,9 +361,5 @@ total_fantom <- dplyr::rename(total_fantom, start=Position, m5pseq=response,
 features_fantom <- collect_features(total_fantom, features, genome)
 features_m5pseq <- collect_features(total_m5pseq, features, genome)
 
-write.table(features_m5pseq,
-            file=file.path(args$odir, "features_5pseq.csv"),
-            row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
-write.table(features_fantom,
-            file=file.path(args$odir, "features_fantom5.csv"),
-            row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
+write_csv(features_m5pseq, file.path(args$odir, "features_5pseq.csv"))
+write_csv(features_fantom, file.path(args$odir, "features_fantom5.csv"))
