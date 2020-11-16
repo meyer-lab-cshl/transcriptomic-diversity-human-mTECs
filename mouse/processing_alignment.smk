@@ -19,12 +19,12 @@ rule all:
 
 rule unique_reads:
     input:
-        sam="{dir}/alignments/{sample}_{replicate}_Aligned.sortedByCoord.out.bam",
+        bam="{dir}/alignments/{sample}_{replicate}_Aligned.sortedByCoord.out.bam",
     output:
         unique="{dir}/alignments/{sample}_{replicate}_Aligned.sortedByCoord.unique.sam",
     shell:
         """
-        samtools view -q 255 -h {input.sam} > {output.unique}
+        samtools view -q 255 -h {input.bam} > {output.unique}
         """
 
 rule strand_reads:
@@ -49,8 +49,11 @@ rule convert_bam:
         bai="{dir}/alignments/{sample}_{replicate}_Aligned.sortedByCoord.unique.{strand}.sorted.bam.bai",
     shell:
         """
+        # output with headers (-h) in bam (-b) from input sam (-S)
         samtools view -h -b -S {input.sam} > {output.bam}
+        # sort bam file with max 3GB of memory (-m) per thread
         samtools sort -m 3G {output.bam} {wildcards.dir}/alignments/{wildcards.sample}_{wildcards.replicate}_Aligned.sortedByCoord.unique.{wildcards.strand}.sorted
+        # Create index (creates output.bai file)
         samtools index {output.sort}
         """
 
@@ -62,7 +65,8 @@ rule make_bedgraph:
         bedgraph="{dir}/bedgraphs/{sample}_{replicate}_5prime_nz_readdepth.{strand}.bedgraph",
     shell:
         """
-        genomeCoverageBed -5 -dz -ibam {input.sort} > {output.bedgraph}
+        # Coverage at each 5'(-5) non-zero (dz) position from sorted bam (-ibam)
+        bedtools genomecov -5 -dz -ibam {input.sort} > {output.bedgraph}
         """
 
 rule merge_bedgraph:
