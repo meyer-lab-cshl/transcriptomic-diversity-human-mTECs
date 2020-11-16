@@ -13,14 +13,17 @@ SAMPLE_HUMAN, = glob_wildcards("/sonas-hs/meyer/hpc/home/hmeyer/data/tss/human/f
 
 rule all:
     input:
-        #expand("{pdir}/mouse/fantom/tss/combined/all_mESC_46C.positions.csv",
-        #    pdir=DIRECTORY),
-        expand("{pdir}/mouse/fantom/bed/GRCm38/all_mESC_46C.count.unmapped.txt",
+        expand("{pdir}/mouse/fantom/bed/GRCm38/{sample}.bed",
+            sample=SAMPLE_MOUSE,
             pdir=DIRECTORY),
-        expand("{pdir}/human/fantom/bed/GRCh38/all_tissues.count.unmapped.txt",
+        expand("{pdir}/human/fantom/bed/GRCh38/{sample}.bed",
+            sample=SAMPLE_HUMAN,
+            pdir=DIRECTORY),
+        expand("{pdir}/mouse/fantom/tss/combined/all_mESC_46C.positions.csv",
             pdir=DIRECTORY),
         expand("{pdir}/human/fantom/tss/combined/all_tissues.positions.csv",
             pdir=DIRECTORY),
+        "{dir}/combined/fantom_liftover_human_mouse.pdf"
 
 rule liftover_counts_mouse:
     input:
@@ -166,3 +169,16 @@ rule combine_counts_human:
         """
 
 
+rule visualise_liftover:
+    input:
+        human="{dir}/human/fantom/bed/GRCh38/all_tissues.count.unmapped.txt",
+        mouse="{dir}/mouse/fantom/bed/GRCm38/all_mESC_C46.count.unmapped.txt",
+    output:
+        "{dir}/combined/fantom_liftover_human_mouse.pdf"
+    shell:
+        """
+        Rscript liftover_summary.R \
+            --dir {wildcards.dir}/combined \
+            --human {input.human} \
+            --mouse {input.mouse}
+        """
