@@ -285,37 +285,6 @@ if (args$debug) {
     args$suffix <- ".isoforms.csv"
 }
 
-extendRange <- function(annotation, offset=100) {
-    tmp <- tibble(chrom=as.character(seqnames(annotation)),
-                  gene=annotation$gene_id,
-           end_range=end(annotation),
-           start_range=start(annotation))
-    seqlen <- seqlengths(annotation) %>%
-        enframe(name="chrom", value="length")
-    tmp <- tmp %>%
-        left_join(seqlen, by="chrom") %>%
-        dplyr::filter(end_range + offset > length | start_range - offset < 0)
-
-    annotation[!annotation$gene_id %in% tmp$gene,] <-
-        annotation[!annotation$gene_id %in% tmp$gene,] + offset
-
-    close2start <- tmp %>% dplyr::filter(start_range - offset < 0)
-    if (nrow(close2start) != 0) {
-        start(annotation[annotation$gene_id %in% close2start$gene,]) <- 1
-        end(annotation[annotation$gene_id %in% close2start$gene,]) <-
-           end(annotation[annotation$gene_id %in% close2start$gene,]) + offset
-    }
-
-    close2end <- tmp %>% dplyr::filter(end_range + offset > length)
-    if (nrow(close2end) != 0) {
-        end(annotation[annotation$gene_id %in% close2end$gene,]) <-
-            close2end$length
-        start(annotation[annotation$gene_id %in% close2end$gene,]) <-
-            start(annotation[annotation$gene_id %in% close2end$gene,]) - offset
-    }
-    annotation
-}
-
 # define mouse chromosome ids
 chr <- paste("chr", c(1:19, "M", "X", "Y"), sep="")
 
@@ -367,15 +336,10 @@ total <- dplyr::rename(total, start=Position,
                        BarcodeCount.5pseq=BarcodeCount.x,
                        BarcodeCount.fantom=BarcodeCount.y)
 
-total_fantom <- preprocess_feature_table(fantom, m5pseq, anno_genes,
-total_fantom <- dplyr::rename(total_fantom, start=Position, m5pseq=response,
-                       BarcodeCount=BarcodeCount.x)
 
 ## Annotate tss data with features ####
 features_total <- collect_features(total, features, genome,
                                    BarcodeCount.x="BarcodeCount.5pseq",
                                    BarcodeCount.y="BarcodeCount.fantom")
-features_m5pseq <- collect_features(total_m5pseq, features, genome)
 
-write_csv(features_m5pseq, file.path(args$odir, "features_5pseq.csv"))
-write_csv(features_fantom, file.path(args$odir, "features_fantom5.csv"))
+write_csv(features_total, file.path(args$odir, "features_total.csv"))
