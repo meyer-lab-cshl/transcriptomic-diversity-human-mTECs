@@ -17,3 +17,9 @@ respective README.md
 
 ## fantom
 * Processing of human and mouse fantom5 samples
+
+## tra
+Scripts for estimating tissue specifc antigens based on:
+  * tau measure (paper included)
+  * Sansom 2014 paper (Rmd provided by Sansom)
+
