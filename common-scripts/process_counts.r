@@ -2,10 +2,42 @@
 ## Libraries ####
 #################
 
-library(dplyr)
+library(tidyverse)
 library(GenomicRanges)
 library(optparse)
 library(AnnotationHub)
+
+
+extendGeneRange <- function(annotation, offset=100) {
+    tmp <- tibble(chrom=as.character(seqnames(annotation)),
+                  gene=annotation$gene_id,
+           end_range=end(annotation),
+           start_range=start(annotation))
+    seqlen <- seqlengths(annotation) %>%
+        enframe(name="chrom", value="length")
+    tmp <- tmp %>%
+        left_join(seqlen, by="chrom") %>%
+        dplyr::filter(end_range + offset > length | start_range - offset < 0)
+
+    annotation[!annotation$gene_id %in% tmp$gene,] <-
+        annotation[!annotation$gene_id %in% tmp$gene,] + offset
+
+    close2start <- tmp %>% dplyr::filter(start_range - offset < 0)
+    if (nrow(close2start) != 0) {
+        start(annotation[annotation$gene_id %in% close2start$gene,]) <- 1
+        end(annotation[annotation$gene_id %in% close2start$gene,]) <-
+           end(annotation[annotation$gene_id %in% close2start$gene,]) + offset
+    }
+
+    close2end <- tmp %>% dplyr::filter(end_range + offset > length)
+    if (nrow(close2end) != 0) {
+        end(annotation[annotation$gene_id %in% close2end$gene,]) <-
+            close2end$length
+        start(annotation[annotation$gene_id %in% close2end$gene,]) <-
+            start(annotation[annotation$gene_id %in% close2end$gene,]) - offset
+    }
+    annotation
+}
 
 #################################
 ## parameters and input data ####
@@ -21,6 +53,10 @@ option_list <- list(
                type="character", help="Name of species for gene mapping
                (mouse | human) [default: %default].",
                default=NULL),
+    make_option(c("-n", "--normalise"), action="store_true", dest="normalise",
+               type="character", help="Normalise counts by by total number of
+               counts [default: %default].",
+               default=FALSE),
     make_option(c("-i", "--ifile"), action="store", dest="ifile",
                type="character", help="Path to input file [default: %default].",
                default=NULL),
@@ -38,6 +74,7 @@ args <- parse_args(OptionParser(option_list=option_list))
 
 if (args$debug) {
     args <- list()
+    args$normalise <- TRUE
     args$type <- "bed"
     args$species <- "mouse"
     args$odir <- "~/data/tss/mouse/fantom/tss"
@@ -46,6 +83,7 @@ if (args$debug) {
                         "ES-46C_embryonic_stem_cells_neuronal_differentiation_day00_biol_rep1.CNhs14104.14357-155I1.bed", sep="")
 }
 
+## Load annotations ####
 hub <- AnnotationHub()
 if (args$species == "human") {
     # |Organism: Homo sapiens
@@ -69,11 +107,14 @@ if (args$species == "human") {
     stop("Species", args$species, "unknown")
 }
 
+## Change seqlevels style to UCSC ie chr1 insted of 1; prevent warning by setting
+## option for missing names
+options(ensembldb.seqnameNotFound = "ORIGINAL")
+seqlevelsStyle(anno) <- "UCSC"
+
 # get gene ids, expand range by 100
-anno_genes <- genes(anno)
-anno_genes <- anno_genes + 100
-seqlevelsStyle(anno_genes) <- "UCSC"
-anno_genes <- subset(anno_genes, seqnames %in% chr)
+anno_genes <- genes(anno, filter=SeqNameFilter(chr))
+anno_genes <- extendGeneRange(anno_genes, offset= 100)
 
 ################
 ## Analysis ####
@@ -102,8 +143,10 @@ if (args$type == 'pos') {
     data_agg <- dplyr::select(dat_agg, chromosome, start, strand, end, count)
 }
 
-# normalise counts based on total read count
-dat_agg$count <- dat_agg$count/(sum(abs(dat_agg$count)))*10000000
+if (args$normalise) {
+    # normalise counts based on total read count
+    dat_agg$count <- dat_agg$count/(sum(abs(dat_agg$count)))*10000000
+}
 
 if (args$type == "pos" || args$type == "bed") {
     ## Format into bedgraph ####
@@ -173,3 +216,32 @@ write.table(dat_positions,
             file=file.path(args$odir, "raw_positions",
                            paste(args$sample, ".positions.csv", sep="")),
             row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
+
+# format summary ctts
+dat_ctts <- data.frame(chrom=dat_agg$chromosome,
+                            start=dat_agg$start,
+                            strand=dat_agg$strand,
+                            BarcodeCount=dat_agg$count,
+                            stringsAsFactors=FALSE)
+
+dat_ctts <- dat_ctts[with(dat_ctts, order(chrom, start)),]
+write.table(dat_ctts,
+            file=file.path(args$odir, "ctts",
+                           paste(args$sample, ".ctts.txt", sep="")),
+            row.names=FALSE, na="", col.names=FALSE, quote=FALSE, sep="\t")
+
+# format summary bed
+dat_bed <- data.frame(chrom=dat_agg$chromosome,
+                      start=dat_agg$start,
+                      end=dat_agg$end,
+                      name=paste(dat_agg$chromosome, ":", dat_agg$start, "..",
+                                 dat_agg$end, ",", dat_agg$strand, sep=""),
+                      BarcodeCount=dat_agg$count,
+                      strand=dat_agg$strand,
+                      stringsAsFactors=FALSE)
+
+dat_bed <- dat_bed[with(dat_bed, order(chrom, start)),]
+write.table(dat_bed,
+            file=file.path(args$odir, "ctts",
+                           paste(args$sample, ".bed", sep="")),
+            row.names=FALSE, na="", col.names=FALSE, quote=FALSE, sep="\t")
