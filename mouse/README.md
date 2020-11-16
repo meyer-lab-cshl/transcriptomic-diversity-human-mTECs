@@ -4,7 +4,7 @@
 
 <p align="center">
 <img
-src="dag/alignment_dag.png" height="400">
+src="dag/alignment_dag.png" height="200">
 </p>
 
 ## 2.Processing alignments
@@ -18,5 +18,5 @@ src="dag/processing_alignment_dag.png" height="400">
 
 <p align="center">
 <img
-src="dag/tss_dag.png" height="400">
+src="dag/tss_dag.png" height="100">
 </p>
