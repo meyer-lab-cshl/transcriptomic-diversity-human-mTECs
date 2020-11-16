@@ -8,14 +8,15 @@ library(BSgenome)
 library(BSgenome.Mmusculus.UCSC.mm10)
 library(tidyverse)
 
-preprocess_feature_table <- function(datx, daty, anno_genes) {
+preprocess_feature_table <- function(datx, daty, name.x, name.y, anno_genes) {
     # merge dataframes to find non-overlapping positions
     # define response value: In other data source? yes/no
-    dat <- left_join(datx, daty, by=c("geneID", "Position")) %>%
+    dat <- full_join(datx, daty, by=c("geneID", "Position")) %>%
         arrange(geneID, Position) %>%
         dplyr::select(geneID, Position, BarcodeCount.x, BarcodeCount.y) %>%
-        mutate(response=case_when(is.na(BarcodeCount.y) ~ "no",
-                                        TRUE ~ "yes"))
+        mutate(response=case_when(is.na(BarcodeCount.x) ~ name.y,
+                                  is.na(BarcodeCount.y) ~ name.x,
+                                        TRUE ~ "both"))
 
     # split into genes and intergenic regions
     dat_inter <- dat[grepl("intergenic", dat$geneID),]
@@ -39,7 +40,7 @@ preprocess_feature_table <- function(datx, daty, anno_genes) {
     dat <- dat %>%
         mutate(end=Position + 1) %>%
         dplyr::select(geneID, chrom, strand, Position, end, response,
-                      BarcodeCount.x)
+                      BarcodeCount.x, BarcodeCount.y)
     return(dat)
 }
 
@@ -153,26 +154,35 @@ generate_features <- function(anno_exons, anno_genes, anno_transcripts) {
     return(features)
 }
 
-collect_features <- function(total, features, genome) {
+collect_features <- function(total, features, genome, BarcodeCount.x,
+                             BarcodeCount.y) {
+    name.x <- colnames(total)[colnames(total) == BarcodeCount.x]
+    name.y <- colnames(total)[colnames(total) == BarcodeCount.y]
+    colnames(total)[colnames(total) == BarcodeCount.x] <- "BarcodeCount.x"
+    colnames(total)[colnames(total) == BarcodeCount.y] <- "BarcodeCount.y"
     ## Rank genes by expression level ####
     # sum up count from all positions of each gene
     # and define a rank for each gene based on overall expression level
     genes <- total %>%
-        dplyr::select(geneID, start, BarcodeCount) %>%
+        dplyr::select(geneID, start, BarcodeCount.x, BarcodeCount.y) %>%
         group_by(geneID) %>%
-        summarise(counts=sum(BarcodeCount)) %>%
+        summarise(counts.x=sum(BarcodeCount.x, na.rm=TRUE),
+                  counts.y=sum(BarcodeCount.y, na.rm=TRUE)) %>%
         ungroup %>%
-        mutate(expr_rank_gene = rank(counts, ties.method = "average"))
+        mutate(expr_rank_gene.x = rank(counts.x, ties.method = "average")) %>%
+        mutate(expr_rank_gene.y = rank(counts.y, ties.method = "average"))
 
     ## Expression level relativ to gene and to total for each peak ####
     total <- total %>%
-        group_by(geneID) %>%
-        mutate(sumCount=sum(BarcodeCount)) %>%
-        mutate(relCount=BarcodeCount/sumCount) %>%
-        ungroup %>%
-        mutate(relAllCount=as.numeric(BarcodeCount/sum(BarcodeCount))) %>%
         left_join(genes, by="geneID") %>%
-        dplyr::select(-sumCount, counts)
+        mutate(relCount.x=BarcodeCount.x/counts.x) %>%
+        mutate(relCount.y=BarcodeCount.y/counts.y) %>%
+        ungroup %>%
+        mutate(relAllCount=as.numeric(BarcodeCount.x/sum(BarcodeCount.x,
+                                                       na.rm=TRUE))) %>%
+        mutate(relAllCount.y=as.numeric(BarcodeCount.y/sum(BarcodeCount.y,
+                                                           na.rm=TRUE))) %>%
+        dplyr::select(-counts.x, -counts.y)
 
     ## Annotate features ####
     ranges <- makeGRangesFromDataFrame(total, keep.extra.columns = TRUE)
@@ -212,32 +222,34 @@ collect_features <- function(total, features, genome) {
     start_m5[start_m5 < 1] <- 1
     total$Freq10A <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m5,
-                                            (total$start+5)), "A")
+                                            (total$start+5)), "A")[,1]
     total$Freq10C <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m5,
-                                            (total$start+5)), "C")
+                                            (total$start+5)), "C")[,1]
     total$Freq10G <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m5,
-                                            (total$start+5)), "G")
+                                            (total$start+5)), "G")[,1]
     total$Freq10T <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m5,
-                                            (total$start+5)), "T")
+                                            (total$start+5)), "T")[,1]
 
     ## Base content 50bp window
     start_m25 <- total$start - 25
     start_m25[start_m25 < 1] <- 1
     total$Freq50A <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m25,
-                                            (total$start+25)), "A")
+                                            (total$start+25)), "A")[,1]
     total$Freq50C <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m25,
-                                            (total$start+25)), "C")
+                                            (total$start+25)), "C")[,1]
     total$Freq50G <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m25,
-                                            (total$start+25)), "G")
+                                            (total$start+25)), "G")[,1]
     total$Freq50T <- letterFrequency(getSeq(genome, total$chrom,
                                             start_m25,
-                                            (total$start+25)), "T")
+                                            (total$start+25)), "T")[,1]
+    colnames(total)[colnames(total) == "BarcodeCount.x"] <- name.x
+    colnames(total)[colnames(total) == "BarcodeCount.y"] <- name.y
     return(total)
 }
 
@@ -349,16 +361,20 @@ if (!file.exists(file.path(args$odir, "features_mouse_mm10.rds"))) {
 }
 
 ## Pre-process tss data ####
-total_m5pseq <- preprocess_feature_table(m5pseq, fantom, anno_genes)
-total_m5pseq <- dplyr::rename(total_m5pseq, start=Position, Fantom5=response,
-                       BarcodeCount=BarcodeCount.x)
+total <- preprocess_feature_table(m5pseq, fantom, name.x="5pseq",
+                                  name.y="fantom", anno_genes)
+total <- dplyr::rename(total, start=Position,
+                       BarcodeCount.5pseq=BarcodeCount.x,
+                       BarcodeCount.fantom=BarcodeCount.y)
 
-total_fantom <- preprocess_feature_table(fantom, m5pseq, anno_genes)
+total_fantom <- preprocess_feature_table(fantom, m5pseq, anno_genes,
 total_fantom <- dplyr::rename(total_fantom, start=Position, m5pseq=response,
                        BarcodeCount=BarcodeCount.x)
 
 ## Annotate tss data with features ####
-features_fantom <- collect_features(total_fantom, features, genome)
+features_total <- collect_features(total, features, genome,
+                                   BarcodeCount.x="BarcodeCount.5pseq",
+                                   BarcodeCount.y="BarcodeCount.fantom")
 features_m5pseq <- collect_features(total_m5pseq, features, genome)
 
 write_csv(features_m5pseq, file.path(args$odir, "features_5pseq.csv"))
