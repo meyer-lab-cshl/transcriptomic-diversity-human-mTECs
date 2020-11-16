@@ -49,11 +49,11 @@ mousefiles <- list.files(path=args$mousedir, pattern=args$suffix,
 
 # Iterate over all counts files in directory
 fantomlist <- lapply(fantomfiles, function(s) {
-    dat <- fread(s, header=TRUE, stringsAsFactors=FALSE)
+    dat <- read_csv(s)
 })
 
 mouselist <- lapply(mousefiles, function(s) {
-    dat <- fread(s, header=TRUE, stringsAsFactors=FALSE)
+    dat <- read_csv(s)
 })
 
 dat_fantom <- do.call(rbind, fantomlist)
@@ -68,26 +68,25 @@ dat_fantom_agg <- dat_fantom[, lapply(.SD, sum), by=.(geneID, Position),
                                .SDcols=c("BarcodeCount", "ReadCount",
                                          "PosFromAnno", "Class")]
 
+dat_fantom_agg <- dat_fantom %>%
+    group_by(geneID, Position) %>%
+    summarise(BarcodeCount=mean(BarcodeCount)) %>%
+    ungroup
+
 # Combine counts from all replicates of 5Pseq mESC 46C samples
-dat_mouse_agg <- dat_mouse[, lapply(.SD, sum), by=.(geneID, Position),
-                               .SDcols=c("BarcodeCount", "ReadCount",
-                                         "PosFromAnno", "Class")]
+dat_mouse_agg <- dat_mouse %>%
+    group_by(geneID, Position) %>%
+    summarise(BarcodeCount=mean(BarcodeCount)) %>%
+    ungroup
 
-setDF(dat_fantom_agg)
-setDF(dat_mouse_agg)
 
-write.table(dat_mouse_agg,
-            file=file.path(args$odir, "all_mouse_mESC.isoforms.csv"),
-            row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
-write.table(dat_fantom_agg,
-            file=file.path(args$odir, "all_mouse_ES_46C_fantoms.isoforms.csv"),
-            row.names=FALSE, na="", col.names=TRUE, quote=FALSE, sep=",")
+write_csv(dat_mouse_agg,
+            file=file.path(args$odir, "all_mouse_mESC.isoforms.csv"))
+write_csv(dat_fantom_agg,
+          file.path(args$odir, "all_mouse_ES_46C_fantoms.isoforms.csv"))
 
 # Combined 5Pseq and fantom counts
-total <- merge(dat_mouse_agg, dat_fantom_agg, by=c("geneID", "Position"),
-               all=TRUE)
-total <- subset(total, select = -c(ReadCount.x, PosFromAnno.x, Class.x,
-                                   ReadCount.y, PosFromAnno.y, Class.y))
+total <- full_join(dat_mouse_agg, dat_fantom_agg, by=c("geneID", "Position"))
 total <- dplyr::rename(total,
                        c("CountInternal"="BarcodeCount.x",
                          "CountFantom"="BarcodeCount.y"))
@@ -103,6 +102,14 @@ write_csv(summary_total, file.path(args$odir, "comparison_tss_5Pseq_fantom.csv")
 # For visualisation on log scale:
 total[is.na(total)] <- 1
 
+total <- dplyr::filter(total, !is.na(CountInternal), !is.na(CountFantom))
+tmp <- total %>%
+    mutate(CountInternal=CountInternal/sum(total$CountInternal),
+           CountFantom=CountFantom/sum(total$CountFantom))
+
+tmp <- dplyr::filter(tmp, CountInternal > 0.00001,
+                     CountFantom > 0.00001)
+
 p <- ggplot(total, aes(x= CountInternal, y= CountFantom)) +
   geom_pointdensity() +
   scale_color_viridis() +
@@ -110,6 +117,7 @@ p <- ggplot(total, aes(x= CountInternal, y= CountFantom)) +
        y= "Count mESC Fantom5 data") +
   scale_x_log10() +
   scale_y_log10() +
+  coord_fixed() +
   theme_bw()
 ggsave(plot=p, file.path(args$odir, "plots",
                          "counts_fantom_vs_5Pseq_per_position_density.pdf"))
