@@ -16,9 +16,9 @@ knitr::opts_chunk$set(echo = TRUE, cache=TRUE, cache.lazy = FALSE,
 
 ## Tissue-restricted antigens
 During T cell development in the thymus, thymocytes encounter more then 85% of
-all protein, including proteins that are usually expressed in a tissue specicif
+all protein, including proteins that are usually expressed in a tissue specific
 manner. In the following, we use a gene expression data set of about 50k
-transcripts across 30 tissues (GTEx v7) to estimate tissue specific genes.
+transcripts across 30 tissues (GTEx v8) to estimate tissue specific genes.
 We use the measure $\tau$ as introduced in
 [Yanai 2005](https://academic.oup.com/bioinformatics/article/21/5/650/220059)
 and benchmarked in
@@ -27,7 +27,7 @@ to determine a list of human tissue-restricted antigens:
 
 $$\tau=\frac{\sum_{i=1}^{n}(1-\hat{x}_i)}{n-1}$$
 with
-$$x_i = \frac{x_i}{\max\limits_{1\leq i\leq n}{\hat{x}_i}}$$
+$$\hat{x_i} = \frac{x_i}{\max\limits_{1\leq i\leq n}{x_i}}$$
 where $x_i$ is the expression of the gene in tissue $i$ and $n$ is the number of
 tissues.
 
@@ -59,8 +59,8 @@ tau <- function(x) {
     if (all(!is.na(x))) {
         if (min(x, na.rm = TRUE) >= 0) {
             if (max(x) != 0) {
-                x <- (1 - (x / max(x)))
-                res <- sum(x, na.rm = TRUE)
+                x <- x / max(x)
+                res <- sum((1-x), na.rm = TRUE)
                 res <- res / (length(x) - 1)
             } else {
                 res <- 0
@@ -79,12 +79,13 @@ tau <- function(x) {
 ## Download files from GTex
 
 ```{bash download files, eval=FALSE}
-gtex=https://storage.googleapis.com/gtex_analysis_v7/annotations
+gtex=https://storage.googleapis.com/gtex_analysis_v8/annotations
 datadir=~/data/tra/gtex
 
 cd $datadir
-wget $gtex/GTEx_v7_Annotations_SampleAttributesDS.txt
-wget $gtex/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_reads.gct.gz
+wget $gtex/GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt
+wget $gtex/GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct.gz
+gunzip $gtex/GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct.gz
 ```
 
 The following description of the  Quality Control and gene expression analysis
@@ -142,12 +143,12 @@ the following procedure:
 ## Load gene expression data sets
 ```{r load data, cache.lazy = FALSE}
 description_attr <- data.table::fread(file.path(datadir,
-                                "GTEx_v7_Annotations_SampleAttributesDS.txt"),
+                                "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt"),
                                 data.table=FALSE) %>%
                     as_tibble
 
 samples_tpm <- data.table::fread(file.path(datadir,
-                                "GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_tpm.gct"),
+                                "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct"),
                                 data.table=FALSE) %>%
                   as_tibble
 
@@ -185,6 +186,7 @@ colnames(mean_expression) <- tissues_cols
 We follow the processing processing procedure described in the
 [Kryuchkova-Mostacci 2017](https://academic.oup.com/bib/article/18/2/205/2562739#119555168)
 benchmarking study:
+
 * All genes where the highest gene expression < 1 RPKM are set as not expressed;
 * count data are log-transformed after addition of 1 to avoid zero counts.
 
@@ -193,6 +195,8 @@ rpkm <- 1
 gtex_max <- apply(mean_expression, 1, fmax)
 mean_expression_filter <- mean_expression[gtex_max > rpkm,]
 mean_expression_filter <- mean_expression_filter + 1
+
+xhat_expression_filter <- t(apply(mean_expression_filter, 1, function(x) x/max(x, na.rm=TRUE)))
 
 gtex <- data.frame(id=gsub("\\..*", "", rownames(mean_expression_filter)),
                    full=rownames(mean_expression_filter),
@@ -218,6 +222,20 @@ p <- ggplot(gtex, aes(x=tau))
 p + geom_density(color="#d95f02") +
     theme_bw()
 
+
+tt <- cbind(gtex[,-c(2,4)], xhat_expression_filter)
+ttt <- tt[201:210,] %>%
+    pivot_longer(-c(id,tau), names_to="tissue", values_to="x_hat") %>%
+    group_by(id) %>%
+    arrange(x_hat) %>%
+    mutate(tissue=fct_inorder(tissue))
+
+p <- ggplot(ttt, aes(x=tissue, y=x_hat))
+p + geom_point() +
+    geom_hline(aes(yintercept=tau)) +
+    facet_wrap(~id, nrow=10) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=90))
 ```
 
 ## Compare to Fagerberg (2014) data
