@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache=TRUE, message=FALSE)
+knitr::opts_chunk$set(echo = TRUE, cache=FALSE, message=FALSE)
 ```
 
 ## Tissue-restricted antigens
@@ -190,9 +190,9 @@ write.table(select(gtex, -study), file=file.path(datadir, "gtex_tau.csv"),
             sep=",", col.names=TRUE, row.names=FALSE, quote=FALSE)
 
 gtex_tra <- gtex %>%
-    filter(tau > 0.8)
+    filter(tau > 0.7)
 
-write.table(select(gtex_tra, Gene, ENSG),
+write.table(select(gtex_tra, Gene, ENSG, tau),
             file=file.path(datadir, "gtex_tra.csv"),
             sep=",", col.names=TRUE, row.names=FALSE, quote=FALSE)
 
@@ -233,27 +233,35 @@ write.table(expression_tra_tissues,
 * visualise distribution of TRAs per tissue
 
 ```{r}
-tras_per_tissue <- expression_tra_tissues %>%
-    pivot_longer(-c(Gene, ENSG, tau), names_to="tissue", values_to="status") %>%
+ tras_per_tissue <- expression_tra_tissues %>%
+    mutate(thr=case_when(tau < 0.8 ~ "> 0.7", 
+                         tau >= 0.8 & tau < 0.9 ~ "> 0.8",
+                         tau >= 0.9 ~ "> 0.9")) %>%
+    pivot_longer(-c(Gene, ENSG, tau, thr),
+                 names_to="tissue", values_to="status") %>%
     filter(status != 0) %>%
-    group_by(tissue) %>%
+    group_by(tissue, thr) %>%
     summarise(tras = n(), .groups='drop') %>%
     arrange(tras) %>%
     mutate(tissue = fct_inorder(tissue))
 
 p_all_tissues <- ggplot(tras_per_tissue) +
-    geom_bar(aes(x=tissue, y=tras), stat='identity') +
+    geom_bar(aes(x=tissue, y=tras, fill=thr), stat='identity') +
+    scale_fill_manual(values=c('#66c2a5','#fc8d62','#8da0cb')) +
     labs(x="GTEx tissues",
-         y="Number of TRAs") +
+         y="Number of TRAs",
+         fill="Tau threshold") +
     cowplot::theme_cowplot() +
     theme(axis.text.x = element_text(angle=45, hjust = 1, vjust = 1),
           axis.text = element_text(size=text_size),
           axis.title = element_text(size=title_size))
 
 p_tissues_no_testes <- ggplot(filter(tras_per_tissue, tissue != "Testis")) +
-    geom_bar(aes(x=tissue, y=tras), stat='identity') +
+    geom_bar(aes(x=tissue, y=tras, fill=thr), stat='identity') +
+    scale_fill_manual(values=c('#66c2a5','#fc8d62','#8da0cb')) +
     labs(x="GTEx tissues",
-         y="Number of TRAs") +
+         y="Number of TRAs",
+         fill="Tau threshold") +
     cowplot::theme_cowplot() +
     theme(axis.text.x = element_text(angle=45, hjust = 1, vjust = 1),
           axis.text = element_text(size=text_size),
@@ -269,26 +277,33 @@ cowplot::plot_grid(p_all_tissues, p_tissues_no_testes,
 
 ```{r}
 tissue_per_tra <- expression_tra_tissues %>%
-    pivot_longer(-c(Gene, ENSG, tau), names_to="tissue", values_to="status") %>%
+    mutate(thr=case_when(tau < 0.8 ~ "> 0.7", 
+                         tau >= 0.8 & tau < 0.9 ~ "> 0.8",
+                         tau >= 0.9 ~ "> 0.9")) %>%
+    pivot_longer(-c(Gene, ENSG, tau, thr), names_to="tissue", values_to="status") %>%
     filter(status != 0) %>%
-    group_by(Gene, ENSG, tau) %>%
+    group_by(Gene, ENSG, tau, thr) %>%
     summarise(tissues = n(), .groups='drop') %>%
     arrange(tissues) %>%
     mutate(Gene = fct_inorder(Gene))
 
 p_all_tras <-  ggplot(tissue_per_tra) +
-    geom_bar(aes(tissues)) +
+    geom_bar(aes(tissues, fill=thr)) +
+    scale_fill_manual(values=c('#66c2a5','#fc8d62','#8da0cb')) +
     scale_x_continuous( breaks=1:6)+
     labs(x="Number of GTEx tissues",
-         y="Number of TRAs") +
+         y="Number of TRAs",
+         fill="Tau threshold") +
     cowplot::theme_cowplot() +
     theme(axis.text = element_text(size=text_size),
           axis.title = element_text(size=title_size))
 
 p_tau_versus_tissue <-  ggplot(tissue_per_tra) +
-    geom_boxplot(aes(x=as.factor(tissues), y=tau)) +
+    geom_boxplot(aes(x=as.factor(tissues), y=tau, color=thr)) +
+    scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb')) +
     labs(x="Number of GTEx tissues",
-         y="Tau") +
+         y="Tau",
+         color="Tau threshold") +
     cowplot::theme_cowplot() +
     theme(axis.text = element_text(size=text_size),
           axis.title = element_text(size=title_size)) 
