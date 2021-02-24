@@ -10,8 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache=TRUE, cache.lazy = FALSE,
-                      message=FALSE)
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE, message=FALSE)
 ```
 
 ## Tissue-restricted antigens
@@ -34,47 +33,11 @@ tissues.
 ## Setup
 ```{r setup variables and R}
 library(tidyverse)
+box::use(tra=./tra)
 datadir <- "~/data/tra/gtex"
+text_size <- 7
+title_size <- 9
 ```
-
-## Functions
-```{r functions}
-# Functions from Mostacci et al (2016) Bioinformatics
-
-# Function requires a vector with expression of one gene in different tissues.
-# Max is calculated taking in account tissues with 0 expression. 2+0+4=2
-fmax <- function(x) {
-    if (!all(is.na(x))) {
-        res <- max(x, na.rm = TRUE)
-    } else {
-        res <- NA
-    }
-    return(res)
-}
-# 
-# Function requires a vector with expression of one gene in different tissues.
-# If expression for one tissue is not known, gene specificity for this gene is
-# NA; Minimum 2 tissues
-tau <- function(x) {
-    if (all(!is.na(x))) {
-        if (min(x, na.rm = TRUE) >= 0) {
-            if (max(x) != 0) {
-                x <- x / max(x)
-                res <- sum((1-x), na.rm = TRUE)
-                res <- res / (length(x) - 1)
-            } else {
-                res <- 0
-            }
-        } else {
-            res <- NA
-        }
-    } else {
-        res <- NA
-    }
-    return(res)
-}
-```
-
 
 ## Download files from GTex
 
@@ -141,7 +104,7 @@ the following procedure:
    inverse normal transform.
 
 ## Load gene expression data sets
-```{r load data, cache.lazy = FALSE}
+```{r load data, eval=FALSE}
 description_attr <- data.table::fread(file.path(datadir,
                                 "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt"),
                                 data.table=FALSE) %>%
@@ -155,10 +118,15 @@ samples_tpm <- data.table::fread(file.path(datadir,
 ```
 ## Format gene expression data sets
 Join gene ids, tissue and sample IDs with expression values.
-```{r annotate tpm}
+```{r annotate tpm, eval=FALSE}
 tpm_attr <- samples_tpm %>%
     select(Name, Description) %>%
     mutate(ID=gsub("\\..*", "", Name))
+
+write_csv(tpm_attr,
+          file.path(datadir,
+                    "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm_attr.csv")
+)
 
 tpm_annotated <- samples_tpm %>%
     select(-Description, -Name) %>%
@@ -168,10 +136,14 @@ tpm_annotated <- samples_tpm %>%
     mutate(SAMPID=colnames(samples_tpm)[-c(1:2)]) %>% 
     inner_join(select(description_attr, SAMPID, SMTS), by = "SAMPID")
 
+write_csv(tpm_annotated,
+          file.path(datadir,
+                    "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm_gct_annotated.csv")
+)
 ```
 
 Compute the mean expression per gene and per tissue across biological replicates
-```{r mean expression}
+```{r mean expression, eval=FALSE}
 mean_expression <- tpm_annotated %>%
     select(-SAMPID) %>%
     group_by(SMTS) %>%
@@ -180,6 +152,13 @@ mean_expression <- tpm_annotated %>%
 tissues_cols <- mean_expression$SMTS
 mean_expression <- t(mean_expression[,-1])
 colnames(mean_expression) <- tissues_cols
+saveRDS(mean_expression, "GTEx_Analysis_v8_gene_mean_expression.Rdata")
+```
+
+```{r, echo=FALSE}
+tpm_attr <- read_csv(file.path(datadir,
+                    "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm_attr.csv"))
+mean_expression <- readRDS("GTEx_Analysis_v8_gene_mean_expression.Rdata")
 ```
 
 ## Compute list of tissue-specific genes
@@ -192,15 +171,13 @@ benchmarking study:
 
 ```{r tau gtex}
 rpkm <- 1
-gtex_max <- apply(mean_expression, 1, fmax)
+gtex_max <- apply(mean_expression, 1, tra$fmax)
 mean_expression_filter <- mean_expression[gtex_max > rpkm,]
 mean_expression_filter <- mean_expression_filter + 1
 
-xhat_expression_filter <- t(apply(mean_expression_filter, 1, function(x) x/max(x, na.rm=TRUE)))
-
 gtex <- data.frame(id=gsub("\\..*", "", rownames(mean_expression_filter)),
                    full=rownames(mean_expression_filter),
-                   tau=apply(log2(mean_expression_filter), 1, tau),
+                   tau=apply(log2(mean_expression_filter), 1, tra$tau),
                    study='gtex',
                    stringsAsFactors = FALSE)
 
@@ -213,35 +190,119 @@ write.table(select(gtex, -study), file=file.path(datadir, "gtex_tau.csv"),
             sep=",", col.names=TRUE, row.names=FALSE, quote=FALSE)
 
 gtex_tra <- gtex %>%
-    filter(tau > 0.8) %>%
-    select(Gene, ENSG) 
-write.table(gtex_tra, file=file.path(datadir, "gtex_tra.csv"),
+    filter(tau > 0.8)
+
+write.table(select(gtex_tra, Gene, ENSG),
+            file=file.path(datadir, "gtex_tra.csv"),
             sep=",", col.names=TRUE, row.names=FALSE, quote=FALSE)
 
 p <- ggplot(gtex, aes(x=tau))
 p + geom_density(color="#d95f02") +
-    theme_bw()
+    cowplot::theme_cowplot() +
+    theme(axis.text = element_text(size=text_size),
+          axis.title = element_text(size=title_size))
 
+```
 
-tt <- cbind(gtex[,-c(2,4)], xhat_expression_filter)
-ttt <- tt[201:210,] %>%
-    pivot_longer(-c(id,tau), names_to="tissue", values_to="x_hat") %>%
-    group_by(id) %>%
-    arrange(x_hat) %>%
-    mutate(tissue=fct_inorder(tissue))
+## Find tissue-specificity of tissue-specific genes
+* use binarizing approach described by 
+[Yanai 2005](https://academic.oup.com/bioinformatics/article/21/5/650/220059)
 
-p <- ggplot(ttt, aes(x=tissue, y=x_hat))
-p + geom_point() +
-    geom_hline(aes(yintercept=tau)) +
-    facet_wrap(~id, nrow=10) +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle=90))
+```{r}
+mean_expression_tra <- mean_expression_filter %>%
+    as.data.frame %>%
+    rownames_to_column("full") %>%
+    filter(full %in% gtex_tra$full) %>%
+    column_to_rownames("full") %>%
+    as.matrix
+
+expression_tra_tissues <- apply(mean_expression_tra, 1, tra$find_tra_tissues) %>%
+    t %>%
+    as.data.frame %>%
+    rownames_to_column("full") %>%
+    left_join(gtex_tra) %>%
+    select(-full, -study) %>%
+    select(Gene, ENSG, tau, everything()) %>%
+    as_tibble()
+
+write.table(expression_tra_tissues,
+            file=file.path(datadir, "gtex_tra_binarized_expression.csv"),
+            sep=",", col.names=TRUE, row.names=FALSE, quote=FALSE)
+```
+
+* visualise distribution of TRAs per tissue
+
+```{r}
+tras_per_tissue <- expression_tra_tissues %>%
+    pivot_longer(-c(Gene, ENSG, tau), names_to="tissue", values_to="status") %>%
+    filter(status != 0) %>%
+    group_by(tissue) %>%
+    summarise(tras = n(), .groups='drop') %>%
+    arrange(tras) %>%
+    mutate(tissue = fct_inorder(tissue))
+
+p_all_tissues <- ggplot(tras_per_tissue) +
+    geom_bar(aes(x=tissue, y=tras), stat='identity') +
+    labs(x="GTEx tissues",
+         y="Number of TRAs") +
+    cowplot::theme_cowplot() +
+    theme(axis.text.x = element_text(angle=45, hjust = 1, vjust = 1),
+          axis.text = element_text(size=text_size),
+          axis.title = element_text(size=title_size))
+
+p_tissues_no_testes <- ggplot(filter(tras_per_tissue, tissue != "Testis")) +
+    geom_bar(aes(x=tissue, y=tras), stat='identity') +
+    labs(x="GTEx tissues",
+         y="Number of TRAs") +
+    cowplot::theme_cowplot() +
+    theme(axis.text.x = element_text(angle=45, hjust = 1, vjust = 1),
+          axis.text = element_text(size=text_size),
+          axis.title = element_text(size=title_size))
+cowplot::plot_grid(p_all_tissues, p_tissues_no_testes,
+                   nrow=2,
+                   align="h",
+                   axis="tb")
+```
+
+* visualise how many tissues a given TRA is assigned
+* visualise relationship between tau and number of tissues expressing TRA
+
+```{r}
+tissue_per_tra <- expression_tra_tissues %>%
+    pivot_longer(-c(Gene, ENSG, tau), names_to="tissue", values_to="status") %>%
+    filter(status != 0) %>%
+    group_by(Gene, ENSG, tau) %>%
+    summarise(tissues = n(), .groups='drop') %>%
+    arrange(tissues) %>%
+    mutate(Gene = fct_inorder(Gene))
+
+p_all_tras <-  ggplot(tissue_per_tra) +
+    geom_bar(aes(tissues)) +
+    scale_x_continuous( breaks=1:6)+
+    labs(x="Number of GTEx tissues",
+         y="Number of TRAs") +
+    cowplot::theme_cowplot() +
+    theme(axis.text = element_text(size=text_size),
+          axis.title = element_text(size=title_size))
+
+p_tau_versus_tissue <-  ggplot(tissue_per_tra) +
+    geom_boxplot(aes(x=as.factor(tissues), y=tau)) +
+    labs(x="Number of GTEx tissues",
+         y="Tau") +
+    cowplot::theme_cowplot() +
+    theme(axis.text = element_text(size=text_size),
+          axis.title = element_text(size=title_size)) 
+
+cowplot::plot_grid(p_all_tras,p_tau_versus_tissue,
+                   nrow=2,
+                   align="v",
+                   axis="lr")
 ```
 
 ## Compare to Fagerberg (2014) data
-* Dataset derived from Fagerberg (2014) Supplementary data;
-* formating in analogy to formating in Mostacci (2014);
-* formating for zero counts adjusted to adding 1 to each count value instead of
+* Data set derived from Fagerberg (2014) Supplementary data;
+* formatting in analogy to formatying in Mostacci (2014);
+* formatting for zero counts adjusted to adding 1 to each count value instead of
 only setting 0 counts to 1.
 
 ```{r fagerberg data}
@@ -256,11 +317,11 @@ orgExpression <-
 orgExpression <- na.omit(orgExpression[,-29])
 x <- orgExpression[,-1] + 1
 orgExpression[, -1] <- log2(x)
-fagerberg_max <- apply(orgExpression[,-1], 1, fmax)
+fagerberg_max <- apply(orgExpression[,-1], 1, tra$fmax)
 orgExpression <- orgExpression[fagerberg_max > log2(rpkm),]
 fagerberg <- data.frame(id=orgExpression$Ensembl.Gene.ID,
                         full=orgExpression$Ensembl.Gene.ID,
-                        tau=apply(orgExpression[,-1], 1, tau),
+                        tau=apply(orgExpression[,-1], 1, tra$tau),
                         study='fagerberg',
                         stringsAsFactors = FALSE)
 
@@ -272,7 +333,9 @@ fagerberg <- fagerberg %>%
 
 p <- ggplot(fagerberg, aes(x=tau))
 p + geom_density(color="#1b9e77") +
-    theme_bw()
+    cowplot::theme_cowplot() +
+    theme(axis.text = element_text(size=text_size),
+          axis.title = element_text(size=title_size))
 ```
 
 ## Compare the results of GTEx and Fagerberg tissue specificity
@@ -291,9 +354,11 @@ both <- rbind(fagerberg_common, gtex_common)
 
 p <- ggplot(both, aes(x=tau, color=study))
 p + geom_density() +
-    scale_color_manual(values=c("#1b9e77", "#d95f02")) +
-    theme_bw() +
-    theme(legend.position = 'bottom')
+    scale_color_manual(values=c("#1b9e77", "#d95f02"))+
+    cowplot::theme_cowplot() +
+    theme(axis.text = element_text(size=text_size),
+          axis.title = element_text(size=title_size),
+          legend.position = 'bottom')
 
 gtex_tissue_specific <- gtex_common[gtex_common$tau > 0.8,]
 fagerberg_tissue_specific <- fagerberg_common[fagerberg_common$tau > 0.8,]
