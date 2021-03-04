@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -cwd
 #$ -pe threads 12
-#$ -l m_mem_free=16G
+#$ -l m_mem_free=32G
 #$ -N align_reads
 #$ -o align_reads_output.txt
 #$ -e align_reads_output.txt
@@ -35,7 +35,7 @@ for i in ${read_1_array[@]}; do
   --outSAMtype BAM Unsorted \
   --winAnchorMultimapNmax 200 \
   --outFilterMultimapNmax 100 \
-  --outFileNamePrefix $TE_HOME/data/'$i'_
+  --outFileNamePrefix $TE_HOME/data/${i}_
   
   counter=$((counter+1))
 
