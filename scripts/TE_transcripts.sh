@@ -11,7 +11,7 @@ cd $TE_HOME/data
 TEtranscripts \
 --format BAM \
 -t pt214_hi_fastp_1.fastq_Aligned.out.bam pt221_hi_fastp_1.fastq_Aligned.out.bam pt226_hi_fastp_1.fastq_Aligned.out.bam \
--c pt214_lo_fastp_1.fastq_Aligned.out.bam pt221_lo_fastp_1.fastq_Aligned.out.bam pt226_lo_fastp_1.fastq_Aligned.out.bam\
+-c pt214_lo_fastp_1.fastq_Aligned.out.bam pt221_lo_fastp_1.fastq_Aligned.out.bam pt226_lo_fastp_1.fastq_Aligned.out.bam \
 --GTF $TE_HOME/index/human.GRCh38.gtf \
 --TE $TE_HOME/index/GRCh38_Ensembl_rmsk_TE.gtf \
 --mode multi \
