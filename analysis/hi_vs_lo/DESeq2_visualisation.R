@@ -21,3 +21,15 @@ plotCounts(dds, gene = '', intgroup = 'group') ## FEZF2
 
 ## Volcano
 
+df2 = filter(df, Class == 'protein_coding')
+
+library(EnhancedVolcano)
+
+EnhancedVolcano(df2,
+                lab = df2$GeneSymbol,
+                x = 'log2FoldChange',
+                selectLab = c('AIRE', 'CD80', 'FEZF2'),
+                y = 'padj',
+                title = 'mTEC-lo vs mTEC-hi gene expression',
+                pCutoff = 0.1,
+                drawConnectors = TRUE)
