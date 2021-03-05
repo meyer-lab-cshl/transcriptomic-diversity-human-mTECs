@@ -7,11 +7,6 @@ library(DESeq2)
 
 data = read.table("hi_vs_lo.cntTable",header=T,row.names=1)
 
-## Filter count matrix to exclude non-expressed genes
-
-min_read = 1
-data <- data[apply(data,1,function(x){max(x)}) > min_read,]
-
 ## Subset into 'gene' and 'TE' count matrices
 
 gene_data = data[grep("^ENSG",rownames(data)),]
@@ -19,11 +14,26 @@ TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
 
 ## Convert 'gene_ID' to 'gene_name' from GTF file
 
+GENCODE_annotation = read.table(file = 'gencode.v38_gene_annotation_table.txt', header = 1)
+
+## Filter count matrix to exclude non-expressed genes
+
+min_read = 1
+gene_data <- gene_data[apply(gene_data,1,function(x){max(x)}) > min_read,]
+
 ## Define sampleInfo
 
 ID = colnames(gene_data)
 sampleInfo = data.frame(ID,row.names=colnames(gene_data))
 sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
+
+## Modify gene_data
+
+gene_data <- cbind(Geneid = rownames(gene_data), gene_data)
+gene_data = merge(gene_data, GENCODE_annotation, by = 'Geneid')
+#rownames(gene_data) = gene_data$GeneSymbol 
+
+# Doesn't work because some gene IDs are not unique!
 
 ## Construct DESeq dataset object
 
