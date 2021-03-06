@@ -1,4 +1,6 @@
 library(ggplot2)
+library(svglite)
+library(ggpubr)
 
 ##This is a set of plot templates for visualizing DESeq2 output. It assumes
 ##the following assignments:
@@ -31,5 +33,14 @@ EnhancedVolcano(df2,
                 selectLab = c('AIRE', 'CD80', 'FEZF2'),
                 y = 'padj',
                 title = 'mTEC-lo vs mTEC-hi gene expression',
-                pCutoff = 0.1,
-                drawConnectors = TRUE)
+                pCutoff = 0.1)
+
+ggsave("lo_vs_hi_volcano_plot.png", width = 20, height = 15, units = "cm")
+
+ggplot(data = df2, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
+  geom_point(alpha = 0.6) +
+  geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
+  ggtitle('mTEC-lo vs mTEC-hi', '(protein-coding genes only)') +
+  theme_pubr()
+  
