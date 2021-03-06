@@ -6,27 +6,26 @@ library(DESeq2)
 ## Import count matrix
 
 data = read.table("hi_vs_lo.cntTable",header=T,row.names=1)
-#group <- factor(c(rep("hi",3),rep("low",3)))
 
-## Subset into 'gene' and 'TE' count matrices
+## Subset into TE count matrix 'TE_data'
 
-gene_data = data[grep("^ENSG",rownames(data)),]
 TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
 
 ## Filter count matrix to exclude non-expressed genes
 
 min_read = 1
-gene_data <- gene_data[apply(gene_data,1,function(x){max(x)}) > min_read,]
+TE_data <- TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 
 ## Define sampleInfo
 
-ID = colnames(gene_data)
-sampleInfo = data.frame(ID,row.names=colnames(gene_data))
+ID = colnames(TE_data)
+sampleInfo = data.frame(ID,row.names=colnames(TE_data))
 sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
 
 ## Construct DESeq dataset object
 
-dds <- DESeqDataSetFromMatrix(countData = gene_data, colData = sampleInfo, design = ~patient + group)
+dds <- DESeqDataSetFromMatrix(countData = TE_data, colData = sampleInfo, design = ~patient + group)
+dds$group = relevel(dds$group,ref="lo")
 
 ## Run differential expression analysis
 
@@ -47,7 +46,8 @@ GENCODE_annotation_subset = select(GENCODE_annotation, -c(Start, End, Strand, Le
 df = cbind(Geneid = rownames(df), df)
 df = merge(df, GENCODE_annotation_subset, by = 'Geneid')
 
-df = mutate(df, significant = case_when(padj < 0.01 ~ TRUE, padj >= 0.01 ~ FALSE))
+df = mutate(df, significant = case_when((padj < 0.05) & (abs(log2FoldChange) > 1) ~ TRUE, 
+                                        (padj >= 0.05) | (abs(log2FoldChange) <= 1) ~ FALSE))
 
 ## Export
 

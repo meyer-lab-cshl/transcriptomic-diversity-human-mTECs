@@ -41,9 +41,10 @@ ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colour = significant
   geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
   xlab(expression('Log'[2])) +
   ylab(expression('-Log'[10])) +
-  ggtitle('mTEC-lo vs mTEC-hi', '(protein-coding genes only)') +
+  ggtitle('mTEC-lo vs mTEC-hi', 'Gene expression') +
   scale_colour_manual(values = c('#9B9A99', "#B94B4B")) +
   guides(colour = FALSE) +
   theme_pubr()
 
-ggsave("/Plots/lo_vs_hi_volcano_plot.png", width = 20, height = 15, units = "cm")
+ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/lo_vs_hi_volcano_plot.png", 
+       width = 20, height = 15, units = "cm")
