@@ -46,7 +46,10 @@ volcano_plot = ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colou
                 geom_label_repel(
                 data = subset(df, significant == TRUE),
                 aes(label = rownames(subset(df, significant == TRUE))),
-                size = 3.5, box.padding = unit(0.9, 'lines'), point.padding = unit(0.3, 'lines'))
+                size = 3.5, 
+                box.padding = unit(0.9, 'lines'), 
+                point.padding = unit(0.2, 'lines'),
+                max.overlaps = 20)
 
 #geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
 #geom_hline(yintercept = -log10(0.05), linetype = 'dashed')
