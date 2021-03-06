@@ -27,20 +27,19 @@ df2 = filter(df, Class == 'protein_coding')
 
 library(EnhancedVolcano)
 
-EnhancedVolcano(df2,
-                lab = df2$GeneSymbol,
+EnhancedVolcano(df,
+                lab = df$GeneSymbol,
                 x = 'log2FoldChange',
                 selectLab = c('AIRE', 'CD80', 'FEZF2'),
                 y = 'padj',
                 title = 'mTEC-lo vs mTEC-hi gene expression',
-                pCutoff = 0.1)
+                pCutoff = 0.05)
 
-ggsave("lo_vs_hi_volcano_plot.png", width = 20, height = 15, units = "cm")
-
-ggplot(data = df2, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
+ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
   geom_point(alpha = 0.6) +
   geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
   geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
   ggtitle('mTEC-lo vs mTEC-hi', '(protein-coding genes only)') +
   theme_pubr()
-  
+
+ggsave("/Plots/lo_vs_hi_volcano_plot.png", width = 20, height = 15, units = "cm")
