@@ -36,19 +36,20 @@ EnhancedVolcano(df,
                 pCutoff = 0.05)
 
 volcano_plot = ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
-                geom_point(alpha = 0.6) +
-                geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
-                geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
-                xlab(expression('Log'[2])) +
-                ylab(expression('-Log'[10])) +
+                geom_point(alpha = 0.6, aes(colour = significant)) +
+                xlab(expression('Log'[2]*' FC (HI/LO)')) +
+                ylab(expression('-Log'[10]*' P value')) +
                 xlim(-3, 3) +
                 ggtitle('mTEC-lo vs mTEC-hi', 'TE expression') +
                 scale_colour_manual(values = c('#9B9A99', "red")) +
                 guides(colour = FALSE) +
-                geom_text_repel(
+                geom_label_repel(
                 data = subset(df, significant == TRUE),
                 aes(label = rownames(subset(df, significant == TRUE))),
-                size = 4)
+                size = 3.5, box.padding = unit(0.9, 'lines'), point.padding = unit(0.3, 'lines'))
+
+#geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
+#geom_hline(yintercept = -log10(0.05), linetype = 'dashed')
 
 volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                   plot.subtitle = element_text(size = 14),
