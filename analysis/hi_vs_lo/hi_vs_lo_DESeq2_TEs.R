@@ -40,11 +40,8 @@ vs_dds <- vst(dds, blind=FALSE)
 
 df = as.data.frame(res)
 
-GENCODE_annotation = read.table(file = 'gencode.v38_gene_annotation_table.txt', header = 1)
-GENCODE_annotation_subset = select(GENCODE_annotation, -c(Start, End, Strand, Length))
-
-df = cbind(Geneid = rownames(df), df)
-df = merge(df, GENCODE_annotation_subset, by = 'Geneid')
+df = cbind(ID = rownames(df), df)
+df = separate(data = df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
 
 df = mutate(df, significant = case_when((padj < 0.05) & (abs(log2FoldChange) > 1) ~ TRUE, 
                                         (padj >= 0.05) | (abs(log2FoldChange) <= 1) ~ FALSE))
