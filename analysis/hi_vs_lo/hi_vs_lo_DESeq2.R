@@ -47,6 +47,8 @@ GENCODE_annotation_subset = select(GENCODE_annotation, -c(Start, End, Strand, Le
 df = cbind(Geneid = rownames(df), df)
 df = merge(df, GENCODE_annotation_subset, by = 'Geneid')
 
+df = mutate(df, significant = case_when(padj < 0.01 ~ TRUE, padj >= 0.01 ~ FALSE))
+
 ## Export
 
 #write.table(res, file="hi_vs_lo_gene_TE_analysis.txt", sep="\t",quote=F)
