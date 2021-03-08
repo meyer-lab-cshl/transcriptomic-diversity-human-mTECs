@@ -43,19 +43,28 @@ dds$group = relevel(dds$group,ref="lo")
 dds <- DESeq(dds)
 res <- results(dds,independentFiltering=F)
 
-## Transform raw count data
-
-vs_dds <- vst(dds, blind=FALSE)
-
 ## Convert results to dataframe and add signficance label
 
-df = as.data.frame(res)
+results_df = as.data.frame(res)
 
-df = cbind(ID = rownames(df), df)
-df = separate(data = df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+results_df = cbind(ID = rownames(results_df), results_df)
+results_df = separate(data = results_df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+results_ID = cbind(ID = rownames(results_df), results_df)
 
-df = mutate(df, significant = case_when((padj < 0.05) & (abs(log2FoldChange) > 1) ~ TRUE, 
+results_df = mutate(results_df, significant = case_when((padj < 0.05) & (abs(log2FoldChange) > 1) ~ TRUE, 
                                         (padj >= 0.05) | (abs(log2FoldChange) <= 1) ~ FALSE))
+
+results_df = mutate(results_df, abs_log2FoldChange = abs(log2FoldChange))
+
+sig_results_df = results_df[results_df$significant == TRUE,]
+
+## Transform raw count data and convert to dataframe
+
+vs_dds <- vst(dds, blind=FALSE)
+normalized_counts = as.data.frame(assay(vs_dds))
+
+sigGenes = rownames(results_df[results_df$significant == TRUE,])
+sig_normalized_counts = assay(vs_dds)[rownames(normalized_counts) %in% sigGenes,]
 
 ## Export
 
@@ -64,14 +73,20 @@ df = mutate(df, significant = case_when((padj < 0.05) & (abs(log2FoldChange) > 1
 #write.table(resSig, file="hi_vs_lo_sigdiff_gene_TE.txt",sep="\t", quote=F)
 
 #################################################################
+#################################################################
 # Data visualization
 #################################################################
+#################################################################
 
-## PCA
+#################################################################
+# PCA
+#################################################################
 
 plotPCA(vs_dds, intgroup = 'group') + theme_bw()
 
-## Heatmap of normalized counts for TEs with significantly different expression
+#################################################################
+# Heatmap version 1
+#################################################################
 
 normalized_counts = as.data.frame(assay(vs_dds))
 normalized_counts = cbind(ID = rownames(normalized_counts), normalized_counts)
@@ -86,12 +101,23 @@ ggplot(sig_normalized_counts_long, aes(x = variable, y = ID, fill = value)) +
   geom_raster() + theme(axis.text.x=element_text(angle=65, hjust=1)) +
   scale_fill_viridis(trans = 'sqrt')
 
-## Using pheatmap package
+#################################################################
+# Heatmap version 2
+#################################################################
 
-pheatmap(assay(vs_dds)[rownames(normalized_counts) %in% sigGenes,], 
-         cluster_rows=TRUE, show_rownames=TRUE, cluster_cols=FALSE)
+## Rows ordered by fold change w/out clustering
 
-## Volcano
+select <- order(sig_results_df$abs_log2FoldChange, decreasing=TRUE)
+pheatmap(sig_normalized_counts[select,], cluster_rows=FALSE, show_rownames=TRUE, cluster_cols=FALSE)
+
+## Rows clustered
+
+pheatmap(sig_normalized_counts, cluster_rows=TRUE, show_rownames=TRUE, cluster_cols=FALSE)
+
+
+#################################################################
+# Volcano
+#################################################################
 
 volcano_plot = ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
   geom_point(alpha = 0.6, aes(colour = significant)) +
