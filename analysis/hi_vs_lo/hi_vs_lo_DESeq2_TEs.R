@@ -114,7 +114,6 @@ pheatmap(sig_normalized_counts[select,], cluster_rows=FALSE, show_rownames=TRUE,
 
 pheatmap(sig_normalized_counts, cluster_rows=TRUE, show_rownames=TRUE, cluster_cols=FALSE)
 
-
 #################################################################
 # Volcano
 #################################################################
