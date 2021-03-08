@@ -7,6 +7,8 @@ library(ggplot2)
 library(svglite)
 library(ggpubr)
 library(ggrepel)
+library(viridis)
+library(pheatmap)
 
 #################################################################
 # Differential expression with DESeq2
@@ -82,7 +84,12 @@ sig_normalized_counts_long <- melt(sig_normalized_counts, id.vars=c("ID"))
 
 ggplot(sig_normalized_counts_long, aes(x = variable, y = ID, fill = value)) +
   geom_raster() + theme(axis.text.x=element_text(angle=65, hjust=1)) +
-  scale_fill_viridis(trans="sqrt")
+  scale_fill_viridis(trans = 'sqrt')
+
+## Using pheatmap package
+
+pheatmap(assay(vs_dds)[rownames(normalized_counts) %in% sigGenes,], 
+         cluster_rows=TRUE, show_rownames=TRUE, cluster_cols=FALSE)
 
 ## Volcano
 
