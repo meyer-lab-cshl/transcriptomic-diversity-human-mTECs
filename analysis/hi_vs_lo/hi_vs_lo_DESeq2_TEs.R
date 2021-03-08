@@ -10,6 +10,11 @@ library(ggrepel)
 library(viridis)
 library(pheatmap)
 
+## Set paramets
+
+p_value_cutoff = 0.05
+log_fold_change_cutoff = 1
+
 #################################################################
 # Differential expression with DESeq2
 #################################################################
@@ -17,6 +22,7 @@ library(pheatmap)
 ## Import count matrix
 
 data = read.table("hi_vs_lo.cntTable",header=T,row.names=1)
+colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
 
 ## Subset into TE count matrix 'TE_data'
 
@@ -36,7 +42,7 @@ sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient',
 ## Construct DESeq dataset object
 
 dds <- DESeqDataSetFromMatrix(countData = TE_data, colData = sampleInfo, design = ~patient + group)
-dds$group = relevel(dds$group,ref="lo")
+dds$group = relevel(dds$group,ref="LO")
 
 ## Run differential expression analysis
 
@@ -51,8 +57,8 @@ results_df = cbind(ID = rownames(results_df), results_df)
 results_df = separate(data = results_df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
 results_ID = cbind(ID = rownames(results_df), results_df)
 
-results_df = mutate(results_df, significant = case_when((padj < 0.05) & (abs(log2FoldChange) > 1) ~ TRUE, 
-                                        (padj >= 0.05) | (abs(log2FoldChange) <= 1) ~ FALSE))
+results_df = mutate(results_df, significant = case_when((padj < p_value_cutoff) & (abs(log2FoldChange) > log_fold_change_cutoff) ~ TRUE, 
+                                        (padj >= p_value_cutoff) | (abs(log2FoldChange) <= log_fold_change_cutoff) ~ FALSE))
 
 results_df = mutate(results_df, abs_log2FoldChange = abs(log2FoldChange))
 
@@ -82,27 +88,32 @@ sig_normalized_counts = assay(vs_dds)[rownames(normalized_counts) %in% sigGenes,
 # PCA
 #################################################################
 
-plotPCA(vs_dds, intgroup = 'group') + theme_bw()
+PCA = plotPCA(vs_dds, intgroup = 'group') + 
+  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression PCA') +
+  geom_text(aes(label = colnames(vs_dds)), nudge_x = 0.5, nudge_y = 0.2)
+
+PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                        plot.subtitle = element_text(size = 14),
+                        axis.text.x = element_text(size = 14),
+                        axis.text.y = element_text(size = 14),
+                        axis.title = element_text(size = 14),
+                        axis.line = element_line(size = 0.8),
+                        panel.border = element_blank())
+
+ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_PCA.png", 
+       width = 20, height = 15, units = "cm")
 
 #################################################################
-# Heatmap version 1
+# Heatmap version 1 (ggplot)
 #################################################################
-
-normalized_counts = as.data.frame(assay(vs_dds))
-normalized_counts = cbind(ID = rownames(normalized_counts), normalized_counts)
-#normalized_counts = separate(data = normalized_counts, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
-
-sigGenes = rownames(df[df$significant == TRUE,])
-sig_normalized_counts <- normalized_counts[rownames(normalized_counts) %in% sigGenes,]
 
 sig_normalized_counts_long <- melt(sig_normalized_counts, id.vars=c("ID"))
 
-ggplot(sig_normalized_counts_long, aes(x = variable, y = ID, fill = value)) +
-  geom_raster() + theme(axis.text.x=element_text(angle=65, hjust=1)) +
-  scale_fill_viridis(trans = 'sqrt')
+ggplot(sig_normalized_counts_long, aes(x = Var2, y = Var1, fill = value)) +
+  geom_raster() + theme(axis.text.x=element_text(angle=65, hjust=1)) 
 
 #################################################################
-# Heatmap version 2
+# Heatmap version 2 (pheatmap)
 #################################################################
 
 ## Rows ordered by fold change w/out clustering
@@ -112,23 +123,36 @@ pheatmap(sig_normalized_counts[select,], cluster_rows=FALSE, show_rownames=TRUE,
 
 ## Rows clustered
 
-pheatmap(sig_normalized_counts, cluster_rows=TRUE, show_rownames=TRUE, cluster_cols=FALSE)
+my_heatmap = pheatmap(sig_normalized_counts, 
+                      cluster_rows=TRUE,
+                      show_rownames=TRUE, 
+                      cluster_cols=TRUE,
+                      cutree_cols = 2)
+
+save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_heatmap.png")
 
 #################################################################
 # Volcano
 #################################################################
 
-volcano_plot = ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
+volcano_plot = ggplot(data = results_df, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
   geom_point(alpha = 0.6, aes(colour = significant)) +
-  xlab(expression('Log'[2]*' FC (HI/LO)')) +
+  xlab(expression('Log'[2]*' FC')) +
   ylab(expression('-Log'[10]*' P value')) +
   xlim(-3, 3) +
-  ggtitle('mTEC-lo vs mTEC-hi', 'TE expression') +
+  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression') +
   scale_colour_manual(values = c('#9B9A99', "red")) +
   guides(colour = FALSE) +
   geom_label_repel(
-    data = subset(df, significant == TRUE),
-    aes(label = subset(df, significant == TRUE)$class),
+    data = subset(results_df, significant == TRUE),
+    aes(label = subset(results_df, significant == TRUE)$gene),
     size = 3.5, 
     box.padding = unit(0.9, 'lines'), 
     point.padding = unit(0.2, 'lines'),
@@ -145,6 +169,5 @@ volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size 
                                   axis.line = element_line(size = 0.8),
                                   panel.border = element_blank())
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/lo_vs_hi_TEs_volcano_plot.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_volcano_plot.png", 
        width = 20, height = 15, units = "cm")
-
