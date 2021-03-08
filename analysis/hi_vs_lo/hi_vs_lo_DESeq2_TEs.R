@@ -55,7 +55,7 @@ results_df = as.data.frame(res)
 
 results_df = cbind(ID = rownames(results_df), results_df)
 results_df = separate(data = results_df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
-results_ID = cbind(ID = rownames(results_df), results_df)
+results_df = cbind(ID = rownames(results_df), results_df)
 
 results_df = mutate(results_df, significant = case_when((padj < p_value_cutoff) & (abs(log2FoldChange) > log_fold_change_cutoff) ~ TRUE, 
                                         (padj >= p_value_cutoff) | (abs(log2FoldChange) <= log_fold_change_cutoff) ~ FALSE))
@@ -136,7 +136,7 @@ save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
   dev.off()
 }
 
-save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_heatmap.png")
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_heatmap.png")
 
 #################################################################
 # Volcano
@@ -171,3 +171,28 @@ volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size 
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_volcano_plot.png", 
        width = 20, height = 15, units = "cm")
+
+#################################################################
+# Pie chart
+#################################################################
+
+sig_normalized_counts = as.data.frame(sig_normalized_counts)
+sig_normalized_counts_HI = select(sig_normalized_counts, c('214_HI', '221_HI', '226_HI'))
+sig_normalized_counts_HI$mean = rowMeans(sig_normalized_counts_HI)
+sig_normalized_counts_HI = select(sig_normalized_counts_HI, mean)
+
+sig_normalized_counts_HI = cbind(ID = rownames(sig_normalized_counts_HI), sig_normalized_counts_HI)
+sig_normalized_counts_HI = separate(data = sig_normalized_counts_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+sig_normalized_counts_HI = cbind(ID = rownames(sig_normalized_counts_HI), sig_normalized_counts_HI)
+
+sig_normalized_counts_HI = merge(sig_normalized_counts_HI, 
+                                 sig_results_df)
+
+sig_normalized_counts_HI = select(sig_normalized_counts_HI, c('gene', 'family', 'class', 'mean'))
+
+test = group_by(sig_normalized_counts_HI, class) %>% summarize(sum = sum(mean))
+test = as.data.frame(test)
+
+ggplot(test, aes(x="", y=sum, fill=class)) + 
+  geom_bar(stat="identity", width=1, color = 'white') +
+  coord_polar("y", start=0) + theme_void()
