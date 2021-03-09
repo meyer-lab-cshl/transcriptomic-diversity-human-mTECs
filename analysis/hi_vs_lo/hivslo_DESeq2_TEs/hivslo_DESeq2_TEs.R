@@ -9,7 +9,7 @@ log_fold_change_cutoff = 0.58
 
 ## Import count matrix
 
-data = read.table("hi_vs_lo.cntTable",header=T,row.names=1)
+data = read.table("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/hi_vs_lo.cntTable",header=T,row.names=1)
 colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
 
 ## Subset into TE count matrix 'TE_data'

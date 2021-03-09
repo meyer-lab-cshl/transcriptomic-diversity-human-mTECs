@@ -158,8 +158,10 @@ calculate_enrichment_factor = function(group_query, class_query){
   n = up_of_group$sum
   
   enrichment = (n * N) / (k * M)
+
+  p = dhyper(x = c(0:n), m = k, n = (N-k), k = M)
   
-  return(enrichment)
+  return(p)
   
 }
 
