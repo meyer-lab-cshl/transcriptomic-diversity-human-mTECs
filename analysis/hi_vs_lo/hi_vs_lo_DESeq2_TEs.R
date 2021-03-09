@@ -323,17 +323,27 @@ ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_classbreak
 # Enrichment
 #################################################################
 
-all = as.data.frame(count_table) %>%
-  filter(group == 'all')
+calculate_enrichment_factor = function(group_query, class_query){
+  
+  all = as.data.frame(count_table) %>%
+    filter(group == 'all')
+  
+  all_class = filter(all, class == class_query)
+  
+  of_group = as.data.frame(count_table) %>%
+    filter(group == group_query)
+  
+  up_of_group = of_group %>% filter(class == class_query)
+  
+  N = sum(all$sum)
+  k = all_class$sum
+  M = sum(of_group$sum)
+  n = up_of_group$sum
+  
+  enrichment = (n * N) / (k * M)
+  
+  return(enrichment)
+  
+}
 
-all_LTRs = all %>% filter(class == 'LTR')
-
-upregulated = as.data.frame(count_table) %>%
-  filter(group == 'upregulated')
-
-up_LTRs = upregulated %>% filter(class == 'LTR')
-
-N = sum(all$sum)
-k = all_LTRs$sum
-M = sum(upregulated$sum)
-n = up_LTRs$sum
+calculate_enrichment_factor(group_query = 'upregulated', class_query = 'LTR')
