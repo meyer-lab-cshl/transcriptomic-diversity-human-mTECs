@@ -137,7 +137,7 @@ ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_classbreak
        width = 20, height = 15, units = "cm")
 
 #################################################################
-# Enrichment
+# Enrichment 
 #################################################################
 
 calculate_enrichment_factor = function(group_query, class_query){
@@ -166,3 +166,30 @@ calculate_enrichment_factor = function(group_query, class_query){
 }
 
 calculate_enrichment_factor(group_query = 'upregulated', class_query = 'LTR')
+
+#################################################################
+# Gene set enrichment with 'fgsea'
+#################################################################
+
+library(fgsea)
+
+input = results_df
+
+input = mutate(input, ID = sub("\\?", "", ID))
+input = mutate(input, class = sub("\\?", "", class))
+
+ranks = input$log2FoldChange
+names(ranks) = input$ID
+ranks = sort(ranks)
+
+LTRs = filter(input, class == 'LTR')$ID
+SINEs = filter(input, class == 'SINE')$ID
+Satellites = filter(input, class == 'Satellite')$ID
+
+pathways = list(LTRs, SINEs, Satellites)
+names(pathways) = c('LTRs', 'SINEs', 'Satellites')
+
+fgsea(pathways = pathways, stats = ranks)
+
+plotEnrichment(pathways[["LTRs"]],
+               ranks) + labs(title="LTRs")
