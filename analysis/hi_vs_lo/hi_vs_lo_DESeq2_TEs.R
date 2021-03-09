@@ -15,6 +15,8 @@ library(pheatmap)
 p_value_cutoff = 0.05
 log_fold_change_cutoff = 1
 
+print("Test git from rstudio")
+
 #################################################################
 # Differential expression with DESeq2
 #################################################################
