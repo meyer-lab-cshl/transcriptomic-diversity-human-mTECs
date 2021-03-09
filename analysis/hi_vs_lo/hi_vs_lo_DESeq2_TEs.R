@@ -319,4 +319,21 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
 ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_classbreakdown.png", 
        width = 20, height = 15, units = "cm")
 
-## Enrichment analysis?
+#################################################################
+# Enrichment
+#################################################################
+
+all = as.data.frame(count_table) %>%
+  filter(group == 'all')
+
+all_LTRs = all %>% filter(class == 'LTR')
+
+upregulated = as.data.frame(count_table) %>%
+  filter(group == 'upregulated')
+
+up_LTRs = upregulated %>% filter(class == 'LTR')
+
+N = sum(all$sum)
+k = all_LTRs$sum
+M = sum(upregulated$sum)
+n = up_LTRs$sum
