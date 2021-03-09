@@ -62,6 +62,9 @@ results_df = mutate(results_df, significant = case_when(padj < p_value_cutoff ~ 
 results_df = mutate(results_df, FC_significant = case_when(abs(log2FoldChange) > log_fold_change_cutoff ~ TRUE, 
                                                            abs(log2FoldChange) <= log_fold_change_cutoff ~ FALSE))
 
+results_df = mutate(results_df, overall_significant = case_when((significant == TRUE) & (FC_significant == TRUE) ~ TRUE, 
+                                                                (significant == FALSE) | (FC_significant == FALSE) ~ FALSE))
+
 results_df = mutate(results_df, abs_log2FoldChange = abs(log2FoldChange))
 
 sig_results_df = results_df[results_df$significant == TRUE,]
@@ -75,6 +78,8 @@ sigGenes = rownames(results_df[results_df$significant == TRUE,])
 sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGenes,]
 
 upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
+
+downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
 
 ## Export
 
@@ -146,8 +151,8 @@ save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/
 # Volcano
 #################################################################
 
-volcano_plot = ggplot(data = results_df, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
-  geom_point(alpha = 0.6, aes(colour = significant)) +
+volcano_plot = ggplot(data = results_df, aes(x = log2FoldChange, y = -log10(padj), colour = overall_significant)) +
+  geom_point(alpha = 0.6, aes(colour = overall_significant)) +
   xlab(expression('Log'[2]*' FC')) +
   ylab(expression('-Log'[10]*' P value')) +
   xlim(-3, 3) +
@@ -155,8 +160,8 @@ volcano_plot = ggplot(data = results_df, aes(x = log2FoldChange, y = -log10(padj
   scale_colour_manual(values = c('#9B9A99', "red")) +
   guides(colour = FALSE) +
   geom_label_repel(
-    data = subset(results_df, significant == TRUE),
-    aes(label = subset(results_df, significant == TRUE)$gene),
+    data = subset(results_df, overall_significant == TRUE),
+    aes(label = subset(results_df, overall_significant == TRUE)$family),
     size = 3.5, 
     box.padding = unit(0.9, 'lines'), 
     point.padding = unit(0.2, 'lines'),
@@ -192,15 +197,21 @@ build_count_table = function(group, mode){
       
     }
     
-    else if (i == 'differentially_regulated'){
+    if (i == 'diff_regulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
       
     }
     
-    else if (i == 'upregulated'){
+    if (i == 'upregulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% upGenes,]
+      
+    }
+    
+    if (i == 'downregulated'){
+      
+      input = normalized_counts[rownames(normalized_counts) %in% downGenes,]
       
     }
     
@@ -216,16 +227,55 @@ build_count_table = function(group, mode){
     
     if (mode == 'class'){
       
-      input_HI_class = group_by(input_HI, class) %>% summarize(sum = sum(mean))
-      input_HI_class = as.data.frame(input_HI_class)
-      input_HI_class$group = i
+      input_HI = group_by(input_HI, class) %>% summarize(sum = sum(mean))
+      input_HI = as.data.frame(input_HI)
+      input_HI$group = i
       
-      output = input_HI_class
+      if (match(i, group) == 1){
+        
+        output = input_HI
+        
+      }
+      
+      else{
+        
+        output = bind_rows(output, input_HI)
+        
+      }
+    
+    if (mode == 'LTR_family'){
+      
+      input_HI = input_HI %>% 
+        filter(class == 'LTR') %>%
+        group_by(family) %>% 
+        summarize(sum = sum(mean))
+      input_HI = as.data.frame(input_HI)
+      input_HI$group = i
+      
+      print(input_HI)
+      
+      if (match(i, group) == 1){
+        
+        output = input_HI
+        
+      }
+      
+      else{
+        
+        output = bind_rows(output, input_HI)
+        
+      }
+      
+    }  
       
     }
     
   }
-
+  
+  output = output %>%
+    group_by(group) %>%
+    mutate(percent_counts = sum / sum(sum) * 100)
+  
   return(output)
       
 }
@@ -237,72 +287,15 @@ normalized_counts_HI_LTR_family = normalized_counts_HI %>%
 normalized_counts_HI_LTR_family = as.data.frame(normalized_counts_HI_LTR_family)
 normalized_counts_HI_LTR_family$group = 'All'
 
-## Frequency of differentially expressed TEs in mTEC-HI cells
-
-normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
-sig_normalized_counts = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
-
-sig_normalized_counts_HI = select(sig_normalized_counts, c('214_HI', '221_HI', '226_HI'))
-sig_normalized_counts_HI$mean = rowMeans(sig_normalized_counts_HI)
-sig_normalized_counts_HI = select(sig_normalized_counts_HI, mean)
-
-sig_normalized_counts_HI = cbind(ID = rownames(sig_normalized_counts_HI), sig_normalized_counts_HI)
-sig_normalized_counts_HI = separate(data = sig_normalized_counts_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
-sig_normalized_counts_HI = cbind(ID = rownames(sig_normalized_counts_HI), sig_normalized_counts_HI)
-
-sig_normalized_counts_HI = mutate(sig_normalized_counts_HI, class = sub("\\?", "", class))
-
-sig_normalized_counts_HI_class = group_by(sig_normalized_counts_HI, class) %>% summarize(sum = sum(mean))
-sig_normalized_counts_HI_class = as.data.frame(sig_normalized_counts_HI_class)
-sig_normalized_counts_HI_class$group = 'Differentially regulated'
-
-sig_normalized_counts_HI_LTR_family = sig_normalized_counts_HI %>% 
-                                      filter(class == 'LTR') %>%
-                                      group_by(family) %>% 
-                                      summarize(sum = sum(mean))
-
-sig_normalized_counts_HI_LTR_family = as.data.frame(sig_normalized_counts_HI_LTR_family)
-sig_normalized_counts_HI_LTR_family$group = 'Differentially regulated'
-
-## Frequency of upregulated TEs in mTEC-HI cells
-
-normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
-up_normalized_counts = normalized_counts[rownames(normalized_counts) %in% upGenes,]
-
-up_normalized_counts_HI = select(up_normalized_counts, c('214_HI', '221_HI', '226_HI'))
-up_normalized_counts_HI$mean = rowMeans(up_normalized_counts_HI)
-up_normalized_counts_HI = select(up_normalized_counts_HI, mean)
-
-up_normalized_counts_HI = cbind(ID = rownames(up_normalized_counts_HI), up_normalized_counts_HI)
-up_normalized_counts_HI = separate(data = up_normalized_counts_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
-up_normalized_counts_HI = cbind(ID = rownames(up_normalized_counts_HI), up_normalized_counts_HI)
-
-up_normalized_counts_HI = mutate(up_normalized_counts_HI, class = sub("\\?", "", class))
-
-up_normalized_counts_HI_class = group_by(up_normalized_counts_HI, class) %>% summarize(sum = sum(mean))
-up_normalized_counts_HI_class = as.data.frame(up_normalized_counts_HI_class)
-up_normalized_counts_HI_class$group = 'Upregulated'
-
-up_normalized_counts_HI_LTR_family = up_normalized_counts_HI %>% 
-  filter(class == 'LTR') %>%
-  group_by(family) %>% 
-  summarize(sum = sum(mean))
-
-up_normalized_counts_HI_LTR_family = as.data.frame(up_normalized_counts_HI_LTR_family)
-up_normalized_counts_HI_LTR_family$group = 'Upregulated'
-
-## Append the dataframes
-
-class_frequencies = bind_rows(normalized_counts_HI_class, 
-                              sig_normalized_counts_HI_class, 
-                              up_normalized_counts_HI_class)
-LTR_family_frequencies = bind_rows(normalized_counts_HI_LTR_family, 
-                                   sig_normalized_counts_HI_LTR_family,
-                                   up_normalized_counts_HI_LTR_family)
 
 ## Plot stacked bars
 
-bar_chart = ggplot(class_frequencies, aes(x = group, y = sum, fill = class)) + 
+group = c('all', 'diff_regulated', 'upregulated', 'downregulated')
+mode = 'class'
+
+count_table = build_count_table(group, mode)
+
+bar_chart = ggplot(count_table, aes(x = group, y = percent_counts, fill = class)) + 
             geom_col(colour = 'black', position = 'fill') +
             scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
             scale_fill_brewer(palette = "Set1") +
@@ -315,7 +308,7 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                panel.grid.minor.x = element_blank(),
                                panel.grid.major.y = element_line(color = 'grey'),
                                panel.grid.minor.y = element_blank(),
-                               axis.text.x = element_text(size = 14),
+                               axis.text.x = element_text(size = 13),
                                axis.text.y = element_text(size = 14),
                                axis.title = element_text(size = 14),
                                axis.line = element_line(size = 0.8),
@@ -324,4 +317,6 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                legend.title = element_text(size = 14))
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_classbreakdown.png", 
-       width = 15, height = 15, units = "cm")
+       width = 20, height = 15, units = "cm")
+
+## Enrichment analysis?
