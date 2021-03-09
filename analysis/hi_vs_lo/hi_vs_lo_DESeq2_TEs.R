@@ -193,10 +193,7 @@ normalized_counts_HI_class = group_by(normalized_counts_HI, class) %>% summarize
 normalized_counts_HI_class = as.data.frame(normalized_counts_HI_class)
 
 ggplot(normalized_counts_HI_class, aes(x="", y=sum, fill=class)) + 
-  geom_bar(stat="identity", width=1, color = 'white') +
-  coord_polar("y", start=0) + theme_void()
-
-
+  geom_col(poisiton = 'fill')
 
 
 ######
