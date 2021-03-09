@@ -13,9 +13,7 @@ library(pheatmap)
 ## Set parameters
 
 p_value_cutoff = 0.05
-log_fold_change_cutoff = 1
-
-print("Test git from rstudio")
+log_fold_change_cutoff = 0.58
 
 #################################################################
 # Differential expression with DESeq2
@@ -59,20 +57,24 @@ results_df = cbind(ID = rownames(results_df), results_df)
 results_df = separate(data = results_df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
 results_df = cbind(ID = rownames(results_df), results_df)
 
-results_df = mutate(results_df, significant = case_when((padj < p_value_cutoff) & (abs(log2FoldChange) > log_fold_change_cutoff) ~ TRUE, 
-                                        (padj >= p_value_cutoff) | (abs(log2FoldChange) <= log_fold_change_cutoff) ~ FALSE))
+results_df = mutate(results_df, significant = case_when(padj < p_value_cutoff ~ TRUE, padj >= p_value_cutoff ~ FALSE))
+
+results_df = mutate(results_df, FC_significant = case_when(abs(log2FoldChange) > log_fold_change_cutoff ~ TRUE, 
+                                                           abs(log2FoldChange) <= log_fold_change_cutoff ~ FALSE))
 
 results_df = mutate(results_df, abs_log2FoldChange = abs(log2FoldChange))
 
 sig_results_df = results_df[results_df$significant == TRUE,]
 
-## Transform raw count data and convert to dataframe
+## Transform raw count data 
 
 vs_dds <- vst(dds, blind=FALSE)
 transformed_counts = as.data.frame(assay(vs_dds))
 
 sigGenes = rownames(results_df[results_df$significant == TRUE,])
-sig_transformed_counts = assay(vs_dds)[rownames(normalized_counts) %in% sigGenes,]
+sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGenes,]
+
+upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
 
 ## Export
 
@@ -175,7 +177,7 @@ ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_volcano_pl
        width = 20, height = 15, units = "cm")
 
 #################################################################
-# Pie chart
+# Stacked bar chart: class/family frequency
 #################################################################
 
 ## Frequency of all TEs in mTEC-HI cells
@@ -193,13 +195,20 @@ normalized_counts_HI = mutate(normalized_counts_HI, class = sub("\\?", "", class
 
 normalized_counts_HI_class = group_by(normalized_counts_HI, class) %>% summarize(sum = sum(mean))
 normalized_counts_HI_class = as.data.frame(normalized_counts_HI_class)
+normalized_counts_HI_class$group = 'All'
 
-ggplot(normalized_counts_HI_class, aes(x="", y=sum, fill=class)) + 
-  geom_col(poisiton = 'fill')
+normalized_counts_HI_LTR_family = normalized_counts_HI %>% 
+                                  filter(class == 'LTR') %>%
+                                  group_by(family) %>% 
+                                  summarize(sum = sum(mean))
+normalized_counts_HI_LTR_family = as.data.frame(normalized_counts_HI_LTR_family)
+normalized_counts_HI_LTR_family$group = 'All'
 
+## Frequency of differentially expressed TEs in mTEC-HI cells
 
-######
-sig_normalized_counts = as.data.frame(sig_normalized_counts)
+normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
+sig_normalized_counts = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
+
 sig_normalized_counts_HI = select(sig_normalized_counts, c('214_HI', '221_HI', '226_HI'))
 sig_normalized_counts_HI$mean = rowMeans(sig_normalized_counts_HI)
 sig_normalized_counts_HI = select(sig_normalized_counts_HI, mean)
@@ -208,17 +217,78 @@ sig_normalized_counts_HI = cbind(ID = rownames(sig_normalized_counts_HI), sig_no
 sig_normalized_counts_HI = separate(data = sig_normalized_counts_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
 sig_normalized_counts_HI = cbind(ID = rownames(sig_normalized_counts_HI), sig_normalized_counts_HI)
 
-sig_normalized_counts_HI = merge(sig_normalized_counts_HI, 
-                                 sig_results_df)
-
-sig_normalized_counts_HI = select(sig_normalized_counts_HI, c('gene', 'family', 'class', 'mean'))
+sig_normalized_counts_HI = mutate(sig_normalized_counts_HI, class = sub("\\?", "", class))
 
 sig_normalized_counts_HI_class = group_by(sig_normalized_counts_HI, class) %>% summarize(sum = sum(mean))
 sig_normalized_counts_HI_class = as.data.frame(sig_normalized_counts_HI_class)
+sig_normalized_counts_HI_class$group = 'Differentially regulated'
 
-ggplot(sig_normalized_counts_HI_class, aes(x="", y=sum, fill=class)) + 
-  geom_bar(stat="identity", width=1)
+sig_normalized_counts_HI_LTR_family = sig_normalized_counts_HI %>% 
+                                      filter(class == 'LTR') %>%
+                                      group_by(family) %>% 
+                                      summarize(sum = sum(mean))
 
+sig_normalized_counts_HI_LTR_family = as.data.frame(sig_normalized_counts_HI_LTR_family)
+sig_normalized_counts_HI_LTR_family$group = 'Differentially regulated'
 
+## Frequency of upregulated TEs in mTEC-HI cells
 
+normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
+up_normalized_counts = normalized_counts[rownames(normalized_counts) %in% upGenes,]
 
+up_normalized_counts_HI = select(up_normalized_counts, c('214_HI', '221_HI', '226_HI'))
+up_normalized_counts_HI$mean = rowMeans(up_normalized_counts_HI)
+up_normalized_counts_HI = select(up_normalized_counts_HI, mean)
+
+up_normalized_counts_HI = cbind(ID = rownames(up_normalized_counts_HI), up_normalized_counts_HI)
+up_normalized_counts_HI = separate(data = up_normalized_counts_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+up_normalized_counts_HI = cbind(ID = rownames(up_normalized_counts_HI), up_normalized_counts_HI)
+
+up_normalized_counts_HI = mutate(up_normalized_counts_HI, class = sub("\\?", "", class))
+
+up_normalized_counts_HI_class = group_by(up_normalized_counts_HI, class) %>% summarize(sum = sum(mean))
+up_normalized_counts_HI_class = as.data.frame(up_normalized_counts_HI_class)
+up_normalized_counts_HI_class$group = 'Upregulated'
+
+up_normalized_counts_HI_LTR_family = up_normalized_counts_HI %>% 
+  filter(class == 'LTR') %>%
+  group_by(family) %>% 
+  summarize(sum = sum(mean))
+
+up_normalized_counts_HI_LTR_family = as.data.frame(up_normalized_counts_HI_LTR_family)
+up_normalized_counts_HI_LTR_family$group = 'Upregulated'
+
+## Append the dataframes
+
+class_frequencies = bind_rows(normalized_counts_HI_class, 
+                              sig_normalized_counts_HI_class, 
+                              up_normalized_counts_HI_class)
+LTR_family_frequencies = bind_rows(normalized_counts_HI_LTR_family, 
+                                   sig_normalized_counts_HI_LTR_family,
+                                   up_normalized_counts_HI_LTR_family)
+
+## Plot stacked bars
+
+bar_chart = ggplot(class_frequencies, aes(x = group, y = sum, fill = class)) + 
+            geom_col(colour = 'black', position = 'fill') +
+            scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
+            scale_fill_brewer(palette = "Set1") +
+            xlab('') +
+            ylab('Fraction of normalized reads')
+
+bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                               plot.subtitle = element_text(size = 14),
+                               panel.grid.major.x = element_blank(),
+                               panel.grid.minor.x = element_blank(),
+                               panel.grid.major.y = element_line(color = 'grey'),
+                               panel.grid.minor.y = element_blank(),
+                               axis.text.x = element_text(size = 14),
+                               axis.text.y = element_text(size = 14),
+                               axis.title = element_text(size = 14),
+                               axis.line = element_line(size = 0.8),
+                               panel.border = element_blank(),
+                               legend.text = element_text(size = 12),
+                               legend.title = element_text(size = 14))
+
+ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_classbreakdown.png", 
+       width = 15, height = 15, units = "cm")
