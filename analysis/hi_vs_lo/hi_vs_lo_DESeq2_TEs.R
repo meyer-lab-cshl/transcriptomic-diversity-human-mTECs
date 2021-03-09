@@ -7,10 +7,10 @@ library(ggplot2)
 library(svglite)
 library(ggpubr)
 library(ggrepel)
-library(viridis)
+library(gridExtra)
 library(pheatmap)
 
-## Set paramets
+## Set parameters
 
 p_value_cutoff = 0.05
 log_fold_change_cutoff = 1
@@ -31,7 +31,7 @@ TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
 ## Filter count matrix to exclude non-expressed genes
 
 min_read = 1
-TE_data <- TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
+TE_data = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 
 ## Define sampleInfo
 
@@ -67,10 +67,10 @@ sig_results_df = results_df[results_df$significant == TRUE,]
 ## Transform raw count data and convert to dataframe
 
 vs_dds <- vst(dds, blind=FALSE)
-normalized_counts = as.data.frame(assay(vs_dds))
+transformed_counts = as.data.frame(assay(vs_dds))
 
 sigGenes = rownames(results_df[results_df$significant == TRUE,])
-sig_normalized_counts = assay(vs_dds)[rownames(normalized_counts) %in% sigGenes,]
+sig_transformed_counts = assay(vs_dds)[rownames(normalized_counts) %in% sigGenes,]
 
 ## Export
 
@@ -119,11 +119,11 @@ ggplot(sig_normalized_counts_long, aes(x = Var2, y = Var1, fill = value)) +
 ## Rows ordered by fold change w/out clustering
 
 select <- order(sig_results_df$abs_log2FoldChange, decreasing=TRUE)
-pheatmap(sig_normalized_counts[select,], cluster_rows=FALSE, show_rownames=TRUE, cluster_cols=FALSE)
+pheatmap(sig_transformed_counts[select,], cluster_rows=FALSE, show_rownames=TRUE, cluster_cols=FALSE)
 
 ## Rows clustered
 
-my_heatmap = pheatmap(sig_normalized_counts, 
+my_heatmap = pheatmap(sig_transformed_counts, 
                       cluster_rows=TRUE,
                       show_rownames=TRUE, 
                       cluster_cols=TRUE,
@@ -176,6 +176,30 @@ ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_volcano_pl
 # Pie chart
 #################################################################
 
+## Frequency of all TEs in mTEC-HI cells
+
+normalized_counts_HI = as.data.frame(counts(dds, normalized = TRUE)) %>%
+select(c('214_HI', '221_HI', '226_HI'))
+normalized_counts_HI$mean = rowMeans(normalized_counts_HI)
+normalized_counts_HI = select(normalized_counts_HI, mean)
+
+normalized_counts_HI = cbind(ID = rownames(normalized_counts_HI), normalized_counts_HI)
+normalized_counts_HI = separate(data = normalized_counts_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+normalized_counts_HI = cbind(ID = rownames(normalized_counts_HI), normalized_counts_HI)
+
+normalized_counts_HI = mutate(normalized_counts_HI, class = sub("\\?", "", class))
+
+normalized_counts_HI_class = group_by(normalized_counts_HI, class) %>% summarize(sum = sum(mean))
+normalized_counts_HI_class = as.data.frame(normalized_counts_HI_class)
+
+ggplot(normalized_counts_HI_class, aes(x="", y=sum, fill=class)) + 
+  geom_bar(stat="identity", width=1, color = 'white') +
+  coord_polar("y", start=0) + theme_void()
+
+
+
+
+######
 sig_normalized_counts = as.data.frame(sig_normalized_counts)
 sig_normalized_counts_HI = select(sig_normalized_counts, c('214_HI', '221_HI', '226_HI'))
 sig_normalized_counts_HI$mean = rowMeans(sig_normalized_counts_HI)
@@ -190,9 +214,12 @@ sig_normalized_counts_HI = merge(sig_normalized_counts_HI,
 
 sig_normalized_counts_HI = select(sig_normalized_counts_HI, c('gene', 'family', 'class', 'mean'))
 
-test = group_by(sig_normalized_counts_HI, class) %>% summarize(sum = sum(mean))
-test = as.data.frame(test)
+sig_normalized_counts_HI_class = group_by(sig_normalized_counts_HI, class) %>% summarize(sum = sum(mean))
+sig_normalized_counts_HI_class = as.data.frame(sig_normalized_counts_HI_class)
 
-ggplot(test, aes(x="", y=sum, fill=class)) + 
-  geom_bar(stat="identity", width=1, color = 'white') +
-  coord_polar("y", start=0) + theme_void()
+ggplot(sig_normalized_counts_HI_class, aes(x="", y=sum, fill=class)) + 
+  geom_bar(stat="identity", width=1)
+
+
+
+
