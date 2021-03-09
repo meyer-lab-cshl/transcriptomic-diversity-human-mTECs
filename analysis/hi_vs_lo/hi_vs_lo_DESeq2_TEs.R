@@ -180,22 +180,55 @@ ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_volcano_pl
 # Stacked bar chart: class/family frequency
 #################################################################
 
-## Frequency of all TEs in mTEC-HI cells
+build_count_table = function(group, mode){
+  
+  normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
+  
+  for (i in group){
+    
+    if (i == 'all'){
+      
+      input = normalized_counts
+      
+    }
+    
+    else if (i == 'differentially_regulated'){
+      
+      input = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
+      
+    }
+    
+    else if (i == 'upregulated'){
+      
+      input = normalized_counts[rownames(normalized_counts) %in% upGenes,]
+      
+    }
+    
+    input_HI = select(input, c('214_HI', '221_HI', '226_HI'))
+    input_HI$mean = rowMeans(input_HI)
+    input_HI = select(input_HI, mean)
+    
+    input_HI = cbind(ID = rownames(input_HI), input_HI)
+    input_HI = separate(data = input_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+    input_HI = cbind(ID = rownames(input_HI), input_HI)
+    
+    input_HI = mutate(input_HI, class = sub("\\?", "", class))
+    
+    if (mode == 'class'){
+      
+      input_HI_class = group_by(input_HI, class) %>% summarize(sum = sum(mean))
+      input_HI_class = as.data.frame(input_HI_class)
+      input_HI_class$group = i
+      
+      output = input_HI_class
+      
+    }
+    
+  }
 
-normalized_counts_HI = as.data.frame(counts(dds, normalized = TRUE)) %>%
-select(c('214_HI', '221_HI', '226_HI'))
-normalized_counts_HI$mean = rowMeans(normalized_counts_HI)
-normalized_counts_HI = select(normalized_counts_HI, mean)
-
-normalized_counts_HI = cbind(ID = rownames(normalized_counts_HI), normalized_counts_HI)
-normalized_counts_HI = separate(data = normalized_counts_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
-normalized_counts_HI = cbind(ID = rownames(normalized_counts_HI), normalized_counts_HI)
-
-normalized_counts_HI = mutate(normalized_counts_HI, class = sub("\\?", "", class))
-
-normalized_counts_HI_class = group_by(normalized_counts_HI, class) %>% summarize(sum = sum(mean))
-normalized_counts_HI_class = as.data.frame(normalized_counts_HI_class)
-normalized_counts_HI_class$group = 'All'
+  return(output)
+      
+}
 
 normalized_counts_HI_LTR_family = normalized_counts_HI %>% 
                                   filter(class == 'LTR') %>%
