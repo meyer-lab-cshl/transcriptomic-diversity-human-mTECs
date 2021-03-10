@@ -1,3 +1,6 @@
+library(dplyr)
+library(ggplot2)
+
 #################################################################
 # Stacked bar chart: class/family frequency
 #################################################################
@@ -161,7 +164,7 @@ calculate_enrichment_factor = function(group_query, class_query){
 
   p = dhyper(x = c(0:n), m = k, n = (N-k), k = M)
   
-  return(p)
+  return(enrichment)
   
 }
 
@@ -178,18 +181,44 @@ input = results_df
 input = mutate(input, ID = sub("\\?", "", ID))
 input = mutate(input, class = sub("\\?", "", class))
 
-ranks = input$log2FoldChange
+input = mutate(input, ranking_value = sign(log2FoldChange) * -log10(padj))
+
+ranks = input$ranking_value
 names(ranks) = input$ID
 ranks = sort(ranks)
 
 LTRs = filter(input, class == 'LTR')$ID
 SINEs = filter(input, class == 'SINE')$ID
 Satellites = filter(input, class == 'Satellite')$ID
+DNA = filter(input, class == 'DNA')$ID
+LINEs = filter(input, class == 'LINE')$ID
+retroposons = filter(input, class == 'Retroposon')$ID
 
-pathways = list(LTRs, SINEs, Satellites)
-names(pathways) = c('LTRs', 'SINEs', 'Satellites')
+pathways = list(LTRs, SINEs, Satellites, DNA, LINEs, retroposons)
+names(pathways) = c('LTRs', 'SINEs', 'Satellites', 'DNA', 'LINEs', 'Retroposons')
 
-fgsea(pathways = pathways, stats = ranks)
+fgseaRes = fgsea(pathways = pathways, stats = ranks)
 
 plotEnrichment(pathways[["LTRs"]],
                ranks) + labs(title="LTRs")
+
+plotGseaTable(pathway, 
+              ranks, 
+              fgseaRes)
+
+
+#################################################################
+# Gene set enrichment with 'fgsea' (by family)
+#################################################################
+
+library(fgsea)
+
+ERV1 = filter(input, family == 'ERV1')$ID
+
+pathways = list(ERV1)
+names(pathways) = c('ERV1')
+
+fgseaRes = fgsea(pathways = pathways, stats = ranks)
+
+plotEnrichment(pathways[["ERV1"]],
+               ranks) + labs(title="ERV1")
