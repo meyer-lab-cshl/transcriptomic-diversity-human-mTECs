@@ -2,6 +2,15 @@
 # Differential expression with DESeq2
 #################################################################
 
+library(dplyr)
+library(readr)
+library(tidyr)
+library(DESeq2)
+library(reshape2)
+library(svglite)
+library(gridExtra)
+library(pheatmap)
+
 ## Set parameters
 
 p_value_cutoff = 0.05
