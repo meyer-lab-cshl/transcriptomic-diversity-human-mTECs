@@ -8,7 +8,7 @@
 
 cd $TE_HOME/data
 
-TEcount \
+TElocal \
 -b pt214_hi_fastp_1.fastq_Aligned.out.bam \
 --GTF $TE_HOME/index/human.GRCh38.gtf \
 --TE $TE_HOME/index/hg38_rmsk_TE.gtf.locInd \
