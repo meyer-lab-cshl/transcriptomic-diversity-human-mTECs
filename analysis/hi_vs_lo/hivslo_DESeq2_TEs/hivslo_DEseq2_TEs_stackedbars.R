@@ -1,4 +1,5 @@
 library(ggplot2)
+library(DESeq2)
 
 #################################################################
 # Stacked bar chart: class/family frequency
@@ -16,19 +17,19 @@ build_count_table = function(group, mode){
       
     }
     
-    if (i == 'diff_regulated'){
+    else if (i == 'diff_regulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
       
     }
     
-    if (i == 'upregulated'){
+    else if (i == 'upregulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% upGenes,]
       
     }
     
-    if (i == 'downregulated'){
+    else if (i == 'downregulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% downGenes,]
       
@@ -95,7 +96,7 @@ build_count_table = function(group, mode){
     group_by(group) %>%
     mutate(percent_counts = sum / sum(sum) * 100)
   
-  return(output)
+  return(input_HI)
   
 }
 
@@ -109,7 +110,7 @@ normalized_counts_HI_LTR_family$group = 'All'
 
 ## Plot stacked bars
 
-group = c('all', 'diff_regulated', 'upregulated', 'downregulated')
+group = c('all', 'upregulated')
 mode = 'class'
 
 count_table = build_count_table(group, mode)

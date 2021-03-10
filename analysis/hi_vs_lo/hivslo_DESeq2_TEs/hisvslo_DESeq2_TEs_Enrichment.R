@@ -1,5 +1,7 @@
+library(ggplot2)
 library(plyr)
 library(dplyr)
+library(glue)
 
 #################################################################
 # Enrichment 
@@ -69,12 +71,42 @@ pathways = compact(pathways)
 
 fgseaRes = fgsea(pathways = pathways, stats = ranks)
 
-filter(fgseaRes, padj < 0.05)
+## Plot
 
-enrichment_plot = plotEnrichment(pathways[["ERV1"]], ranks) +
-  ggtitle('ERV1') +
+enrichment_plot = function(query_pathway){
+  
+  p_value = filter(fgseaRes, pathway == query_pathway)[, padj]
+  p_value = signif(p_value, digits = 3)
+  
+  NES = filter(fgseaRes, pathway == query_pathway)[, NES]
+  NES = signif(NES, digits = 3)
+  
+  enrichment_plot = plotEnrichment(pathways[[query_pathway]], ranks) +
+    ggtitle(query_pathway) +
+    xlab('Rank (by p-value)') +
+    ylab('Enrichment score') +
+    annotate('label', x = Inf, y = Inf, vjust = 3, hjust = 1.3,
+             label = glue('Adjusted p-value: {p_value}'))
+  
+  return(enrichment_plot + 
+    theme_bw() + 
+    theme(plot.title = element_text(face = 'bold', size = 20),
+          panel.border = element_blank(), 
+          axis.text.x = element_text(size = 14),
+          axis.text.y = element_text(size = 14),
+          axis.line = element_line(size = 0.8),
+          axis.title = element_text(size = 14)))
+  
+}
+
+enrichment_plot('Satellite')
+
+
+enrichment_plot = plotEnrichment(pathways[["Satellite"]], ranks) +
+  ggtitle('Satellite') +
   xlab('Rank (by p-value)') +
   ylab('Enrichment score') +
+  annotate('label', x = 900, y = 0.75, label = 'p-value')
 
 enrichment_plot + 
   theme_bw() + 
@@ -85,5 +117,5 @@ enrichment_plot +
         axis.line = element_line(size = 0.8),
         axis.title = element_text(size = 14)) 
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_ERV1enrichment.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_Satelliteenrichment.png", 
        width = 20, height = 15, units = "cm")
