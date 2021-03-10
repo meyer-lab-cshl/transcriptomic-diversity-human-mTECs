@@ -1,5 +1,7 @@
 library(ggplot2)
 library(DESeq2)
+library(dplyr)
+library(tidyr)
 
 #################################################################
 # Stacked bar chart: class/family frequency
@@ -17,19 +19,19 @@ build_count_table = function(group, mode){
       
     }
     
-    else if (i == 'diff_regulated'){
+    if (i == 'diff_regulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
       
     }
     
-    else if (i == 'upregulated'){
+    if (i == 'upregulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% upGenes,]
       
     }
     
-    else if (i == 'downregulated'){
+    if (i == 'downregulated'){
       
       input = normalized_counts[rownames(normalized_counts) %in% downGenes,]
       
@@ -62,32 +64,32 @@ build_count_table = function(group, mode){
         output = bind_rows(output, input_HI)
         
       }
+    
+    }
       
-      if (mode == 'LTR_family'){
+    if (mode == 'LTR_family'){
         
-        input_HI = input_HI %>% 
-          filter(class == 'LTR') %>%
-          group_by(family) %>% 
-          summarize(sum = sum(mean))
-        input_HI = as.data.frame(input_HI)
-        input_HI$group = i
+      input_HI = input_HI %>% 
+        filter(class == 'LTR') %>%
+        group_by(family) %>% 
+        summarize(sum = sum(mean))
+      input_HI = as.data.frame(input_HI)
+      input_HI$group = i
         
-        print(input_HI)
+      print(input_HI)
         
-        if (match(i, group) == 1){
+      if (match(i, group) == 1){
           
-          output = input_HI
+        output = input_HI
           
-        }
+      }
         
-        else{
+      else{
           
-          output = bind_rows(output, input_HI)
+        output = bind_rows(output, input_HI)
           
-        }
+      }
         
-      }  
-      
     }
     
   }
@@ -96,9 +98,10 @@ build_count_table = function(group, mode){
     group_by(group) %>%
     mutate(percent_counts = sum / sum(sum) * 100)
   
-  return(input_HI)
+  return(output)
   
 }
+
 
 normalized_counts_HI_LTR_family = normalized_counts_HI %>% 
   filter(class == 'LTR') %>%
@@ -120,7 +123,8 @@ bar_chart = ggplot(count_table, aes(x = group, y = percent_counts, fill = class)
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
   scale_fill_brewer(palette = "Set1") +
   xlab('') +
-  ylab('Fraction of normalized reads')
+  ylab('Fraction of normalized reads') +
+  ggtitle('All TE classes')
 
 bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                plot.subtitle = element_text(size = 14),
@@ -137,4 +141,4 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                legend.title = element_text(size = 14))
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_classbreakdown.png", 
-       width = 20, height = 15, units = "cm")
+       width = 15, height = 15, units = "cm")
