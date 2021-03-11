@@ -74,7 +74,7 @@ enrichment_plot = function(query_pathway){
 
 enrichment_plot('Satellite')
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_ERV1enrichment.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_Satelliteenrichment.png", 
        width = 20, height = 15, units = "cm")
 
 #################################################################
