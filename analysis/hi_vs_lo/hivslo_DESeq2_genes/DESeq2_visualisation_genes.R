@@ -35,7 +35,7 @@ EnhancedVolcano(df,
                 title = 'mTEC-lo vs mTEC-hi gene expression',
                 pCutoff = 0.05)
 
-ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
+ggplot(data = df, aes(x = log2FoldChange, y = -log10(padj), colour = overall_significant)) +
   geom_point(alpha = 0.6) +
   geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
   geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
