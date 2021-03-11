@@ -60,3 +60,13 @@ GENCODE_annotation_subset = select(GENCODE_annotation, -c(Start, End, Strand, Le
 
 df = cbind(Geneid = rownames(df), df)
 df = merge(df, GENCODE_annotation_subset, by = 'Geneid')
+
+## Add p value annotation
+
+df = mutate(df, significant = case_when(padj < p_value_cutoff ~ TRUE, padj >= p_value_cutoff ~ FALSE))
+
+df = mutate(df, FC_significant = case_when(abs(log2FoldChange) > log_fold_change_cutoff ~ TRUE, 
+                                                           abs(log2FoldChange) <= log_fold_change_cutoff ~ FALSE))
+
+df = mutate(df, overall_significant = case_when((significant == TRUE) & (FC_significant == TRUE) ~ TRUE, 
+                                                                (significant == FALSE) | (FC_significant == FALSE) ~ FALSE))
