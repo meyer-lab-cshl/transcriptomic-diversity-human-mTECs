@@ -35,6 +35,7 @@ TE_data = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 ID = colnames(TE_data)
 sampleInfo = data.frame(ID,row.names=colnames(TE_data))
 sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
+sampleInfo$patient = factor(sampleInfo$patient)
 
 ## Construct DESeq dataset object
 

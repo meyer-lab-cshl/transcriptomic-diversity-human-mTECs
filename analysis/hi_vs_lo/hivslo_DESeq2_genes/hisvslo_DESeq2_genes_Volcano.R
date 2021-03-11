@@ -2,16 +2,25 @@
 # Volcano
 #################################################################
 
-input = df2
+input = filter(df, Class == 'protein_coding')
 
 ## Coloured by significance (statistical and biological)
+
+gene_list = 'AIRE'
 
 volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = overall_significant)) +
   geom_point(alpha = 0.6, aes(colour = overall_significant)) +
   xlab(expression('Log'[2]*' FC')) +
   ylab(expression('-Log'[10]*' P value')) +
   ggtitle('mTEC-hi vs mTEC-lo', 'Protein-coding gene expression') +
-  scale_colour_manual(values = c('#9B9A99', "red"))
+  scale_colour_manual(values = c('#9B9A99', "red")) +
+  geom_label_repel(
+    data = subset(input, GeneSymbol == gene_list),
+    aes(label = subset(input, GeneSymbol == gene_list)$GeneSymbol),
+    size = 3.5, 
+    box.padding = unit(0.9, 'lines'), 
+    point.padding = unit(0.2, 'lines'),
+    max.overlaps = 20)
 
 #xlim(-3, 3) +
 #geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
