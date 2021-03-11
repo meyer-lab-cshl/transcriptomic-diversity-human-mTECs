@@ -1,11 +1,29 @@
+#################################################################
+# Differential expression with DESeq2
+#################################################################
+
 library(dplyr)
 library(readr)
 library(tidyr)
 library(DESeq2)
+library(reshape2)
+library(svglite)
+library(gridExtra)
+library(pheatmap)
+
+## Set parameters
+
+p_value_cutoff = 0.05
+log_fold_change_cutoff = 0.58
 
 ## Import count matrix
 
-data = read.table("hi_vs_lo.cntTable",header=T,row.names=1)
+setwd("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo")
+data = read.table("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/hi_vs_lo.cntTable",header=T,row.names=1)
+colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
+
+## Subset into gene count matrix 'gene_data'
+
 gene_data = data[grep("^ENSG",rownames(data)),]
 
 ## Filter count matrix to exclude non-expressed genes
@@ -22,7 +40,7 @@ sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient',
 ## Construct DESeq dataset object
 
 dds <- DESeqDataSetFromMatrix(countData = gene_data, colData = sampleInfo, design = ~patient + group)
-dds$group = relevel(dds$group,ref="lo")
+dds$group = relevel(dds$group,ref="LO")
 
 ## Run differential expression analysis
 
@@ -42,12 +60,3 @@ GENCODE_annotation_subset = select(GENCODE_annotation, -c(Start, End, Strand, Le
 
 df = cbind(Geneid = rownames(df), df)
 df = merge(df, GENCODE_annotation_subset, by = 'Geneid')
-
-df = mutate(df, significant = case_when((padj < 0.05) & (abs(log2FoldChange) > 1) ~ TRUE, 
-                                        (padj >= 0.05) | (abs(log2FoldChange) <= 1) ~ FALSE))
-
-## Export
-
-#write.table(res, file="hi_vs_lo_gene_TE_analysis.txt", sep="\t",quote=F)
-#resSig <- res[(!is.na(res$padj) & (res$padj < 0.050000) &         (abs(res$log2FoldChange)> 0.000000)), ]
-#write.table(resSig, file="hi_vs_lo_sigdiff_gene_TE.txt",sep="\t", quote=F)
