@@ -36,6 +36,7 @@ gene_data <- gene_data[apply(gene_data,1,function(x){max(x)}) > min_read,]
 ID = colnames(gene_data)
 sampleInfo = data.frame(ID,row.names=colnames(gene_data))
 sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
+sampleInfo$patient = factor(sampleInfo$patient)
 
 ## Construct DESeq dataset object
 
