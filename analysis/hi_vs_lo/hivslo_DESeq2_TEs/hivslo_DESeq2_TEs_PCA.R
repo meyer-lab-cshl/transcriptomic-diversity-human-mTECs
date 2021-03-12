@@ -4,7 +4,8 @@
 
 PCA = plotPCA(vs_dds, intgroup = 'group') + 
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression PCA') +
-  geom_text(aes(label = colnames(vs_dds)), nudge_x = 0.5, nudge_y = 0.2)
+  geom_text(aes(label = colnames(vs_dds)), nudge_x = 0.5, nudge_y = 0.2) +
+  scale_colour_manual(values = c('#e41a1c', "#377eb8"))
 
 PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                          plot.subtitle = element_text(size = 14),
