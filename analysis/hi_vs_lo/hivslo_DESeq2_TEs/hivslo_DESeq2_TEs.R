@@ -11,6 +11,8 @@ library(svglite)
 library(gridExtra)
 library(pheatmap)
 
+setwd("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo")
+
 ## Set parameters
 
 p_value_cutoff = 0.05
@@ -45,7 +47,7 @@ dds$group = relevel(dds$group,ref="LO")
 ## Run differential expression analysis
 
 dds <- DESeq(dds)
-res <- results(dds,independentFiltering=F)
+res <- results(dds,independentFiltering=T)
 
 ## Convert results to dataframe and add signficance label
 
