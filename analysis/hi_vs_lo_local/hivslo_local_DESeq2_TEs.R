@@ -45,4 +45,32 @@ dds$group = relevel(dds$group,ref="LO")
 dds <- DESeq(dds)
 res <- results(dds,independentFiltering=F)
 
+## Convert results to dataframe and add signficance label
+
 results_df = as.data.frame(res)
+
+results_df = cbind(ID = rownames(results_df), results_df)
+results_df = separate(data = results_df, col = 'ID', into = c('repeat', 'gene', 'family', 'class'), sep = ':')
+results_df = cbind(ID = rownames(results_df), results_df)
+
+results_df = mutate(results_df, significant = case_when(padj < p_value_cutoff ~ TRUE, padj >= p_value_cutoff ~ FALSE))
+
+results_df = mutate(results_df, FC_significant = case_when(abs(log2FoldChange) > log_fold_change_cutoff ~ TRUE, 
+                                                           abs(log2FoldChange) <= log_fold_change_cutoff ~ FALSE))
+
+results_df = mutate(results_df, overall_significant = case_when((significant == TRUE) & (FC_significant == TRUE) ~ TRUE, 
+                                                                (significant == FALSE) | (FC_significant == FALSE) ~ FALSE))
+
+sig_results_df = results_df[results_df$significant == TRUE,]
+
+## Transform raw count data 
+
+vs_dds <- vst(dds, blind=FALSE)
+transformed_counts = as.data.frame(assay(vs_dds))
+
+sigGenes = rownames(results_df[results_df$significant == TRUE,])
+sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGenes,]
+
+upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
+
+downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
