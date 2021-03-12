@@ -45,7 +45,7 @@ min_read = 1
 data_transcripts = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 
 #################################################################
-# Count table produced by TE_transcipts
+# Differential expression analysis
 #################################################################
 
 differential_expression = function(count_table, p_value_cutoff = 0.05, log_fold_change_cutoff = 0.58){
