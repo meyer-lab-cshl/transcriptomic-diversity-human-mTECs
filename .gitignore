@@ -2,4 +2,6 @@ data/
 index/
 software/TElocal-master
 analysis/hi_vs_lo_local/count_table/
+.DS*
+.R*
 *_output.txt
