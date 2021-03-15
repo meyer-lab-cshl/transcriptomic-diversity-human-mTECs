@@ -5,7 +5,7 @@ library(ggrepel)
 # Volcano
 #################################################################
 
-input = results_df
+input = results_df_local
 
 input = mutate(input, ID = sub("\\?", "", ID))
 input = mutate(input, class = sub("\\?", "", class))
@@ -40,6 +40,17 @@ volcano_plot = ggplot() +
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression')
 
 #  scale_colour_manual(values = c('#e41a1c', "#377eb8", "#4daf4a", "#984ea3"))
+
+## Colored by differentially regulated in TE_transcripts
+
+sigGenes = results_df_transcripts[results_df_transcripts$overall_significant == TRUE,]$gene
+
+volcano_plot = ggplot() +
+  geom_point(data = input, aes(x = log2FoldChange, y = -log10(padj)), color = alpha('#9B9A99', 0.6)) +
+  geom_point(data = filter(input, gene %in% sigGenes), aes(x = log2FoldChange, y = -log10(padj)), color = 'red') +
+  xlab(expression('Log'[2]*' FC')) +
+  ylab(expression('-Log'[10]*' P value')) +
+  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression')
 
 ## Plot
 
