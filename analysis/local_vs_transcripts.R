@@ -1,5 +1,92 @@
+library(DESeq2)
+library(dplyr)
+library(tidyr)
+
+#################################################################
+# Functions
+#################################################################
+
+## Differential expression
+
+differential_expression = function(count_table){
+  
+  ## Define sampleInfo
+  
+  ID = colnames(count_table)
+  sampleInfo = data.frame(ID,row.names=colnames(count_table))
+  sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
+  sampleInfo$patient = factor(sampleInfo$patient)
+  
+  ## Construct DESeq dataset object
+  
+  dds <- DESeqDataSetFromMatrix(countData = count_table, colData = sampleInfo, design = ~patient + group)
+  dds$group = relevel(dds$group,ref="LO")
+  
+  ## Run differential expression analysis
+  
+  dds = DESeq(dds)
+  res = results(dds,independentFiltering=F)
+  
+  return(dds)
+  
+}
+
+## Process results
+
+process_DESeq2_results = function(results,
+                                  mode,
+                                  p_value_cutoff = 0.05, 
+                                  log_fold_change_cutoff = 0.58){
+  
+  ## Add statistical and biological significance labels
+  
+  results_df = as.data.frame(results)
+  
+  results_df = mutate(results_df, significant = case_when(padj < p_value_cutoff ~ TRUE, padj >= p_value_cutoff ~ FALSE))
+  
+  results_df = mutate(results_df, FC_significant = case_when(abs(log2FoldChange) > log_fold_change_cutoff ~ TRUE, 
+                                                             abs(log2FoldChange) <= log_fold_change_cutoff ~ FALSE))
+  
+  results_df = mutate(results_df, overall_significant = case_when((significant == TRUE) & (FC_significant == TRUE) ~ TRUE, 
+                                                                  (significant == FALSE) | (FC_significant == FALSE) ~ FALSE))
+  
+  ## Add separate ID columns
+  
+  results_df = cbind(ID = rownames(results_df), results_df)
+  
+  if (mode == 'TE_transcripts'){
+    
+    results_df = separate(data = results_df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+    
+  }
+  
+  if (mode == 'TE_local'){
+    
+    results_df = separate(data = results_df, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
+    
+  }
+  
+  results_df = cbind(ID = rownames(results_df), results_df)
+  
+  return(results_df)
+  
+}
+
 #################################################################
 # Count table produced by TE_local
+#################################################################
+
+data = read.table("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo_local/count_table/TE_local_hi_vs_lo.cntTable",
+                  header=T,row.names=1)
+colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
+
+TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
+
+min_read = 1
+data_local = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
+
+#################################################################
+# Count table produced by TE_local (without locus information)
 #################################################################
 
 data = read.table("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo_local/count_table/TE_local_hi_vs_lo.cntTable",
@@ -48,70 +135,35 @@ data_transcripts = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 # Differential expression analysis
 #################################################################
 
-differential_expression = function(count_table, p_value_cutoff = 0.05, log_fold_change_cutoff = 0.58){
-  
-  ## Define sampleInfo
-  
-  ID = colnames(count_table)
-  sampleInfo = data.frame(ID,row.names=colnames(count_table))
-  sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
-  sampleInfo$patient = factor(sampleInfo$patient)
-  
-  ## Construct DESeq dataset object
-  
-  dds <- DESeqDataSetFromMatrix(countData = count_table, colData = sampleInfo, design = ~patient + group)
-  dds$group = relevel(dds$group,ref="LO")
-  
-  ## Run differential expression analysis
-  
-  dds <- DESeq(dds)
-  res <- results(dds,independentFiltering=T)
-  
-  ## Convert results to dataframe and add signficance label
-  
-  results_df = as.data.frame(res)
-  
-  results_df = cbind(ID = rownames(results_df), results_df)
-  results_df = separate(data = results_df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
-  results_df = cbind(ID = rownames(results_df), results_df)
-  
-  results_df = mutate(results_df, significant = case_when(padj < p_value_cutoff ~ TRUE, padj >= p_value_cutoff ~ FALSE))
-  
-  results_df = mutate(results_df, FC_significant = case_when(abs(log2FoldChange) > log_fold_change_cutoff ~ TRUE, 
-                                                             abs(log2FoldChange) <= log_fold_change_cutoff ~ FALSE))
-  
-  results_df = mutate(results_df, overall_significant = case_when((significant == TRUE) & (FC_significant == TRUE) ~ TRUE, 
-                                                                  (significant == FALSE) | (FC_significant == FALSE) ~ FALSE))
-  
-  results_df = mutate(results_df, abs_log2FoldChange = abs(log2FoldChange))
-  
-  sig_results_df = results_df[results_df$significant == TRUE,]
-  
-  ## Transform raw count data 
-  
-  vs_dds <- vst(dds, blind=FALSE)
-  transformed_counts = as.data.frame(assay(vs_dds))
-  
-  sigGenes = rownames(results_df[results_df$significant == TRUE,])
-  sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGenes,]
-  
-  upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
-  
-  downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
-  
-  return(dds)
-  
-}
+dds_local = differential_expression(data_local)
+res_local = results(dds_local, independentFiltering = F)
 
-dds = differential_expression(data_local)
-
-x = differential_expression(data_transcripts)
-combined_results_df = merge(x, y, by = 'ID')
+dds_transcripts = differential_expression(data_transcripts)
+res_transcripts = results(dds_transcripts, independentFiltering = F)
 
 #################################################################
-# Plot
+# Processing
 #################################################################
 
-ggplot(data = combined_results_df, aes(x = log2FoldChange.x, y = log2FoldChange.y)) +
-  geom_point() +
-  geom_line(x = y)
+results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local')
+results_df_transcripts = process_DESeq2_results(results = res_transcripts, mode = 'TE_transcripts')
+
+##
+
+
+
+
+
+
+
+## Transform raw count data 
+
+vs_dds <- vst(dds, blind=FALSE)
+transformed_counts = as.data.frame(assay(vs_dds))
+
+sigGenes = rownames(results_df[results_df$significant == TRUE,])
+sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGenes,]
+
+upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
+
+downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
