@@ -67,17 +67,36 @@ process_DESeq2_results = function(results,
   
   results_df = cbind(ID = rownames(results_df), results_df)
   
-  ## Add range annotation
-  
-  
-  
   return(results_df)
   
 }
 
+## Make a GRanges object
+
+make_GRanges = function(annotation, results_df){
+  
+  library(GenomicRanges)
+  library(dplyr)
+  library(tidyr)
+  
+  TE_annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
+  TE_annotation = separate(TE_annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':')
+  TE_annotation = separate(TE_annotation, start.stop, into = c('start', 'end'), sep = '-')
+  TE_annotation = rename(TE_annotation, locus = TE)
+  
+  df = merge(results_df_local, TE_annotation, by = 'locus')
+  
+  output = makeGRangesFromDataFrame(df, keep.extra.columns = T)
+  
+  return(output)
+  
+}
+
 #################################################################
-# Count table produced by TE_local
+# TE_local TEs
 #################################################################
+
+## Make count table
 
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
                   header=T,row.names=1)
@@ -88,8 +107,47 @@ TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
 min_read = 1
 data_local = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 
+# Run differential expression
+
+dds_local = differential_expression(data_local)
+res_local = results(dds_local,independentFiltering = F)
+results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local')
+
+# GRanges
+
+annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
+results = results_df_local
+GRanges_TE = make_GRanges(annotation, results)
+
 #################################################################
-# Count table produced by TE_local (without locus information)
+# TE_local genes
+#################################################################
+
+## Make count table
+
+data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
+                  header=T,row.names=1)
+colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
+
+gene_data = data[grep("^ENSG",rownames(data)),]
+
+min_read = 1
+data_local = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
+
+# Run differential expression
+
+dds_local = differential_expression(data_local)
+res_local = results(dds_local,independentFiltering = F)
+results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local')
+
+# GRanges
+
+annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
+results = results_df_local
+GRanges_TE = make_GRanges(annotation, results)
+
+#################################################################
+# TE_local (without locus information)
 #################################################################
 
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
@@ -123,8 +181,10 @@ row.names(data_local) = data_local$ID
 data_local = select(data_local, -ID)
 
 #################################################################
-# Count table produced by TE_transcipts
+# TE_transcipts
 #################################################################
+
+## Make count table
 
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
@@ -134,23 +194,15 @@ TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
 min_read = 1
 data_transcripts = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 
-#################################################################
-# TE_local
-#################################################################
-
-dds_local = differential_expression(data_local)
-res_local = results(dds_local,independentFiltering = F)
-results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local')
-
-#################################################################
-# TE_transcripts
-#################################################################
+# Run differential expression
 
 dds_transcripts = differential_expression(data_transcripts)
 res_transcripts = results(dds_transcripts,independentFiltering = F)
 results_df_transcripts = process_DESeq2_results(results = res_transcripts, mode = 'TE_transcripts')
 
-##
+#################################################################
+# Misc stuff I'm hoarding in case it's important
+#################################################################
 
 sigGenes_transcripts = results_df_transcripts[results_df_transcripts$significant == TRUE,]$gene
 
