@@ -30,6 +30,23 @@ differential_expression = function(count_table){
   
 }
 
+## Split into gene and TE
+
+extract_genes = function(results_df){
+  
+  output = results_df[grep("^ENSG",rownames(results_df)),]
+  
+  return(output)
+  
+}
+
+extract_TEs = function(results_df){
+  
+  output = results_df[grepl("^(?!ENSG).*$",rownames(results_df), perl = TRUE),]
+  return(output)
+  
+}
+
 ## Process results
 
 process_DESeq2_results = function(results,
@@ -73,18 +90,32 @@ process_DESeq2_results = function(results,
 
 ## Make a GRanges object
 
-make_GRanges = function(annotation, results_df){
+make_GRanges = function(mode, results_df){
   
   library(GenomicRanges)
   library(dplyr)
   library(tidyr)
   
-  TE_annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
-  TE_annotation = separate(TE_annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':')
-  TE_annotation = separate(TE_annotation, start.stop, into = c('start', 'end'), sep = '-')
-  TE_annotation = rename(TE_annotation, locus = TE)
+  if (mode == 'TE'){
+    
+    annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
+    annotation = separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':')
+    annotation = separate(annotation, start.stop, into = c('start', 'end'), sep = '-')
+    annotation = rename(annotation, locus = TE)
+    
+    df = merge(results_df, TE_annotation, by = 'locus')
+    
+  }
   
-  df = merge(results_df_local, TE_annotation, by = 'locus')
+  if (mode == 'gene'){
+    
+    annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/gencode.v38_gene_annotation_table.txt', header = 1)
+    annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand'))
+    annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
+    
+    df = merge(results_df, TE_annotation, by = 'Geneid')
+    
+  }
   
   output = makeGRangesFromDataFrame(df, keep.extra.columns = T)
   
@@ -93,7 +124,7 @@ make_GRanges = function(annotation, results_df){
 }
 
 #################################################################
-# TE_local TEs
+# TE_local
 #################################################################
 
 ## Make count table
@@ -102,49 +133,26 @@ data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs
                   header=T,row.names=1)
 colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
 
-TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
-
 min_read = 1
-data_local = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
+data = data[apply(data,1,function(x){max(x)}) > min_read,]
 
 # Run differential expression
 
-dds_local = differential_expression(data_local)
-res_local = results(dds_local,independentFiltering = F)
-results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local')
+dds_local = differential_expression(data)
+results_local = results(dds_local, independentFiltering = F)
+
+results_local_gene = extract_genes(results_local)
+results_local_TE = extract_TEs(results_local)
+
+results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
 
 # GRanges
 
-annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
-results = results_df_local
-GRanges_TE = make_GRanges(annotation, results)
+GRanges_TE = make_GRanges(mode = 'TE',
+                          results_df = results_df_local_TE)
 
-#################################################################
-# TE_local genes
-#################################################################
-
-## Make count table
-
-data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
-                  header=T,row.names=1)
-colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
-
-gene_data = data[grep("^ENSG",rownames(data)),]
-
-min_read = 1
-data_local = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
-
-# Run differential expression
-
-dds_local = differential_expression(data_local)
-res_local = results(dds_local,independentFiltering = F)
-results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local')
-
-# GRanges
-
-annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
-results = results_df_local
-GRanges_TE = make_GRanges(annotation, results)
+GRanges_gene = make_GRanges(mode = 'gene',
+                           results_df = results_df_local_gene)
 
 #################################################################
 # TE_local (without locus information)
