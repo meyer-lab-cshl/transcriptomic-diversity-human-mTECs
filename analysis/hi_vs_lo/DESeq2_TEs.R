@@ -75,7 +75,7 @@ process_DESeq2_results = function(results,
 # Count table produced by TE_local
 #################################################################
 
-data = read.table("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo_local/count_table/TE_local_hi_vs_lo.cntTable",
+data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
                   header=T,row.names=1)
 colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
 
@@ -88,7 +88,7 @@ data_local = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 # Count table produced by TE_local (without locus information)
 #################################################################
 
-data = read.table("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo_local/count_table/TE_local_hi_vs_lo.cntTable",
+data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
                   header=T,row.names=1)
 colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
 
@@ -122,7 +122,7 @@ data_local = select(data_local, -ID)
 # Count table produced by TE_transcipts
 #################################################################
 
-data = read.table("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/hi_vs_lo.cntTable",header=T,row.names=1)
+data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
 
 TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
@@ -142,7 +142,7 @@ results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local'
 # TE_transcripts
 #################################################################
 
-dds_transcritps = differential_expression(data_transcripts)
+dds_transcripts = differential_expression(data_transcripts)
 res_transcripts = results(dds_transcripts,independentFiltering = F)
 results_df_transcripts = process_DESeq2_results(results = res_transcripts, mode = 'TE_transcripts')
 
@@ -150,9 +150,9 @@ results_df_transcripts = process_DESeq2_results(results = res_transcripts, mode 
 
 sigGenes_transcripts = results_df_transcripts[results_df_transcripts$significant == TRUE,]$gene
 
-diff_reg_transcripts = filter(results_df_local, gene %in% sigGenes)
+diff_reg_transcripts = filter(results_df_local, gene %in% sigGenes_transcripts)
 diff_reg_local = filter(results_df_local, significant == TRUE)
-diff_reg_both = filter(diff_reg_local, gene %in% sigGenes)
+diff_reg_both = filter(diff_reg_local, gene %in% sigGenes_transcripts)
 
 sigLocus_transcripts = diff_reg_transcripts$ID
 sigLocus_local = diff_reg_local$ID
