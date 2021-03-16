@@ -1,7 +1,8 @@
 data/
 index/
 software/TElocal-master
-analysis/hi_vs_lo_local/count_table/
+analysis/count_tables/
 .DS*
 .R*
 *_output.txt
+.Rproj.user
