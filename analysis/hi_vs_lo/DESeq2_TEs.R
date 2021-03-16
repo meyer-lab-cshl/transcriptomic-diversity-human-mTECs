@@ -25,7 +25,6 @@ differential_expression = function(count_table){
   ## Run differential expression analysis
   
   dds = DESeq(dds)
-  res = results(dds,independentFiltering=F)
   
   return(dds)
   
@@ -132,29 +131,31 @@ min_read = 1
 data_transcripts = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
 
 #################################################################
-# Differential expression analysis
+# TE_local
 #################################################################
 
 dds_local = differential_expression(data_local)
-res_local = results(dds_local, independentFiltering = F)
-
-dds_transcripts = differential_expression(data_transcripts)
-res_transcripts = results(dds_transcripts, independentFiltering = F)
-
-#################################################################
-# Processing
-#################################################################
-
+res_local = results(dds_local,independentFiltering = F)
 results_df_local = process_DESeq2_results(results = res_local, mode = 'TE_local')
+
+#################################################################
+# TE_transcripts
+#################################################################
+
+dds_transcritps = differential_expression(data_transcripts)
+res_transcripts = results(dds_transcripts,independentFiltering = F)
 results_df_transcripts = process_DESeq2_results(results = res_transcripts, mode = 'TE_transcripts')
 
 ##
 
+sigGenes_transcripts = results_df_transcripts[results_df_transcripts$significant == TRUE,]$gene
 
+diff_reg_transcripts = filter(results_df_local, gene %in% sigGenes)
+diff_reg_local = filter(results_df_local, significant == TRUE)
+diff_reg_both = filter(diff_reg_local, gene %in% sigGenes)
 
-
-
-
+sigLocus_transcripts = diff_reg_transcripts$ID
+sigLocus_local = diff_reg_local$ID
 
 ## Transform raw count data 
 
