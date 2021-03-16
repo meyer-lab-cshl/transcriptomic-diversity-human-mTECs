@@ -7,7 +7,7 @@ library(tidyr)
 # Stacked bar chart: class/family frequency
 #################################################################
 
-build_count_table = function(group, mode){
+build_count_table = function(dds, results_df, group, mode){
   
   normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
   
@@ -21,18 +21,21 @@ build_count_table = function(group, mode){
     
     if (i == 'diff_regulated'){
       
+      sigGenes = results_df[results_df$significant == TRUE,]$ID
       input = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
       
     }
     
     if (i == 'upregulated'){
       
+      upGenes = results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0), ]$ID
       input = normalized_counts[rownames(normalized_counts) %in% upGenes,]
       
     }
     
     if (i == 'downregulated'){
       
+      downGenes = results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0), ]$ID
       input = normalized_counts[rownames(normalized_counts) %in% downGenes,]
       
     }
@@ -42,7 +45,7 @@ build_count_table = function(group, mode){
     input_HI = select(input_HI, mean)
     
     input_HI = cbind(ID = rownames(input_HI), input_HI)
-    input_HI = separate(data = input_HI, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+    input_HI = separate(data = input_HI, col = 'ID', into = c('element', 'gene', 'family', 'class'), sep = ':')
     input_HI = cbind(ID = rownames(input_HI), input_HI)
     
     input_HI = mutate(input_HI, class = sub("\\?", "", class))
@@ -102,21 +105,14 @@ build_count_table = function(group, mode){
   
 }
 
-
-normalized_counts_HI_LTR_family = normalized_counts_HI %>% 
-  filter(class == 'LTR') %>%
-  group_by(family) %>% 
-  summarize(sum = sum(mean))
-normalized_counts_HI_LTR_family = as.data.frame(normalized_counts_HI_LTR_family)
-normalized_counts_HI_LTR_family$group = 'All'
-
-
 ## Plot stacked bars
 
-group = c('all', 'upregulated')
+dds = dds_local
+results_df = results_df_local
+group = c('all', 'diff_regulated', 'downregulated', 'upregulated')
 mode = 'class'
 
-count_table = build_count_table(group, mode)
+count_table = build_count_table(dds, results_df, group, mode)
 
 bar_chart = ggplot(count_table, aes(x = group, y = percent_counts, fill = class)) + 
   geom_col(colour = 'black', position = 'fill') +
@@ -124,7 +120,7 @@ bar_chart = ggplot(count_table, aes(x = group, y = percent_counts, fill = class)
   scale_fill_brewer(palette = "Set1") +
   xlab('') +
   ylab('Fraction of normalized reads') +
-  ggtitle('All TE classes')
+  ggtitle('All TE classes', 'TE local')
 
 bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                plot.subtitle = element_text(size = 14),
@@ -140,5 +136,5 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                legend.text = element_text(size = 12),
                                legend.title = element_text(size = 14))
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_classbreakdown.png", 
-       width = 15, height = 15, units = "cm")
+ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo_local/Plots/hi_vs_lo_TEs_classbreakdown.png", 
+       width = 20, height = 13, units = "cm")

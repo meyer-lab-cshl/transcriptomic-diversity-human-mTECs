@@ -9,16 +9,14 @@ library(glue)
 
 library(fgsea)
 
-## Building list of TEs ranked by p-value
+## Building list of TEs ranked by logFC
 
-input = results_df
+input = results_df_local
 
 input = mutate(input, ID = sub("\\?", "", ID))
 input = mutate(input, class = sub("\\?", "", class))
 
-input = filter(input, class != 'Unknown')
-
-input = mutate(input, ranking_value = sign(log2FoldChange) * -log10(padj))
+input = mutate(input, ranking_value = log2FoldChange)
 
 ranks = input$ranking_value
 names(ranks) = input$ID
