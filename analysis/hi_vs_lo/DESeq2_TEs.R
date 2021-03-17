@@ -32,17 +32,20 @@ differential_expression = function(count_table){
 
 ## Split into gene and TE
 
-extract_genes = function(results_df){
+extract_from_DESeq2 = function(mode, input){
   
-  output = results_df[grep("^ENSG",rownames(results_df)),]
+  if (mode == 'gene'){
+    
+    output = input[grep("^ENSG",rownames(input)),]
+    
+  }
   
-  return(output)
+  if (mode == 'TE'){
+    
+    output = input[grepl("^(?!ENSG).*$",rownames(input), perl = TRUE),]
+    
+  }
   
-}
-
-extract_TEs = function(results_df){
-  
-  output = results_df[grepl("^(?!ENSG).*$",rownames(results_df), perl = TRUE),]
   return(output)
   
 }
@@ -104,7 +107,7 @@ make_GRanges = function(mode, results_df){
   
   if (mode == 'TE'){
     
-    annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
+    annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
     annotation = separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':')
     annotation = separate(annotation, start.stop, into = c('start', 'end'), sep = '-')
     annotation = rename(annotation, locus = TE)
@@ -115,7 +118,7 @@ make_GRanges = function(mode, results_df){
   
   if (mode == 'gene'){
     
-    annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/gencode.v38_gene_annotation_table.txt', header = 1)
+    annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
     annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand'))
     annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
     
@@ -145,13 +148,18 @@ data = data[apply(data,1,function(x){max(x)}) > min_read,]
 # Run differential expression
 
 dds_local = differential_expression(data)
-results_local = results(dds_local, independentFiltering = F)
+dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
+dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
 
-results_local_gene = extract_genes(results_local)
-results_local_TE = extract_TEs(results_local)
+results_local = results(dds_local, independentFiltering = F)
+results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
+results_local_TE = extract_from_DRSeq2(mode = 'TE', input = results_local)
 
 results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
 results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
+
+results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
+results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
 
 # GRanges
 
@@ -160,10 +168,14 @@ library(GenomicRanges)
 GRanges_gene = make_GRanges(mode = 'gene',
                             results_df = results_df_local_gene)
 
-GRanges_TE = make_GRanges(mode = 'TE',
-                          results_df = results_df_local_TE)
+GRanges_gene_sigdiff = make_GRanges(mode = 'gene',
+                            results_df = results_df_local_gene_sigdiff)
 
-findOverlaps()
+
+GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
+                                  results_df = results_df_local_TE_sigdiff)
+
+subsetByOverlaps(GRanges_TE_sigdiff, GRanges_gene_sigdiff)
 
 #################################################################
 # TE_local (without locus information)
