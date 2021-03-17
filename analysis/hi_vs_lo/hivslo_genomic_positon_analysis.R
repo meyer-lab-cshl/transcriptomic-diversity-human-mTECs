@@ -1,6 +1,9 @@
 library(GenomicRanges)
+library(regioneR)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
+library(ggplotify)
 
 #################################################################
 # 
@@ -56,6 +59,32 @@ GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
 subsetByOverlaps(GRanges_TE_sigdiff, GRanges_gene_sigdiff)
 
 #################################################################
+# GRanges
+################################################################### 
+
+results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
+results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
+results_df_local_gene_down = filter(results_df_local_gene, (significant == T) & (log2FoldChange < 0))
+
+results_df_local_TE_up = filter(results_df_local_TE, (significant == T) & (log2FoldChange > 0))
+results_df_local_TE_unchanged = filter(results_df_local_TE, significant == F)
+results_df_local_TE_down = filter(results_df_local_TE, (significant == T) & (log2FoldChange < 0))
+
+GRanges_gene_up = make_GRanges(mode = 'gene',
+                               results_df = results_df_local_gene_up)
+GRanges_gene_unchanged = make_GRanges(mode = 'gene',
+                               results_df = results_df_local_gene_unchanged)
+GRanges_gene_down = make_GRanges(mode = 'gene',
+                               results_df = results_df_local_gene_down)
+
+GRanges_TE_up = make_GRanges(mode = 'TE',
+                               results_df = results_df_local_TE_up)
+GRanges_TE_unchanged = make_GRanges(mode = 'TE',
+                                      results_df = results_df_local_TE_unchanged)
+GRanges_TE_down = make_GRanges(mode = 'TE',
+                                 results_df = results_df_local_TE_down)
+
+#################################################################
 # regioneR
 ################################################################### 
 
@@ -74,9 +103,60 @@ pt = permTest(A = GRanges_TE_sigdiff,
 
 pt = permTest(A = GRanges_TE_sigdiff, 
               B = GRanges_gene_sigdiff, 
-              ntimes = 100,
+              ntimes = 5000,
               randomize.function = resampleRegions,
               universe = GRanges_TE,
               evaluate.function = meanDistance)
+              
+plot(pt)
 
-plot(pt) 
+## Heatmap
+
+#gene_groups = list(GRanges_gene_up, GRanges_gene_unchanged, GRanges_gene_down)
+gene_groups = list(GRanges_gene_up)
+TE_groups = list(GRanges_TE_up, GRanges_TE_unchanged, GRanges_TE_down)
+
+output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
+
+row_number = 1
+
+for (gene_group in gene_groups){
+  
+  column_number = 1
+  
+  for (TE_group in TE_groups){
+    
+    pt = permTest(A = TE_group, 
+                 B = gene_group, 
+                 ntimes = 50,
+                 randomize.function = resampleRegions,
+                 universe = GRanges_TE,
+                 evaluate.function = meanDistance)
+    
+    p_value = pt$meanDistance[1]
+    Z_score = pt$meanDistance[6]
+    
+    if (p_value < 0.05){
+      
+      output[row_number, column_number] = Z_score
+      
+    }
+    
+    else{
+      
+      output[row_number, column_number] = NA
+      
+    }
+    
+    column_number = column_number + 1
+    
+  }
+  
+  row_number = row_number + 1
+  
+}
+
+my_heatmap = pheatmap(output, 
+                      cluster_rows=FALSE,
+                      show_rownames=TRUE, 
+                      cluster_cols=FALSE)
