@@ -97,41 +97,6 @@ process_DESeq2_results = function(results,
   
 }
 
-## Make a GRanges object
-
-make_GRanges = function(mode, results_df){
-  
-  library(GenomicRanges)
-  library(dplyr)
-  library(tidyr)
-  
-  if (mode == 'TE'){
-    
-    annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
-    annotation = separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':')
-    annotation = separate(annotation, start.stop, into = c('start', 'end'), sep = '-')
-    annotation = rename(annotation, locus = TE)
-    
-    df = merge(results_df, annotation, by = 'locus')
-    
-  }
-  
-  if (mode == 'gene'){
-    
-    annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
-    annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand'))
-    annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
-    
-    df = merge(results_df, annotation, by = 'Geneid')
-
-  }
-  
-  output = makeGRangesFromDataFrame(df, keep.extra.columns = T)
-  
-  return(output)
-  
-}
-
 #################################################################
 # TE_local
 #################################################################
@@ -160,22 +125,6 @@ results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 
 
 results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
 results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
-
-# GRanges
-
-library(GenomicRanges)
-
-GRanges_gene = make_GRanges(mode = 'gene',
-                            results_df = results_df_local_gene)
-
-GRanges_gene_sigdiff = make_GRanges(mode = 'gene',
-                            results_df = results_df_local_gene_sigdiff)
-
-
-GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
-                                  results_df = results_df_local_TE_sigdiff)
-
-subsetByOverlaps(GRanges_TE_sigdiff, GRanges_gene_sigdiff)
 
 #################################################################
 # TE_local (without locus information)
