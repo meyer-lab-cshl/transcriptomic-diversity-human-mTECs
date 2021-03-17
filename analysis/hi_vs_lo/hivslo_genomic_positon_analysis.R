@@ -1,5 +1,4 @@
 library(GenomicRanges)
-library(cooccur)
 library(dplyr)
 library(tidyr)
 
@@ -36,10 +35,16 @@ make_GRanges = function(mode, results_df){
   
 }
 
-##
+## GRanges
+
 
 GRanges_gene = make_GRanges(mode = 'gene',
                             results_df = results_df_local_gene)
+
+GRanges_TE = make_GRanges(mode = 'TE',
+                          results_df = results_df_local_TE)
+
+
 
 GRanges_gene_sigdiff = make_GRanges(mode = 'gene',
                                     results_df = results_df_local_gene_sigdiff)
@@ -50,4 +55,28 @@ GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
 
 subsetByOverlaps(GRanges_TE_sigdiff, GRanges_gene_sigdiff)
 
-## Testing cooccur 
+#################################################################
+# regioneR
+################################################################### 
+
+random_RS = resampleRegions(GRanges_TE_sigdiff, universe=GRanges_TE)
+
+## Do my differentially expressed TEs overlap with differentially expressed genes more frequently than expected by chance?
+
+pt = permTest(A = GRanges_TE_sigdiff, 
+              B = GRanges_gene_sigdiff, 
+              ntimes = 100,
+              randomize.function = resampleRegions,
+              universe = GRanges_TE,
+              evaluate.function = numOverlaps)
+
+## Are differentially expressed TEs closer to differentially expressed genes than expected by chance?
+
+pt = permTest(A = GRanges_TE_sigdiff, 
+              B = GRanges_gene_sigdiff, 
+              ntimes = 100,
+              randomize.function = resampleRegions,
+              universe = GRanges_TE,
+              evaluate.function = meanDistance)
+
+plot(pt) 
