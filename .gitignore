@@ -1,6 +1,8 @@
 data/
 index/
 software/TElocal-master
+analysis/*.txt
+analysis/annotation_tables/
 analysis/count_tables/
 .DS*
 .R*

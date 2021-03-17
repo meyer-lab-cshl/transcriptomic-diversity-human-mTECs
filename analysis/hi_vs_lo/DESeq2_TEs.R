@@ -68,21 +68,27 @@ process_DESeq2_results = function(results,
   
   ## Add separate ID columns
   
-  results_df = cbind(ID = rownames(results_df), results_df)
-  
   if (mode == 'TE_transcripts'){
     
+    results_df = cbind(ID = rownames(results_df), results_df)
     results_df = separate(data = results_df, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
+    results_df = cbind(ID = rownames(results_df), results_df)
     
   }
   
   if (mode == 'TE_local'){
     
+    results_df = cbind(ID = rownames(results_df), results_df)
     results_df = separate(data = results_df, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
+    results_df = cbind(ID = rownames(results_df), results_df)
     
   }
   
-  results_df = cbind(ID = rownames(results_df), results_df)
+  if (mode == 'Gene'){
+    
+    results_df = cbind(Geneid = rownames(results_df), results_df)
+    
+  }
   
   return(results_df)
   
@@ -103,7 +109,7 @@ make_GRanges = function(mode, results_df){
     annotation = separate(annotation, start.stop, into = c('start', 'end'), sep = '-')
     annotation = rename(annotation, locus = TE)
     
-    df = merge(results_df, TE_annotation, by = 'locus')
+    df = merge(results_df, annotation, by = 'locus')
     
   }
   
@@ -113,8 +119,8 @@ make_GRanges = function(mode, results_df){
     annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand'))
     annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
     
-    df = merge(results_df, TE_annotation, by = 'Geneid')
-    
+    df = merge(results_df, annotation, by = 'Geneid')
+
   }
   
   output = makeGRangesFromDataFrame(df, keep.extra.columns = T)
@@ -144,15 +150,20 @@ results_local = results(dds_local, independentFiltering = F)
 results_local_gene = extract_genes(results_local)
 results_local_TE = extract_TEs(results_local)
 
+results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
 results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
 
 # GRanges
 
+library(GenomicRanges)
+
+GRanges_gene = make_GRanges(mode = 'gene',
+                            results_df = results_df_local_gene)
+
 GRanges_TE = make_GRanges(mode = 'TE',
                           results_df = results_df_local_TE)
 
-GRanges_gene = make_GRanges(mode = 'gene',
-                           results_df = results_df_local_gene)
+findOverlaps()
 
 #################################################################
 # TE_local (without locus information)
