@@ -136,9 +136,9 @@ build_count_table = function(tool, dds, results_df, group, mode){
 ## Plot stacked bars
 
 tool = 'TE_local'
-dds = dds_local
-results_df = results_df_local
-group = c('all', 'diff_regulated', 'diff_regulated_both')
+dds = dds_local_TE
+results_df = results_df_local_TE
+group = c('all', 'diff_regulated', 'downregulated', 'upregulated')
 mode = 'class'
 
 count_table = build_count_table(tool, dds, results_df, group, mode)
@@ -165,5 +165,5 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                legend.text = element_text(size = 12),
                                legend.title = element_text(size = 14))
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/hi_vs_lo_TEs_classbreakdown.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/hi_vs_lo_TEs_classbreakdown.png", 
        width = 20, height = 13, units = "cm")

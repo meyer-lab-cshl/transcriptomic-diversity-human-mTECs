@@ -5,18 +5,18 @@ library(ggrepel)
 # TE local
 #################################################################
 
-input = results_df_local
+input = results_df_local_TE
 
 input = mutate(input, ID = sub("\\?", "", ID))
 input = mutate(input, class = sub("\\?", "", class))
 
 ## Coloured by significance (statistical and biological)
 
-volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = overall_significant)) +
-  geom_point(alpha = 0.6, aes(colour = overall_significant)) +
+volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
+  geom_point(alpha = 0.6, aes(colour = significant)) +
   xlab(expression('Log'[2]*' FC')) +
   ylab(expression('-Log'[10]*' P value')) +
-  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression: TE') +
+  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression: TE local') +
   scale_colour_manual(values = c('#9B9A99', "red"))
 
 #geom_vline(xintercept = c(1, -1), linetype = 'dashed') +
@@ -53,7 +53,7 @@ volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size 
                                   panel.border = element_blank(),
                                   legend.position = 'none')
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo_local/Plots/local_volcano.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/local_volcano.png", 
        width = 20, height = 15, units = "cm")
 
 #################################################################
@@ -107,5 +107,5 @@ volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size 
                                   axis.line = element_line(size = 0.8),
                                   panel.border = element_blank())
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_volcano_plot.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/local_volcano.png", 
        width = 20, height = 15, units = "cm")
