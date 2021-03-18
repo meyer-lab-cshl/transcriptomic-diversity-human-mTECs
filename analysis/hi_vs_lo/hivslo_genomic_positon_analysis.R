@@ -3,7 +3,6 @@ library(regioneR)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-library(ggplotify)
 library(pheatmap)
 library(RColorBrewer)
 
@@ -165,6 +164,12 @@ for (gene_group in gene_groups){
   row_number = row_number + 1
   
 }
+
+
+# Save variables (export them)
+saveRDS(gene_groups, "~/TE_thymus/analysis/cluster_R_stuff/gene_groups.rds")
+
+
 
 my_heatmap = pheatmap(mat = output, 
                       cluster_rows=FALSE,
