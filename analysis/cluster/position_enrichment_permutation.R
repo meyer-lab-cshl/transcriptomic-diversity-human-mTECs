@@ -6,7 +6,7 @@ library(regioneR)
 ## Import variables
 
 gene_groups = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/gene_groups.rds")
-TE_groups = readRDS("grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/TE_groups.rds")
+TE_groups = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/TE_groups.rds")
 
 ##########################
 
@@ -87,4 +87,4 @@ output = run_perm_test(gene_groups, TE_groups, mode = 'overlap')
 
 # Export output
 
-saveRDS(output, "grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/position_enrichment_permutation_output.rds")
+saveRDS(output, "/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/position_enrichment_permutation_output.rds")
