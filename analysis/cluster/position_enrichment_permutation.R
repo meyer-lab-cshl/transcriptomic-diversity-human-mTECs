@@ -1,5 +1,5 @@
-library(GenomicRanges)
-library(regioneR)
+library(GenomicRanges, lib.loc = '/grid/meyer/home/mpeacey/R/x86_64-pc-linux-gnu-library/4.0/')
+library(regioneR, lib.loc = '/grid/meyer/home/mpeacey/R/x86_64-pc-linux-gnu-library/4.0/')
 
 ## Import variables
 
