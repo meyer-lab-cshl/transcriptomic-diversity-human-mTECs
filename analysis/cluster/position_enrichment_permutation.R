@@ -1,13 +1,16 @@
+library(GenomicRanges)
+library(regioneR)
+
 ## Import variables
 
-gene_groups = readRDS("~/TE_thymus/analysis/cluster_R_stuff/gene_groups.rds")
-TE_groups = readRDS("~/TE_thymus/analysis/cluster_R_stuff/TE_groups.rds")
+gene_groups = readRDS("~/TE_thymus/analysis/cluster/gene_groups.rds")
+TE_groups = readRDS("~/TE_thymus/analysis/cluster/TE_groups.rds")
 
 ##########################
 
 output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
-rownames(output) = c('gene_up', 'gene_down')
-colnames(output) = c('TE_up', 'TE_down')
+rownames(output) = c('gene_up', 'gene_unchanged', 'gene_down')
+colnames(output) = c('TE_up', 'TE_unchanged', 'TE_down')
 
 row_number = 1
 number_of_tests = ncol(output) + nrow(output)
@@ -49,7 +52,6 @@ for (gene_group in gene_groups){
   
 }
 
-
 # Export output
 
-saveRDS(output, "~/TE_thymus/analysis/cluster_R_stuff/gene_groups.rds")
+saveRDS(output, "~/TE_thymus/analysis/cluster/position_enrichment_permutation_output.rds")
