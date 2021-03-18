@@ -1,17 +1,12 @@
-<<<<<<< HEAD
 .libPaths = '/grid/meyer/home/mpeacey/R/x86_64-pc-linux-gnu-library/4.0/'
 
 library(GenomicRanges)
 library(regioneR)
-=======
-library(GenomicRanges, lib.loc = '/grid/meyer/home/mpeacey/R/x86_64-pc-linux-gnu-library/4.0/')
-library(regioneR, lib.loc = '/grid/meyer/home/mpeacey/R/x86_64-pc-linux-gnu-library/4.0/')
->>>>>>> a542125d7fd15453297fca8c029d1913a02438c3
 
 ## Import variables
 
-gene_groups = readRDS("~/TE_thymus/analysis/cluster/gene_groups.rds")
-TE_groups = readRDS("~/TE_thymus/analysis/cluster/TE_groups.rds")
+gene_groups = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/gene_groups.rds")
+TE_groups = readRDS("grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/TE_groups.rds")
 
 ##########################
 
@@ -92,4 +87,4 @@ output = run_perm_test(gene_groups, TE_groups, mode = 'overlap')
 
 # Export output
 
-saveRDS(output, "~/TE_thymus/analysis/cluster/position_enrichment_permutation_output.rds")
+saveRDS(output, "grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/position_enrichment_permutation_output.rds")
