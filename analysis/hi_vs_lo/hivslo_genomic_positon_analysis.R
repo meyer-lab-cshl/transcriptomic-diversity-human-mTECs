@@ -122,6 +122,9 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
 GRanges_TE = make_GRanges(mode = 'TE',
                           results_df = results_df_local_TE)
 
+GRanges_gene = make_GRanges(mode = 'gene',
+                            results_df = results_df_local_gene)
+
 results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
 results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
 results_df_local_gene_down = filter(results_df_local_gene, (significant == T) & (log2FoldChange < 0))
@@ -178,4 +181,41 @@ save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
 save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/hi_vs_lo_genomic_poisitons_heatmap_overlap.png")
 
 
-#####
+#################################################################
+# Experimental method
+#################################################################
+
+GRanges_gene_test = GRanges_gene[1:100]
+
+gene_fold_change = rep(NA, length(GRanges_gene_test))
+TE_fold_change = rep(NA, length(GRanges_gene_test))
+
+for (gene in c(1:length(GRanges_gene_test))){
+  
+  gene_fold_change[gene] = GRanges_gene[gene]$log2FoldChange[1]
+  
+  overlapping_TEs = findOverlaps(query = GRanges_gene[gene],
+                                 subject = GRanges_TE)
+  
+  overlapping_TEs = as.data.frame(overlapping_TEs)
+  hit_indices = overlapping_TEs$subjectHits
+  
+  fold_changes = rep(NA, length(hit_indices))
+  index_number = 1
+  
+  for (index in hit_indices){
+    
+    fold_changes[index_number] = GRanges_TE[index]$log2FoldChange[1]
+    index_number = index_number + 1
+    
+  }
+  
+  TE_fold_change[gene] = mean(fold_changes)
+  
+}
+
+output = data.frame(gene_fold_change = gene_fold_change, TE_fold_change = TE_fold_change)
+
+ggplot(data = output, aes(x = gene_fold_change, y = TE_fold_change)) +
+  geom_point()
+
