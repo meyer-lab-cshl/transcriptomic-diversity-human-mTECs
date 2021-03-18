@@ -40,11 +40,11 @@ make_GRanges = function(mode, results_df){
   
 }
 
-run_perm_test = function(gene_groups, TE_groups, mode = 'distance'){
+run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
   
   output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
-  rownames(output) = c('gene_up', 'gene_down')
-  colnames(output) = c('TE_up', 'TE_down')
+  rownames(output) = c('gene_up', 'gene_unchanged', 'gene_down')
+  colnames(output) = c('TE_up', 'TE_unchanged', 'TE_down')
   
   row_number = 1
   number_of_tests = ncol(output) + nrow(output)
@@ -55,17 +55,18 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'distance'){
     
     for (TE_group in TE_groups){
       
-      print(glue('Starting column {column_number}, row {row_number}'))
+      print(glue('Starting row {row_number}, column {column_number}'))
       
       if (mode == 'distance'){
         
         pt = permTest(A = TE_group, 
                       B = gene_group, 
-                      ntimes = 100,
+                      ntimes = 1000,
                       randomize.function = resampleRegions,
                       universe = GRanges_TE,
                       evaluate.function = meanDistance,
-                      alternative = 'less')
+                      alternative = 'less',
+                      verbose = TRUE)
         
         p_value = pt$meanDistance[[1]]
         Z_score = pt$meanDistance[[6]]
@@ -76,14 +77,17 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'distance'){
         
         pt = permTest(A = TE_group, 
                       B = gene_group, 
-                      ntimes = 100,
+                      ntimes = 1000,
                       randomize.function = resampleRegions,
                       universe = GRanges_TE,
                       evaluate.function = numOverlaps,
-                      alternative = 'greater')
+                      alternative = 'greater',
+                      verbose = TRUE)
         
         p_value = pt$numOverlaps[[1]]
         Z_score = -pt$numOverlaps[[6]]
+        
+        print(p_value)
         
       }
       
@@ -113,7 +117,7 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'distance'){
 
 #################################################################
 # GRanges
-################################################################### 
+################################################################# 
 
 GRanges_TE = make_GRanges(mode = 'TE',
                           results_df = results_df_local_TE)
@@ -142,10 +146,10 @@ GRanges_TE_down = make_GRanges(mode = 'TE',
 
 #################################################################
 # regioneR
-################################################################### 
+#################################################################
 
-gene_groups = list(GRanges_gene_up, GRanges_gene_down)
-TE_groups = list(GRanges_TE_up, GRanges_TE_down)
+gene_groups = list(GRanges_gene_up, GRanges_gene_unchanged, GRanges_gene_down)
+TE_groups = list(GRanges_TE_up, GRanges_TE_unchanged, GRanges_TE_down)
 
 saveRDS(gene_groups, "~/TE_thymus/analysis/cluster/gene_groups.rds")
 saveRDS(TE_groups, "~/TE_thymus/analysis/cluster/TE_groups.rds")
