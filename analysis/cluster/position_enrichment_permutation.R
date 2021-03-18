@@ -13,8 +13,8 @@ TE_groups = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/TE_grou
 run_perm_test = function(gene_groups, TE_groups, mode = 'distance'){
   
   output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
-  rownames(output) = c('gene_up', 'gene_down')
-  colnames(output) = c('TE_up', 'TE_down')
+  rownames(output) = c('gene_up', 'gene_unchanged', 'gene_down')
+  colnames(output) = c('TE_up', 'TE_unchanged', 'TE_down')
   
   row_number = 1
   number_of_tests = ncol(output) + nrow(output)
@@ -24,9 +24,7 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'distance'){
     column_number = 1
     
     for (TE_group in TE_groups){
-      
-      print(glue('Starting column {column_number}, row {row_number}'))
-      
+            
       if (mode == 'distance'){
         
         pt = permTest(A = TE_group, 
