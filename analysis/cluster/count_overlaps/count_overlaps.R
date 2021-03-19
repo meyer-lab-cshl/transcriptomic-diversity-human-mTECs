@@ -26,7 +26,7 @@ for (i in 1:length(GRanges_TE)){
   }
   
   down_hit = countOverlaps(query = GRanges_TE[i], subject = GRanges_gene_down)
-  if (length(up_hit) > 0){
+  if (length(down_hit) > 0){
     
     overlap_with_down_gene[i] = T
     
