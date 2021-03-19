@@ -187,18 +187,18 @@ save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/
 
 correlate_fold_change = function(query, subject){
   
-  gene_fold_change = rep(NA, length(query))
-  TE_fold_change = rep(NA, length(query))
+  query_fold_change = rep(NA, length(query))
+  subject_fold_change = rep(NA, length(query))
   
-  for (gene in c(1:length(query))){
-    print(gene)
-    gene_fold_change[gene] = query[gene]$log2FoldChange[1]
+  for (i in c(1:length(query))){
+    print(i)
+    query_fold_change[i] = query[i]$log2FoldChange[1]
     
-    overlapping_TEs = findOverlaps(query = query[gene],
+    overlapping_subjects = findOverlaps(query = query[i],
                                    subject = subject)
     
-    overlapping_TEs = as.data.frame(overlapping_TEs)
-    hit_indices = overlapping_TEs$subjectHits
+    overlapping_subjects = as.data.frame(overlapping_subjects)
+    hit_indices = overlapping_subjects$subjectHits
     
     fold_changes = rep(NA, length(hit_indices))
     index_number = 1
@@ -210,11 +210,11 @@ correlate_fold_change = function(query, subject){
       
     }
     
-    TE_fold_change[gene] = log2(mean(fold_changes))
+    subject_fold_change[i] = log2(mean(fold_changes))
     
   }
   
-  output = data.frame(gene_fold_change = gene_fold_change, TE_fold_change = TE_fold_change)
+  output = data.frame(query_fold_change = query_fold_change, subject_fold_change = subject_fold_change)
   
   return(output)
   
@@ -223,9 +223,9 @@ correlate_fold_change = function(query, subject){
 saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/GRanges_gene.rds")
 saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/GRanges_TE.rds")
 
-output = correlate_fold_change(query = GRanges_gene[1:20000], subject = GRanges_TE)
+output = correlate_fold_change(query = GRanges_TE[1:10000], subject = GRanges_gene)
 
-correlation = ggplot(data = output, aes(x = gene_fold_change, y = TE_fold_change)) + 
+correlation = ggplot(data = output, aes(x = query_fold_change, y = subject_fold_change)) + 
   geom_point(alpha = 0.6, size = 0.5) +
   geom_smooth(method='lm')
 
