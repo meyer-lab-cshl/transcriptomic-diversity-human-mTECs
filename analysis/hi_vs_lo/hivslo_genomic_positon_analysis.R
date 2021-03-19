@@ -220,6 +220,9 @@ correlate_fold_change = function(query, subject){
   
 }
 
+saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/GRanges_gene.rds")
+saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/GRanges_TE.rds")
+
 output = correlate_fold_change(query = GRanges_gene[1:20000], subject = GRanges_TE)
 
 correlation = ggplot(data = output, aes(x = gene_fold_change, y = TE_fold_change)) + 
