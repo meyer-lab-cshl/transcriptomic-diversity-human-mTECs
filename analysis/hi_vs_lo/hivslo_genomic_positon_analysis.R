@@ -154,16 +154,6 @@ correlate_fold_change = function(query, subject){
 # GRanges
 ################################################################# 
 
-results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
-results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
-results_df_local_gene_down = filter(results_df_local_gene, (significant == T) & (log2FoldChange < 0))
-results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
-
-results_df_local_TE_up = filter(results_df_local_TE, (significant == T) & (log2FoldChange > 0))
-results_df_local_TE_unchanged = filter(results_df_local_TE, significant == F)
-results_df_local_TE_down = filter(results_df_local_TE, (significant == T) & (log2FoldChange < 0))
-results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
-
 GRanges_gene = make_GRanges(mode = 'gene',
                             results_df = results_df_local_gene)
 saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/GRanges_gene.rds")
@@ -243,13 +233,29 @@ output = readRDS("~/TE_thymus/analysis/cluster/gene_vs_TE.rds")
 
 output = correlate_fold_change(query = GRanges_gene_sigdiff, subject = GRanges_TE_sigdiff)
 
-output = readRDS("~/TE_thymus/analysis/cluster/gene_sigdiff_vs_TE_sigdiff.rds")
-
-## Plot and test
-
 correlation = ggplot(data = output, aes(x = query_fold_change, y = subject_fold_change)) + 
   geom_point(alpha = 0.6, size = 0.5) +
-  geom_smooth(method='lm')
+  geom_smooth(method='lm') +
+  xlab(expression('Log'[2]*' FC (differentially expressed genes)')) +
+  ylab(expression('Log'[2]*' mean FC (overlapping differentially expressed TEs)')) +
+  ggtitle('Correlated expression of overlapping genes and TEs', 'Differentially expressed genes/TEs only')
+
+## query: GRanges_TE_sigdiff, subject: GRanges_gene_sigdiff
+
+output = correlate_fold_change(query = GRanges_TE_sigdiff, subject = GRanges_gene_sigdiff)
+
+correlation_test = cor.test(x = output$subject_fold_change, y = output$query_fold_change, method = 'pearson')
+
+r_squared = as.character(correlation_test$estimate ** 2)
+
+correlation = ggplot(data = output, aes(x = subject_fold_change, y = query_fold_change)) + 
+  geom_point(alpha = 0.6, size = 0.5) +
+  geom_smooth(method='lm') +
+  ylab(expression('Log'[2]*' FC (differentially expressed TEs)')) +
+  xlab(expression('Log'[2]*' mean FC (overlapping differentially expressed genes)')) +
+  ggtitle('Correlated expression of overlapping genes and TEs', 'Differentially expressed genes/TEs only')
+
+## Plot and test
 
 correlation + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                plot.subtitle = element_text(size = 14),
@@ -259,4 +265,7 @@ correlation + theme_bw() + theme(plot.title = element_text(face = 'bold', size =
                                axis.line = element_line(size = 0.8),
                                panel.border = element_blank())
 
-cor.test(x = output$query_fold_change, y = output$subject_fold_change, method = 'pearson')
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/correlated_expression_sigdiff_only.png", 
+       width = 20, height = 15, units = "cm")
+
+

@@ -54,14 +54,15 @@ extract_from_DESeq2 = function(mode, input){
 
 process_DESeq2_results = function(results,
                                   mode,
-                                  p_value_cutoff = 0.05, 
+                                  p_value_cutoff = 0.1, 
                                   log_fold_change_cutoff = 0.58){
   
   ## Add statistical and biological significance labels
   
   results_df = as.data.frame(results)
   
-  results_df = mutate(results_df, significant = case_when(padj < p_value_cutoff ~ TRUE, padj >= p_value_cutoff ~ FALSE))
+  results_df = mutate(results_df, significant = case_when(padj < p_value_cutoff ~ TRUE, 
+                                                          padj >= p_value_cutoff ~ FALSE))
   
   results_df = mutate(results_df, FC_significant = case_when(abs(log2FoldChange) > log_fold_change_cutoff ~ TRUE, 
                                                              abs(log2FoldChange) <= log_fold_change_cutoff ~ FALSE))
@@ -116,14 +117,21 @@ dds_local = differential_expression(data)
 dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
 dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
 
-results_local = results(dds_local, independentFiltering = T)
+results_local = results(dds_local, independentFiltering = F)
 results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
-results_local_TE = extract_from_DRSeq2(mode = 'TE', input = results_local)
+results_local_TE = extract_from_DESeq2(mode = 'TE', input = results_local)
 
 results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
 results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
 
+results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
+results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
+results_df_local_gene_down = filter(results_df_local_gene, (significant == T) & (log2FoldChange < 0))
 results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
+
+results_df_local_TE_up = filter(results_df_local_TE, (significant == T) & (log2FoldChange > 0))
+results_df_local_TE_unchanged = filter(results_df_local_TE, significant == F)
+results_df_local_TE_down = filter(results_df_local_TE, (significant == T) & (log2FoldChange < 0))
 results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
 
 #################################################################

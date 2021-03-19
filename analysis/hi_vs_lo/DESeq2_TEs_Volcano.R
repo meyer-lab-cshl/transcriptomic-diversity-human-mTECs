@@ -97,6 +97,16 @@ volcano_plot = ggplot() +
   xlim(-3, 3) +
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression')
 
+## Coloured by spatial overlap with DE genes 
+
+volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = overall_significant)) +
+  geom_point(alpha = 0.6, aes(colour = overall_significant)) +
+  xlab(expression('Log'[2]*' FC')) +
+  ylab(expression('-Log'[10]*' P value')) +
+  xlim(-3, 3) +
+  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression') +
+  scale_colour_manual(values = c('#9B9A99', "red"))
+
 ## Plot
 
 volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
