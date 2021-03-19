@@ -190,12 +190,12 @@ correlate_fold_change = function(query, subject){
   query_fold_change = rep(NA, length(query))
   subject_fold_change = rep(NA, length(query))
   
-  for (i in c(1:length(query))){
+  for (i in 1:length(query)){
     print(i)
     query_fold_change[i] = query[i]$log2FoldChange[1]
     
     overlapping_subjects = findOverlaps(query = query[i],
-                                   subject = subject)
+                                        subject = subject)
     
     overlapping_subjects = as.data.frame(overlapping_subjects)
     hit_indices = overlapping_subjects$subjectHits
@@ -223,7 +223,7 @@ correlate_fold_change = function(query, subject){
 saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/GRanges_gene.rds")
 saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/GRanges_TE.rds")
 
-output = correlate_fold_change(query = GRanges_TE[1:10000], subject = GRanges_gene)
+output = correlate_fold_change(query = GRanges_gene[100:200], subject = GRanges_TE)
 
 correlation = ggplot(data = output, aes(x = query_fold_change, y = subject_fold_change)) + 
   geom_point(alpha = 0.6, size = 0.5) +

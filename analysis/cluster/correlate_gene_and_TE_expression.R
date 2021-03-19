@@ -1,22 +1,24 @@
 .libPaths('/grid/meyer/home/mpeacey/R/x86_64-pc-linux-gnu-library/4.0/')
 
-GRanges_gene = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/GRanges_TE.rds")
+library(GenomicRanges)
+
+GRanges_gene = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/GRanges_gene.rds")
 GRanges_TE = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/GRanges_TE.rds")
 
 correlate_fold_change = function(query, subject){
   
-  gene_fold_change = rep(NA, length(query))
-  TE_fold_change = rep(NA, length(query))
+  query_fold_change = rep(NA, length(query))
+  subject_fold_change = rep(NA, length(query))
   
-  for (gene in c(1:length(query))){
-    print(gene)
-    gene_fold_change[gene] = query[gene]$log2FoldChange[1]
+  for (i in 1:length(query)){
+    print(i)
+    query_fold_change[i] = query[i]$log2FoldChange[1]
     
-    overlapping_TEs = findOverlaps(query = query[gene],
-                                   subject = subject)
+    overlapping_subjects = findOverlaps(query = query[i],
+                                        subject = subject)
     
-    overlapping_TEs = as.data.frame(overlapping_TEs)
-    hit_indices = overlapping_TEs$subjectHits
+    overlapping_subjects = as.data.frame(overlapping_subjects)
+    hit_indices = overlapping_subjects$subjectHits
     
     fold_changes = rep(NA, length(hit_indices))
     index_number = 1
@@ -28,11 +30,11 @@ correlate_fold_change = function(query, subject){
       
     }
     
-    TE_fold_change[gene] = log2(mean(fold_changes))
+    subject_fold_change[i] = log2(mean(fold_changes))
     
   }
   
-  output = data.frame(gene_fold_change = gene_fold_change, TE_fold_change = TE_fold_change)
+  output = data.frame(query_fold_change = query_fold_change, subject_fold_change = subject_fold_change)
   
   return(output)
   
