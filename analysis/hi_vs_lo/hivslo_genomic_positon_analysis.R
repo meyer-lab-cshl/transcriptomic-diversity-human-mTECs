@@ -166,6 +166,7 @@ GRanges_gene_unchanged = make_GRanges(mode = 'gene',
                                results_df = results_df_local_gene_unchanged)
 GRanges_gene_down = make_GRanges(mode = 'gene',
                                results_df = results_df_local_gene_down)
+saveRDS(GRanges_gene_down, "~/TE_thymus/analysis/cluster/objects/GRanges_gene_down.rds")
 
 GRanges_gene_sigdiff = make_GRanges(mode = 'gene',
                                     results_df = results_df_local_gene_sigdiff)
