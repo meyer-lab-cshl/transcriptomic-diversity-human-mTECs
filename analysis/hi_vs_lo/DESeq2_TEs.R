@@ -116,7 +116,7 @@ dds_local = differential_expression(data)
 dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
 dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
 
-results_local = results(dds_local, independentFiltering = F)
+results_local = results(dds_local, independentFiltering = T)
 results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
 results_local_TE = extract_from_DRSeq2(mode = 'TE', input = results_local)
 

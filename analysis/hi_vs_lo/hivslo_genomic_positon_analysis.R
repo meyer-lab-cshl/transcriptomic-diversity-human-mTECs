@@ -185,37 +185,52 @@ save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/
 # Experimental method
 #################################################################
 
-GRanges_gene_test = GRanges_gene[1:100]
-
-gene_fold_change = rep(NA, length(GRanges_gene_test))
-TE_fold_change = rep(NA, length(GRanges_gene_test))
-
-for (gene in c(1:length(GRanges_gene_test))){
+correlate_fold_change = function(query, subject){
   
-  gene_fold_change[gene] = GRanges_gene[gene]$log2FoldChange[1]
+  gene_fold_change = rep(NA, length(query))
+  TE_fold_change = rep(NA, length(query))
   
-  overlapping_TEs = findOverlaps(query = GRanges_gene[gene],
-                                 subject = GRanges_TE)
-  
-  overlapping_TEs = as.data.frame(overlapping_TEs)
-  hit_indices = overlapping_TEs$subjectHits
-  
-  fold_changes = rep(NA, length(hit_indices))
-  index_number = 1
-  
-  for (index in hit_indices){
+  for (gene in c(1:length(query))){
+    print(gene)
+    gene_fold_change[gene] = query[gene]$log2FoldChange[1]
     
-    fold_changes[index_number] = GRanges_TE[index]$log2FoldChange[1]
-    index_number = index_number + 1
+    overlapping_TEs = findOverlaps(query = query[gene],
+                                   subject = subject)
+    
+    overlapping_TEs = as.data.frame(overlapping_TEs)
+    hit_indices = overlapping_TEs$subjectHits
+    
+    fold_changes = rep(NA, length(hit_indices))
+    index_number = 1
+    
+    for (index in hit_indices){
+      
+      fold_changes[index_number] = 2 ** subject[index]$log2FoldChange[1]
+      index_number = index_number + 1
+      
+    }
+    
+    TE_fold_change[gene] = log2(mean(fold_changes))
     
   }
   
-  TE_fold_change[gene] = mean(fold_changes)
+  output = data.frame(gene_fold_change = gene_fold_change, TE_fold_change = TE_fold_change)
+  
+  return(output)
   
 }
 
-output = data.frame(gene_fold_change = gene_fold_change, TE_fold_change = TE_fold_change)
+output = correlate_fold_change(query = GRanges_gene[1:20000], subject = GRanges_TE)
 
-ggplot(data = output, aes(x = gene_fold_change, y = TE_fold_change)) +
-  geom_point()
+correlation = ggplot(data = output, aes(x = gene_fold_change, y = TE_fold_change)) + 
+  geom_point(alpha = 0.6, size = 0.5) +
+  geom_smooth(method='lm')
+
+correlation + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                               plot.subtitle = element_text(size = 14),
+                               axis.text.x = element_text(size = 14),
+                               axis.text.y = element_text(size = 14),
+                               axis.title = element_text(size = 14),
+                               axis.line = element_line(size = 0.8),
+                               panel.border = element_blank())
 
