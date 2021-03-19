@@ -8,7 +8,7 @@ library(RColorBrewer)
 library(glue)
 
 #################################################################
-# 
+# Functions
 #################################################################
 
 make_GRanges = function(mode, results_df){
@@ -115,37 +115,87 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
   
 }
 
+correlate_fold_change = function(query, subject){
+  
+  query_fold_change = rep(NA, length(query))
+  subject_fold_change = rep(NA, length(query))
+  
+  for (i in 1:length(query)){
+    print(i)
+    query_fold_change[i] = query[i]$log2FoldChange[1]
+    
+    overlapping_subjects = findOverlaps(query = query[i],
+                                        subject = subject)
+    
+    overlapping_subjects = as.data.frame(overlapping_subjects)
+    hit_indices = overlapping_subjects$subjectHits
+    
+    fold_changes = rep(NA, length(hit_indices))
+    index_number = 1
+    
+    for (index in hit_indices){
+      
+      fold_changes[index_number] = 2 ** subject[index]$log2FoldChange[1]
+      index_number = index_number + 1
+      
+    }
+    
+    subject_fold_change[i] = log2(mean(fold_changes))
+    
+  }
+  
+  output = data.frame('query_fold_change' = query_fold_change, 'subject_fold_change' = subject_fold_change)
+  
+  return(output)
+  
+}
+
 #################################################################
 # GRanges
 ################################################################# 
 
-GRanges_TE = make_GRanges(mode = 'TE',
-                          results_df = results_df_local_TE)
-
-GRanges_gene = make_GRanges(mode = 'gene',
-                            results_df = results_df_local_gene)
-
 results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
 results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
 results_df_local_gene_down = filter(results_df_local_gene, (significant == T) & (log2FoldChange < 0))
+results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
 
 results_df_local_TE_up = filter(results_df_local_TE, (significant == T) & (log2FoldChange > 0))
 results_df_local_TE_unchanged = filter(results_df_local_TE, significant == F)
 results_df_local_TE_down = filter(results_df_local_TE, (significant == T) & (log2FoldChange < 0))
+results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
+
+GRanges_gene = make_GRanges(mode = 'gene',
+                            results_df = results_df_local_gene)
+saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/GRanges_gene.rds")
 
 GRanges_gene_up = make_GRanges(mode = 'gene',
                                results_df = results_df_local_gene_up)
+
 GRanges_gene_unchanged = make_GRanges(mode = 'gene',
                                results_df = results_df_local_gene_unchanged)
 GRanges_gene_down = make_GRanges(mode = 'gene',
                                results_df = results_df_local_gene_down)
 
+GRanges_gene_sigdiff = make_GRanges(mode = 'gene',
+                                    results_df = results_df_local_gene_sigdiff)
+saveRDS(GRanges_gene_sigdiff, "~/TE_thymus/analysis/cluster/GRanges_gene_sigdiff.rds")
+
+GRanges_TE = make_GRanges(mode = 'TE',
+                          results_df = results_df_local_TE)
+saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/GRanges_TE.rds")
+
 GRanges_TE_up = make_GRanges(mode = 'TE',
                                results_df = results_df_local_TE_up)
+
 GRanges_TE_unchanged = make_GRanges(mode = 'TE',
                                       results_df = results_df_local_TE_unchanged)
+
 GRanges_TE_down = make_GRanges(mode = 'TE',
                                  results_df = results_df_local_TE_down)
+
+GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
+                                    results_df = results_df_local_TE_sigdiff)
+saveRDS(GRanges_TE_sigdiff, "~/TE_thymus/analysis/cluster/GRanges_TE_sigdiff.rds")
 
 #################################################################
 # regioneR
@@ -182,48 +232,20 @@ save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/
 
 
 #################################################################
-# Experimental method
+# Correlation method
 #################################################################
 
-correlate_fold_change = function(query, subject){
-  
-  query_fold_change = rep(NA, length(query))
-  subject_fold_change = rep(NA, length(query))
-  
-  for (i in 1:length(query)){
-    print(i)
-    query_fold_change[i] = query[i]$log2FoldChange[1]
-    
-    overlapping_subjects = findOverlaps(query = query[i],
-                                        subject = subject)
-    
-    overlapping_subjects = as.data.frame(overlapping_subjects)
-    hit_indices = overlapping_subjects$subjectHits
-    
-    fold_changes = rep(NA, length(hit_indices))
-    index_number = 1
-    
-    for (index in hit_indices){
-      
-      fold_changes[index_number] = 2 ** subject[index]$log2FoldChange[1]
-      index_number = index_number + 1
-      
-    }
-    
-    subject_fold_change[i] = log2(mean(fold_changes))
-    
-  }
-  
-  output = data.frame(query_fold_change = query_fold_change, subject_fold_change = subject_fold_change)
-  
-  return(output)
-  
-}
+## query: GRanges_gene, subject: GRanges_TE
 
-saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/GRanges_gene.rds")
-saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/GRanges_TE.rds")
+output = readRDS("~/TE_thymus/analysis/cluster/gene_vs_TE.rds")
 
-output = correlate_fold_change(query = GRanges_gene[100:200], subject = GRanges_TE)
+## query: GRanges_gene_sigdiff, subject: GRanges_TE_sigdiff
+
+output = correlate_fold_change(query = GRanges_gene_sigdiff, subject = GRanges_TE_sigdiff)
+
+output = readRDS("~/TE_thymus/analysis/cluster/gene_sigdiff_vs_TE_sigdiff.rds")
+
+## Plot and test
 
 correlation = ggplot(data = output, aes(x = query_fold_change, y = subject_fold_change)) + 
   geom_point(alpha = 0.6, size = 0.5) +
@@ -237,3 +259,4 @@ correlation + theme_bw() + theme(plot.title = element_text(face = 'bold', size =
                                axis.line = element_line(size = 0.8),
                                panel.border = element_blank())
 
+cor.test(x = output$query_fold_change, y = output$subject_fold_change, method = 'pearson')

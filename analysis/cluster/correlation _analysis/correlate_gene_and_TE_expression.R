@@ -2,9 +2,6 @@
 
 library(GenomicRanges)
 
-GRanges_gene = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/GRanges_gene.rds")
-GRanges_TE = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/GRanges_TE.rds")
-
 correlate_fold_change = function(query, subject){
   
   query_fold_change = rep(NA, length(query))
@@ -34,14 +31,15 @@ correlate_fold_change = function(query, subject){
     
   }
   
-  output = data.frame(query_fold_change = query_fold_change, subject_fold_change = subject_fold_change)
+  output = data.frame('query_fold_change' = query_fold_change, 'subject_fold_change' = subject_fold_change)
   
   return(output)
   
 }
 
-output = correlate_fold_change(query = GRanges_gene, subject = GRanges_TE)
+GRanges_gene_sigdiff = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/correlation_analysis/GRanges_gene_sigdiff.rds")
+GRanges_TE_sigdiff = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/correlation_analysis/GRanges_TE_sigdiff.rds")
 
-saveRDS(output, "/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/correlate_gene_and_TE_expression_output.rds")
+output = correlate_fold_change(query = GRanges_gene_sigdiff, subject = GRanges_TE_sigdiff)
 
-
+saveRDS(output, "/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/correlation_analysis/gene_sigdiff_vs_TE_sigdiff.rds")
