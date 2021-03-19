@@ -42,6 +42,37 @@ volcano_plot = ggplot() +
   ylab(expression('-Log'[10]*' P value')) +
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression: TElocal')
 
+## Coloured by spatial overlap with DE genes 
+
+overlap_with_up_gene = rep(NA, length(GRanges_TE))
+
+for (i in 1:length(GRanges_TE)){
+  
+  print(i)
+  up_hit = countOverlaps(query = GRanges_TE[i], subject = GRanges_gene_up)
+  if (length(up_hit) > 0){
+    
+    overlap_with_up_gene[i] = T
+    
+  }
+  
+  else{
+    
+    overlap_with_up_gene[i] = F
+    
+  }
+  
+}
+
+
+
+volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
+  geom_point(alpha = 0.6, aes(colour = significant)) +
+  xlab(expression('Log'[2]*' FC')) +
+  ylab(expression('-Log'[10]*' P value')) +
+  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression: TE local') +
+  scale_colour_manual(values = c('#9B9A99', "red"))
+
 ## Plot
 
 volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
@@ -96,16 +127,6 @@ volcano_plot = ggplot() +
   ylab(expression('-Log'[10]*' P value')) +
   xlim(-3, 3) +
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression')
-
-## Coloured by spatial overlap with DE genes 
-
-volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = overall_significant)) +
-  geom_point(alpha = 0.6, aes(colour = overall_significant)) +
-  xlab(expression('Log'[2]*' FC')) +
-  ylab(expression('-Log'[10]*' P value')) +
-  xlim(-3, 3) +
-  ggtitle('mTEC-hi vs mTEC-lo', 'TE expression') +
-  scale_colour_manual(values = c('#9B9A99', "red"))
 
 ## Plot
 

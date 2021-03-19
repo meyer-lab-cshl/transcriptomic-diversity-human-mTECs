@@ -43,8 +43,8 @@ make_GRanges = function(mode, results_df){
 run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
   
   output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
-  rownames(output) = c('gene_up', 'gene_unchanged', 'gene_down')
-  colnames(output) = c('TE_up', 'TE_unchanged', 'TE_down')
+  rownames(output) = c('gene_up', 'gene_down')
+  colnames(output) = c('TE_up', 'TE_down')
   
   row_number = 1
   number_of_tests = ncol(output) + nrow(output)
@@ -156,10 +156,11 @@ correlate_fold_change = function(query, subject){
 
 GRanges_gene = make_GRanges(mode = 'gene',
                             results_df = results_df_local_gene)
-saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/GRanges_gene.rds")
+saveRDS(GRanges_gene, "~/TE_thymus/analysis/cluster/objects/GRanges_gene.rds")
 
 GRanges_gene_up = make_GRanges(mode = 'gene',
                                results_df = results_df_local_gene_up)
+saveRDS(GRanges_gene_up, "~/TE_thymus/analysis/cluster/objects/GRanges_gene_up.rds")
 
 GRanges_gene_unchanged = make_GRanges(mode = 'gene',
                                results_df = results_df_local_gene_unchanged)
@@ -168,11 +169,11 @@ GRanges_gene_down = make_GRanges(mode = 'gene',
 
 GRanges_gene_sigdiff = make_GRanges(mode = 'gene',
                                     results_df = results_df_local_gene_sigdiff)
-saveRDS(GRanges_gene_sigdiff, "~/TE_thymus/analysis/cluster/GRanges_gene_sigdiff.rds")
+saveRDS(GRanges_gene_sigdiff, "~/TE_thymus/analysis/cluster/objects/GRanges_gene_sigdiff.rds")
 
 GRanges_TE = make_GRanges(mode = 'TE',
                           results_df = results_df_local_TE)
-saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/GRanges_TE.rds")
+saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/objects/GRanges_TE.rds")
 
 GRanges_TE_up = make_GRanges(mode = 'TE',
                                results_df = results_df_local_TE_up)
@@ -185,14 +186,14 @@ GRanges_TE_down = make_GRanges(mode = 'TE',
 
 GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
                                     results_df = results_df_local_TE_sigdiff)
-saveRDS(GRanges_TE_sigdiff, "~/TE_thymus/analysis/cluster/GRanges_TE_sigdiff.rds")
+saveRDS(GRanges_TE_sigdiff, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_sigdiff.rds")
 
 #################################################################
 # regioneR
 #################################################################
 
-gene_groups = list(GRanges_gene_up, GRanges_gene_unchanged, GRanges_gene_down)
-TE_groups = list(GRanges_TE_up, GRanges_TE_unchanged, GRanges_TE_down)
+gene_groups = list(GRanges_gene_up, GRanges_gene_down)
+TE_groups = list(GRanges_TE_up, GRanges_TE_down)
 
 saveRDS(gene_groups, "~/TE_thymus/analysis/cluster/gene_groups.rds")
 saveRDS(TE_groups, "~/TE_thymus/analysis/cluster/TE_groups.rds")
@@ -244,7 +245,7 @@ correlation = ggplot(data = output, aes(x = query_fold_change, y = subject_fold_
 
 output = correlate_fold_change(query = GRanges_TE_sigdiff, subject = GRanges_gene_sigdiff)
 
-correlation_test = cor.test(x = output$subject_fold_change, y = output$query_fold_change, method = 'pearson')
+correlation_test = cor.test(x = output$query_fold_change, y = output$subject_fold_change, method = 'pearson')
 
 r_squared = as.character(correlation_test$estimate ** 2)
 
@@ -266,6 +267,6 @@ correlation + theme_bw() + theme(plot.title = element_text(face = 'bold', size =
                                panel.border = element_blank())
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/correlated_expression_sigdiff_only.png", 
-       width = 20, height = 15, units = "cm")
+       width = 25, height = 15, units = "cm")
 
 
