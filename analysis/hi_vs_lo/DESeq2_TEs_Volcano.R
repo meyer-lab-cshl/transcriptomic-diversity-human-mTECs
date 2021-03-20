@@ -1,5 +1,6 @@
 library(ggplot2)
 library(ggrepel)
+library(dplyr)
 
 #################################################################
 # TE local
@@ -44,17 +45,32 @@ volcano_plot = ggplot() +
 
 ## Coloured by spatial overlap with DE genes 
 
-overlap_with_up_gene = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/count_overlaps/overlap_with_up_gene.rds")
-overlap_with_down_gene = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/count_overlaps/overlap_with_down_gene.rds")
+up_hits = findOverlaps(GRanges_TE, GRanges_gene_up)
+up_hits = as.data.frame(up_hits)
+up_hits_query_index = unique(up_hits$queryHits)
 
-input$overlap_with_up_gene = overlap_with_up_gene
-input$overlap_with_down_gene = overlap_with_down_gene
+down_hits = findOverlaps(GRanges_TE, GRanges_gene_down)
+down_hits = as.data.frame(down_hits)
+down_hits_query_index = unique(down_hits$queryHits)
 
-volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = overlap_with_up_gene)) +
-  geom_point(alpha = 0.6, aes(colour = overlap_with_up_gene)) +
+overlap_with_up_gene = results_df_local_TE[up_hits_query_index, ]$ID
+overlap_with_down_gene = results_df_local_TE[down_hits_query_index, ]$ID
+
+input = mutate(results_df_local_TE, overlap_with_up_gene = case_when(ID %in% overlap_with_up_gene == T ~ TRUE,
+                                                                     ID %in% overlap_with_up_gene == F ~ FALSE))
+input = mutate(input, overlap_with_down_gene = case_when(ID %in% overlap_with_down_gene == T ~ TRUE,
+                                                         ID %in% overlap_with_down_gene == F ~ FALSE))
+
+input = mutate(input, overlap_status = case_when((overlap_with_up_gene == T) & (overlap_with_down_gene == T) ~ 'both',
+                                                 (overlap_with_up_gene == T) & (overlap_with_down_gene == F) ~ 'up',
+                                                 (overlap_with_up_gene == F) & (overlap_with_down_gene == T) ~ 'down'))
+
+volcano_plot = ggplot(data = subset(input, overlap_status != '<NA>'), aes(x = log2FoldChange, y = -log10(padj), colour = overlap_status)) +
+  geom_point(alpha = 0.6) +
   xlab(expression('Log'[2]*' FC')) +
   ylab(expression('-Log'[10]*' P value')) +
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression: TE local') +
+  ylim(0, 90)
   scale_colour_manual(values = c('#9B9A99', "red"))
 
 ## Plot
