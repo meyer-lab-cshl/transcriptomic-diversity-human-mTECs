@@ -40,5 +40,5 @@ for (i in 1:length(GRanges_TE)){
   
 }
 
-saveRDS(overlap_with_up_gene, "/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/count_overlaps/overlap_with_up_gene.rds")
-saveRDS(overlap_with_down_gene, "/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/count_overlaps/overlap_with_down_gene.rds")
+saveRDS(overlap_with_up_gene, "/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/objects/overlap_with_up_gene.rds")
+saveRDS(overlap_with_down_gene, "/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/objects/overlap_with_down_gene.rds")
