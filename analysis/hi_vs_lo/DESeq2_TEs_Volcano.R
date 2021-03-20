@@ -44,30 +44,14 @@ volcano_plot = ggplot() +
 
 ## Coloured by spatial overlap with DE genes 
 
-overlap_with_up_gene = rep(NA, length(GRanges_TE))
+overlap_with_up_gene = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/count_overlaps/overlap_with_up_gene.rds")
+overlap_with_down_gene = readRDS("/grid/meyer/home/mpeacey/TE_thymus/analysis/cluster/count_overlaps/overlap_with_down_gene.rds")
 
-for (i in 1:length(GRanges_TE)){
-  
-  print(i)
-  up_hit = countOverlaps(query = GRanges_TE[i], subject = GRanges_gene_up)
-  if (length(up_hit) > 0){
-    
-    overlap_with_up_gene[i] = T
-    
-  }
-  
-  else{
-    
-    overlap_with_up_gene[i] = F
-    
-  }
-  
-}
+input$overlap_with_up_gene = overlap_with_up_gene
+input$overlap_with_down_gene = overlap_with_down_gene
 
-
-
-volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = significant)) +
-  geom_point(alpha = 0.6, aes(colour = significant)) +
+volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), colour = overlap_with_up_gene)) +
+  geom_point(alpha = 0.6, aes(colour = overlap_with_up_gene)) +
   xlab(expression('Log'[2]*' FC')) +
   ylab(expression('-Log'[10]*' P value')) +
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression: TE local') +
