@@ -7,7 +7,7 @@ library(tidyr)
 # Stacked bar chart: class/family frequency
 #################################################################
 
-build_count_table = function(dds, results_df, group, mode){
+build_count_table = function(dds, results_df, group, mode, by){
   
   normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
   
@@ -67,32 +67,62 @@ build_count_table = function(dds, results_df, group, mode){
     
     if (mode == 'class'){
       
-      input = group_by(input, class) %>% summarize(sum = sum(mean))
-      input = as.data.frame(input)
-      input$group = i
+      if (by == 'normalized_reads'){
+        
+        input = group_by(input, class) %>% summarize(summary = sum(mean))
+        
+      }
+      
+      if (by == 'locus'){
+        
+        input = group_by(input, class) %>% summarize(summary = n())
+        
+      }
       
     }
       
     if (mode == 'LTR_family'){
+      
+      if (by == 'normalized_reads'){
         
-      input = input %>% 
-        filter(class == 'LTR') %>%
-        group_by(family) %>% 
-        summarize(sum = sum(mean))
-      input = as.data.frame(input)
-      input$group = i
+        input = input %>% 
+          filter(class == 'LTR') %>%
+          group_by(family) %>% 
+          summarize(summary = sum(mean))
+        
+      }
+      
+      if (by == 'locus'){
+        
+        input = input %>% 
+          filter(class == 'LTR') %>%
+          group_by(family) %>% 
+          summarize(summary = n())
+      
+      }
       
     }
     
     if (mode == 'overlap'){
       
-      input = group_by(input, overlap_status) %>% summarize(sum = sum(mean))
-      input = as.data.frame(input)
-      input$group = i
+      if (by == 'normalized_reads'){
+        
+        input = group_by(input, overlap_status) %>% summarize(summary = sum(mean))
+        
+      }
+      
+      if (by == 'locus'){
+        
+        input = group_by(input, overlap_status) %>% summarize(summary = n())
+        
+      }
       
     }
     
     ######
+    
+    input = as.data.frame(input)
+    input$group = i
     
     if (match(i, group) == 1){
       
@@ -110,28 +140,27 @@ build_count_table = function(dds, results_df, group, mode){
   
   output = output %>%
     group_by(group) %>%
-    mutate(percent_counts = sum / sum(sum) * 100)
+    mutate(percent = summary / sum(summary) * 100)
   
   return(output)
   
 }
 
-dds = dds_local_TE
-results_df = results_df_local_TE
-group = c('all', 'diff_regulated', 'up_regulated', 'down_regulated')
-mode = 'overlap'
-
-count_table = build_count_table(dds, results_df, group, mode)
+count_table = build_count_table(dds = dds_local_TE,
+                                results_df = results_df_local_TE, 
+                                group = c('all', 'diff_regulated', 'up_regulated', 'down_regulated'), 
+                                mode = 'overlap',
+                                by = 'locus')
 
 ## Plot stacked bars
 
-bar_chart = ggplot(count_table, aes(x = group, y = percent_counts, fill = overlap_status)) + 
+bar_chart = ggplot(count_table, aes(x = group, y = percent, fill = overlap_status)) + 
   geom_col(colour = 'black', position = 'fill') +
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
   scale_fill_brewer(palette = "Set1") +
   xlab('') +
   ylab('Fraction of normalized reads') +
-  ggtitle('All TE classes', 'TE local')
+  ggtitle('TEs in mTEC-HI cells', 'Subset by physical overlap with genes')
 
 bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                plot.subtitle = element_text(size = 14),
@@ -147,5 +176,5 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                legend.text = element_text(size = 12),
                                legend.title = element_text(size = 14))
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/hi_vs_lo_TEs_classbreakdown.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/21-03-25/slide_3.png", 
        width = 20, height = 13, units = "cm")

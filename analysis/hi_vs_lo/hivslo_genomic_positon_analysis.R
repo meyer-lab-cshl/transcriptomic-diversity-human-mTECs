@@ -214,21 +214,11 @@ results_df_local_TE = mutate(results_df_local_TE, overlap_with_down_gene = case_
 results_df_local_TE = mutate(results_df_local_TE, overlap_with_unchanged_gene = case_when(ID %in% overlap_with_unchanged_gene == T ~ TRUE,
                                                                                      ID %in% overlap_with_unchanged_gene == F ~ FALSE))
 
-results_df_local_TE = mutate(results_df_local_TE, overlap_status = case_when(((overlap_with_up_gene == T) & (overlap_with_down_gene == T)) |
-                                                                               ((overlap_with_up_gene == T) & (overlap_with_unchanged_gene == T)) |
-                                                                               ((overlap_with_down_gene == T) & (overlap_with_unchanged_gene == T)) ~ 'multiple',
-                                                                             (overlap_with_up_gene == T) & 
-                                                                               (overlap_with_down_gene == F) &
-                                                                               (overlap_with_unchanged_gene == F) ~ 'up',
-                                                                             (overlap_with_up_gene == F) & 
-                                                                               (overlap_with_down_gene == T) &
-                                                                               (overlap_with_unchanged_gene == F) ~ 'down',
-                                                                             (overlap_with_up_gene == F) & 
-                                                                               (overlap_with_down_gene == F) &
-                                                                               (overlap_with_unchanged_gene == T) ~ 'unchanged',
-                                                                             (overlap_with_up_gene == F) & 
-                                                                               (overlap_with_down_gene == F) &
-                                                                               (overlap_with_unchanged_gene == F) ~ 'none'))
+results_df_local_TE = mutate(results_df_local_TE, overlap_status = case_when((overlap_with_up_gene == T) & (overlap_with_down_gene == F)  ~ 'up',
+                                                              (overlap_with_up_gene == F) & (overlap_with_down_gene == T) ~ 'down',
+                                                              (overlap_with_up_gene == F) & (overlap_with_down_gene == F) & (overlap_with_unchanged_gene == T) ~ 'unchanged',
+                                                              (overlap_with_up_gene == F) & (overlap_with_down_gene == F) & (overlap_with_unchanged_gene == F) ~ 'none'))
+
 
 #################################################################
 # regioneR
