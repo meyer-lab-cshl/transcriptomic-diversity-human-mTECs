@@ -7,29 +7,20 @@ library(tidyr)
 # Stacked bar chart: class/family frequency
 #################################################################
 
-build_count_table = function(tool, dds, results_df, group, mode){
+build_count_table = function(dds, results_df, group, mode){
   
   normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
   
   normalized_counts = cbind(ID = rownames(normalized_counts), normalized_counts)
   
-  ## ID column is split into constituent parts, which depend on the tool used.
+  ## Merge with results_df, determine mean and remove unnecessary columns
   
-  if (tool == 'TE_transcripts'){
-    
-    normalized_counts = separate(data = normalized_counts, col = 'ID', into = c('gene', 'family', 'class'), sep = ':')
-    
-  }
+  normalized_counts = merge(normalized_counts, results_df, by = 'ID')
+  normalized_counts = select(normalized_counts, -c('214_LO', '221_LO', '226_LO'))
+  normalized_counts$mean = rowMeans(normalized_counts[2:4])
+  normalized_counts = select(normalized_counts, -c('214_HI', '221_HI', '226_HI'))
   
-  if (tool == 'TE_local'){
-    
-    normalized_counts = separate(data = normalized_counts, col = 'ID', into = c('element', 'gene', 'family', 'class'), sep = ':')
-    
-  }
-  
-  ## Row names are reset to ID
-  
-  normalized_counts = cbind(ID = rownames(normalized_counts), normalized_counts)
+  normalized_counts = mutate(normalized_counts, class = sub("\\?", "", class))
   
   ## Input is determined by subsetting normalized_counts by logical conditions specified in 'group'
   
@@ -44,21 +35,21 @@ build_count_table = function(tool, dds, results_df, group, mode){
     if (i == 'diff_regulated'){
       
       sigGenes = results_df[results_df$significant == TRUE,]$ID
-      input = normalized_counts[rownames(normalized_counts) %in% sigGenes,]
+      input = normalized_counts[normalized_counts$ID %in% sigGenes,]
       
     }
     
-    if (i == 'upregulated'){
+    if (i == 'up_regulated'){
       
       upGenes = results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0), ]$ID
-      input = normalized_counts[rownames(normalized_counts) %in% upGenes,]
+      input =normalized_counts[normalized_counts$ID %in% upGenes,]
       
     }
     
-    if (i == 'downregulated'){
+    if (i == 'down_regulated'){
       
       downGenes = results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0), ]$ID
-      input = normalized_counts[rownames(normalized_counts) %in% downGenes,]
+      input = normalized_counts[normalized_counts$ID %in% downGenes,]
       
     }
     
@@ -72,57 +63,49 @@ build_count_table = function(tool, dds, results_df, group, mode){
 
     }
     
-    input_HI = select(input, -c('214_LO', '221_LO', '226_LO'))
-    input_HI$mean = rowMeans(input_HI[6:8])
-    input_HI = select(input_HI, -c('214_HI', '221_HI', '226_HI'))
-  
-    input_HI = mutate(input_HI, class = sub("\\?", "", class))
+    ########
     
     if (mode == 'class'){
       
-      input_HI = group_by(input_HI, class) %>% summarize(sum = sum(mean))
-      input_HI = as.data.frame(input_HI)
-      input_HI$group = i
+      input = group_by(input, class) %>% summarize(sum = sum(mean))
+      input = as.data.frame(input)
+      input$group = i
       
-      if (match(i, group) == 1){
-        
-        output = input_HI
-        
-      }
-      
-      else{
-        
-        output = bind_rows(output, input_HI)
-        
-      }
-    
     }
       
     if (mode == 'LTR_family'){
         
-      input_HI = input_HI %>% 
+      input = input %>% 
         filter(class == 'LTR') %>%
         group_by(family) %>% 
         summarize(sum = sum(mean))
-      input_HI = as.data.frame(input_HI)
-      input_HI$group = i
-        
-      print(input_HI)
-        
-      if (match(i, group) == 1){
-          
-        output = input_HI
-          
-      }
-        
-      else{
-          
-        output = bind_rows(output, input_HI)
-          
-      }
-        
+      input = as.data.frame(input)
+      input$group = i
+      
     }
     
+    if (mode == 'overlap'){
+      
+      input = group_by(input, overlap_status) %>% summarize(sum = sum(mean))
+      input = as.data.frame(input)
+      input$group = i
+      
+    }
+    
+    ######
+    
+    if (match(i, group) == 1){
+      
+      output = input
+      
+    }
+    
+    if (match(i, group) != 1) {
+      
+      output = bind_rows(output, input)
+      
+    }  
+
   }
   
   output = output %>%
@@ -133,17 +116,16 @@ build_count_table = function(tool, dds, results_df, group, mode){
   
 }
 
-## Plot stacked bars
-
-tool = 'TE_local'
 dds = dds_local_TE
 results_df = results_df_local_TE
-group = c('all', 'diff_regulated', 'downregulated', 'upregulated')
-mode = 'class'
+group = c('all', 'diff_regulated', 'up_regulated', 'down_regulated')
+mode = 'overlap'
 
-count_table = build_count_table(tool, dds, results_df, group, mode)
+count_table = build_count_table(dds, results_df, group, mode)
 
-bar_chart = ggplot(count_table, aes(x = group, y = percent_counts, fill = class)) + 
+## Plot stacked bars
+
+bar_chart = ggplot(count_table, aes(x = group, y = percent_counts, fill = overlap_status)) + 
   geom_col(colour = 'black', position = 'fill') +
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
   scale_fill_brewer(palette = "Set1") +

@@ -45,26 +45,6 @@ volcano_plot = ggplot() +
 
 ## Coloured by spatial overlap with DE genes 
 
-up_hits = findOverlaps(GRanges_TE, GRanges_gene_up)
-up_hits = as.data.frame(up_hits)
-up_hits_query_index = unique(up_hits$queryHits)
-
-down_hits = findOverlaps(GRanges_TE, GRanges_gene_down)
-down_hits = as.data.frame(down_hits)
-down_hits_query_index = unique(down_hits$queryHits)
-
-overlap_with_up_gene = results_df_local_TE[up_hits_query_index, ]$ID
-overlap_with_down_gene = results_df_local_TE[down_hits_query_index, ]$ID
-
-input = mutate(results_df_local_TE, overlap_with_up_gene = case_when(ID %in% overlap_with_up_gene == T ~ TRUE,
-                                                                     ID %in% overlap_with_up_gene == F ~ FALSE))
-input = mutate(input, overlap_with_down_gene = case_when(ID %in% overlap_with_down_gene == T ~ TRUE,
-                                                         ID %in% overlap_with_down_gene == F ~ FALSE))
-
-input = mutate(input, overlap_status = case_when((overlap_with_up_gene == T) & (overlap_with_down_gene == T) ~ 'both',
-                                                 (overlap_with_up_gene == T) & (overlap_with_down_gene == F) ~ 'up',
-                                                 (overlap_with_up_gene == F) & (overlap_with_down_gene == T) ~ 'down'))
-
 volcano_plot = ggplot(data = subset(input, overlap_status != '<NA>'), aes(x = log2FoldChange, y = -log10(padj), colour = overlap_status)) +
   geom_point(alpha = 0.6) +
   xlab(expression('Log'[2]*' FC')) +

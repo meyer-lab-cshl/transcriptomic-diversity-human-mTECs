@@ -189,6 +189,47 @@ GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
                                     results_df = results_df_local_TE_sigdiff)
 saveRDS(GRanges_TE_sigdiff, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_sigdiff.rds")
 
+## Annotate results_df_local_TE
+
+up_hits = findOverlaps(GRanges_TE, GRanges_gene_up)
+up_hits = as.data.frame(up_hits)
+up_hits_query_index = unique(up_hits$queryHits)
+
+down_hits = findOverlaps(GRanges_TE, GRanges_gene_down)
+down_hits = as.data.frame(down_hits)
+down_hits_query_index = unique(down_hits$queryHits)
+
+unchanged_hits = findOverlaps(GRanges_TE, GRanges_gene_unchanged)
+unchanged_hits = as.data.frame(unchanged_hits)
+unchanged_hits_query_index = unique(unchanged_hits$queryHits)
+
+overlap_with_up_gene = results_df_local_TE[up_hits_query_index, ]$ID
+overlap_with_down_gene = results_df_local_TE[down_hits_query_index, ]$ID
+overlap_with_unchanged_gene = results_df_local_TE[unchanged_hits_query_index, ]$ID
+
+results_df_local_TE = mutate(results_df_local_TE, overlap_with_up_gene = case_when(ID %in% overlap_with_up_gene == T ~ TRUE,
+                                                                                   ID %in% overlap_with_up_gene == F ~ FALSE))
+results_df_local_TE = mutate(results_df_local_TE, overlap_with_down_gene = case_when(ID %in% overlap_with_down_gene == T ~ TRUE,
+                                                                                     ID %in% overlap_with_down_gene == F ~ FALSE))
+results_df_local_TE = mutate(results_df_local_TE, overlap_with_unchanged_gene = case_when(ID %in% overlap_with_unchanged_gene == T ~ TRUE,
+                                                                                     ID %in% overlap_with_unchanged_gene == F ~ FALSE))
+
+results_df_local_TE = mutate(results_df_local_TE, overlap_status = case_when(((overlap_with_up_gene == T) & (overlap_with_down_gene == T)) |
+                                                                               ((overlap_with_up_gene == T) & (overlap_with_unchanged_gene == T)) |
+                                                                               ((overlap_with_down_gene == T) & (overlap_with_unchanged_gene == T)) ~ 'multiple',
+                                                                             (overlap_with_up_gene == T) & 
+                                                                               (overlap_with_down_gene == F) &
+                                                                               (overlap_with_unchanged_gene == F) ~ 'up',
+                                                                             (overlap_with_up_gene == F) & 
+                                                                               (overlap_with_down_gene == T) &
+                                                                               (overlap_with_unchanged_gene == F) ~ 'down',
+                                                                             (overlap_with_up_gene == F) & 
+                                                                               (overlap_with_down_gene == F) &
+                                                                               (overlap_with_unchanged_gene == T) ~ 'unchanged',
+                                                                             (overlap_with_up_gene == F) & 
+                                                                               (overlap_with_down_gene == F) &
+                                                                               (overlap_with_unchanged_gene == F) ~ 'none'))
+
 #################################################################
 # regioneR
 #################################################################
