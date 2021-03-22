@@ -177,16 +177,25 @@ data_local = select(data_local, -ID)
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
 
-TE_data = data[grepl("^(?!ENSG).*$",rownames(data), perl = TRUE),]
-
 min_read = 1
-data_transcripts = TE_data[apply(TE_data,1,function(x){max(x)}) > min_read,]
+data = data[apply(data,1,function(x){max(x)}) > min_read,]
 
 # Run differential expression
 
-dds_transcripts = differential_expression(data_transcripts)
-res_transcripts = results(dds_transcripts,independentFiltering = F)
-results_df_transcripts = process_DESeq2_results(results = res_transcripts, mode = 'TE_transcripts')
+dds_transcripts = differential_expression(data)
+dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
+dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
+
+results_transcripts = results(dds_transcripts, independentFiltering = F)
+results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
+results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
+
+results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
+results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
+
+results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
+
+results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
 
 #################################################################
 # Misc stuff I'm hoarding in case it's important
