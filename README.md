@@ -13,6 +13,6 @@
     + GENCODE GRCh38 gene annotation
     
 3. **Differential expression analysis with DESEq2**
-    + Pre-filtering: minimum of one read per gene/TE
+    + Pre-filtering: minimum of ten normalized reads per gene/TE
     + FDR: 0.1
     + Independent filtering: off
