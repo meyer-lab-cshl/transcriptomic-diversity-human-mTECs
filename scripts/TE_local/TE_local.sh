@@ -6,27 +6,13 @@
 #$ -o TE_local_output.txt
 #$ -e TE_local_output.txt
 
-cd $TE_HOME/data/GTEX_test/Brain
+cd $TE_HOME/data/hi_vs_lo                         
 
 for FILE in *_Aligned.out.bam; do
   TElocal \
   -b ${FILE} \
-  --GTF $TE_HOME/index/human.GRCh38.gtf \
-  --TE $TE_HOME/index/hg38_rmsk_TE.gtf.locInd \
+  --GTF $TE_HOME/index/annotations/human.GRCh38.gtf \
+  --TE $TE_HOME/index/annotations/TElocal_prebuilt_indices/GRCh38_GENCODE_rmsk_TE.gtf.locInd \
   --project TE_local_${FILE}
 
 done
-
-cd $TE_HOME/data/GTEX_test/Not_Sun_Exposed
-
-for FILE in *_Aligned.out.bam; do
-  TElocal \
-  -b ${FILE} \
-  --GTF $TE_HOME/index/human.GRCh38.gtf \
-  --TE $TE_HOME/index/hg38_rmsk_TE.gtf.locInd \
-  --project TE_local_${FILE}
-
-done 
-
-
-
