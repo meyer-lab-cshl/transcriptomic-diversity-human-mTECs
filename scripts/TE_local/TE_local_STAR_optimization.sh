@@ -6,7 +6,7 @@
 #$ -o TE_local_output.txt
 #$ -e TE_local_output.txt
 
-cd $TE_HOME/data/STAR_optimization/
+cd $TE_HOME/data/STAR_optimization/mTEC-HI/
 
 for FILE in *_Aligned.out.bam; do
   TElocal \
@@ -16,3 +16,4 @@ for FILE in *_Aligned.out.bam; do
   --project TE_local_${FILE}
 
 done
+
