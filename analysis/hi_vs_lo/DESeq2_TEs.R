@@ -8,23 +8,27 @@ library(tidyr)
 
 ## Differential expression
 
-differential_expression = function(count_table){
+differential_expression = function(raw_count_table, min_reads = 10){
   
   ## Define sampleInfo
   
-  ID = colnames(count_table)
-  sampleInfo = data.frame(ID,row.names=colnames(count_table))
+  ID = colnames(raw_count_table)
+  sampleInfo = data.frame(ID,row.names=colnames(raw_count_table))
   sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
   sampleInfo$patient = factor(sampleInfo$patient)
   
   ## Construct DESeq dataset object
   
-  dds <- DESeqDataSetFromMatrix(countData = count_table, colData = sampleInfo, design = ~patient + group)
+  dds <- DESeqDataSetFromMatrix(countData = raw_count_table, colData = sampleInfo, design = ~patient + group)
   dds$group = relevel(dds$group,ref="LO")
   
   ## Run differential expression analysis
   
   dds = DESeq(dds)
+  
+  ## Pre-filter to remove rows with less than 'min_reads' total (default 10)
+  
+  dds = dds[ rowSums(counts(dds)) >= min_reads, ]
   
   return(dds)
   
@@ -108,8 +112,8 @@ data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs
                   header=T,row.names=1)
 colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
 
-min_read = 1
-data = data[apply(data,1,function(x){max(x)}) > min_read,]
+#min_read = 1
+#pre_filtered_data = data[apply(data,1,function(x){max(x)}) > min_read,]
 
 # Run differential expression
 
@@ -221,3 +225,60 @@ sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGene
 upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
 
 downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
+
+#################################################################
+# Optimizing DESeq2 for TEs
+#################################################################
+
+library(glue)
+
+data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
+                  header=T,row.names=1)
+colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
+
+min_reads = c(2, 5, 10, 20)
+independent_filtering = c(T, F)
+
+gene = matrix(, nrow = length(independent_filtering), ncol = length(min_reads))
+rownames(gene) = c('IF_on', 'IF_off')
+colnames(gene) = c('2', '5', '10', '20')
+
+TE = matrix(, nrow = length(independent_filtering), ncol = length(min_reads))
+rownames(TE) = c('IF_on', 'IF_off')
+colnames(TE) = c('2', '5', '10', '20')
+
+row_number = 1
+
+for (i in independent_filtering){
+  
+  column_number = 1
+  
+  for (i_2 in min_reads){
+    
+    print(glue('Starting row {row_number}, column {column_number}'))
+    
+    dds_local = differential_expression(data, min_reads = i_2)
+    
+    results_local = results(dds_local, independentFiltering = i)
+    
+    results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
+    results_local_TE = extract_from_DESeq2(mode = 'TE', input = results_local)
+    
+    results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
+    results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
+    
+    results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
+    
+    results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
+    
+    gene[row_number, column_number] = nrow(results_df_local_gene_sigdiff)
+    TE[row_number, column_number] = nrow(results_df_local_TE_sigdiff)
+      
+    column_number = column_number + 1
+    
+  }
+  
+  row_number = row_number + 1
+  
+}
+
