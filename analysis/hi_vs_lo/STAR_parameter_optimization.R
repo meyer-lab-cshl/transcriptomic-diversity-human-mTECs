@@ -1,12 +1,12 @@
 library(ggplot2)
 library(dplyr)
 
-df = data.frame(multi_map_parameter = c(10, 100, 150, 200))
+df = data.frame(multi_map_parameter = c(10, 50, 100, 150, 200))
 
 df$multi_map_parameter = as.factor(df$multi_map_parameter)
 
-df$annotated_reads = c(71792494.63372958, 71993044.47464405, 71996200.89465106, 71998061.01108)
-df$multi_reads = c(8845166, 9349924, 9355569, 9360374)
+df$annotated_reads = c(71792494.63372958, 71982022.56696483, 71993044.47464405, 71996200.89465106, 71998061.01108)
+df$multi_reads = c(8845166, 9341186, 9349924, 9355569, 9360374)
 
 df = mutate(df, percent_multi_reads = (multi_reads / annotated_reads) * 100)
 
@@ -32,4 +32,4 @@ plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 16),
                                legend.title = element_text(size = 14))
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/21-03-25/STAR_parameter_optimization.png", 
-       width = 12, height = 10, units = "cm")
+       width = 15, height = 10, units = "cm")
