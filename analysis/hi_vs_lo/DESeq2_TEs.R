@@ -8,7 +8,7 @@ library(tidyr)
 
 ## Differential expression
 
-differential_expression = function(raw_count_table, min_reads = 10){
+differential_expression = function(raw_count_table, min_reads = 2){
   
   ## Define sampleInfo
   
