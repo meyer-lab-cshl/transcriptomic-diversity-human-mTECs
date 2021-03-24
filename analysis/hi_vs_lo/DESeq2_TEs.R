@@ -225,5 +225,3 @@ sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGene
 upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
 
 downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
-
-
