@@ -110,7 +110,7 @@ process_DESeq2_results = function(results,
 
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
                   header=T,row.names=1)
-colnames(data) = c('214_HI', '214_LO', '221_HI', '221_LO', '226_HI', '226_LO')
+colnames(data) = c('226_LO', '226_HI', '221_LO', '221_HI', '214_HI', '214_LO')
 
 #min_read = 1
 #pre_filtered_data = data[apply(data,1,function(x){max(x)}) > min_read,]
@@ -181,8 +181,8 @@ data_local = select(data_local, -ID)
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
 
-min_read = 1
-data = data[apply(data,1,function(x){max(x)}) > min_read,]
+#min_read = 1
+#data = data[apply(data,1,function(x){max(x)}) > min_read,]
 
 # Run differential expression
 
