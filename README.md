@@ -1,5 +1,7 @@
 # TE_thymus
 
+Transposable element expression in medullary thymic epithelial cells.
+
 ## Workflow:
 
 1. **Align reads with STAR**

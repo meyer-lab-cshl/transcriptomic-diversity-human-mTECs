@@ -8,13 +8,15 @@ library(tidyr)
 input = results_df_local_TE
 input = mutate(input, ID = sub("\\?", "", ID))
 input = mutate(input, class = sub("\\?", "", class))
-input = filter(input, significant == TRUE)
+#input = filter(input, significant == TRUE)
 
-input = mutate(input, up_regulated = case_when(log2FoldChange > 0 ~ T,
-                                               log2FoldChange < 0 ~ F))
+#input = mutate(input, up_regulated = case_when(log2FoldChange > 0 ~ T,
+#                                               log2FoldChange < 0 ~ F))
 
 input = mutate(input, detected_by_TE = case_when(gene %in% results_df_transcripts_TE_sigdiff$gene ~ T,
                                                  !(gene %in% results_df_transcripts_TE_sigdiff$gene) ~ F))
+
+input = mutate(input, log2FoldChange_transcripts = )
 
 #################################################################
 # Plotting changes in expression at the element level
@@ -22,29 +24,62 @@ input = mutate(input, detected_by_TE = case_when(gene %in% results_df_transcript
 
 ## Take a random subset
 
-input_random_subset = sample_n(input, 200)
+random_element_subset = sample(results_df_transcripts_TE$gene, 20)
 
-## Plot fold change
+local_input = filter(results_df_local_TE, gene %in% random_element_subset)
 
-plot = ggplot(data = input_random_subset, aes(x = gene, y = log2FoldChange, color = detected_by_TE)) +
-  geom_bar(stat = 'summary', fun.y = 'mean') + 
-  geom_point() +
+transcripts_input = filter(results_df_transcripts_TE, gene %in% random_element_subset) %>% 
+  arrange(log2FoldChange) %>%
+  mutate(gene = factor(gene, levels = gene))
+
+plot = ggplot(data = transcripts_input, aes(x = gene, y = log2FoldChange, fill = significant)) +
+  geom_bar(stat = 'identity') + 
+  geom_point(data = local_input, aes(x = gene, y = log2FoldChange, color = significant), size = 0.5, alpha = 0.6, position = 'jitter') +
   xlab('Element') +
   ylab(expression('Log'[2]*' Fold Change')) +
-  ggtitle('TE expression in mTEC-HI vs mTEC-LO', 'Differentially regulated copies only (random subset of elements)')
+  ggtitle('TE expression in mTEC-HI vs mTEC-LO', 'TEtranscripts and TElocal compared (random subset of elements)')
 
+plot = ggplot(data = transcripts_input, aes(x = gene, y = log2FoldChange)) +
+  geom_bar(stat = 'identity', aes(fill = significant)) + 
+  geom_violin(data = local_input, aes(x = gene, y = log2FoldChange)) +
+  xlab('Element') +
+  ylab(expression('Log'[2]*' Fold Change')) +
+  ggtitle('TE expression in mTEC-HI vs mTEC-LO', 'TEtranscripts and TElocal compared (random subset of elements)')
+
+## Only elements detected by TE_transcirpts
+
+local_input = filter(results_df_local_TE, gene %in% results_df_transcripts_TE_sigdiff$gene)
+
+transcripts_input = filter(results_df_transcripts_TE, gene %in% results_df_transcripts_TE_sigdiff$gene) %>% 
+  arrange(log2FoldChange) %>%
+  mutate(gene = factor(gene, levels = gene))
+
+plot = ggplot(data = transcripts_input, aes(x = gene, y = log2FoldChange, fill = significant)) +
+  geom_bar(stat = 'identity') + 
+  geom_point(data = local_input, aes(x = gene, y = log2FoldChange, color = significant), size = 0.5, alpha = 0.6) +
+  xlab('Element') +
+  ylab(expression('Log'[2]*' Fold Change')) +
+  ggtitle('TE expression in mTEC-HI vs mTEC-LO', 'TEtranscripts and TElocal compared (elements detected by TEtranscripts only)')
+
+plot = ggplot(data = transcripts_input, aes(x = gene, y = log2FoldChange)) +
+  geom_bar(stat = 'identity', aes(fill = significant)) + 
+  geom_violin(data = local_input, aes(x = gene, y = log2FoldChange)) +
+  xlab('Element') +
+  ylab(expression('Log'[2]*' Fold Change')) +
+  ggtitle('TE expression in mTEC-HI vs mTEC-LO', 'TEtranscripts and TElocal compared (random subset of elements)')
+
+## Plot
 
 plot + theme(axis.text.x = element_text(angle = 90, size = 10),
              plot.title = element_text(face = 'bold', size = 20),
              plot.subtitle = element_text(size = 14))
 
-## Plot signed p value
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/21-03-25/local_vs_transcripts_violin.png", 
+       width = 23, height = 12, units = "cm")
 
-input_random_subset = mutate(input_random_subset, signed_log10padj = -log10(padj) * sign(log2FoldChange))
-
-ggplot(data = input, aes(x = gene, y = signed_log10padj)) +
-  geom_point(alpha = 0.6, size = 0.5) +
-  facet_grid(. ~ class)
+#################################################################
+# Only elements detected by TE_transcripts
+#################################################################
 
 
 
