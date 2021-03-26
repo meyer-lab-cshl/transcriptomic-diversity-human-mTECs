@@ -14,7 +14,7 @@ plot = ggplot(data = df, aes(x = multi_map_parameter, y = percent_multi_reads)) 
   geom_bar(stat = 'identity', color = 'black') +
   scale_y_continuous(expand = expansion(mult = c(0, .2))) +
   xlab('outFilterMultimapNmax_array') +
-  ylab('Proportion of multi-mapped reads (%)') +
+  ylab('Proportion of annotated reads that multi-map (%)') +
   ggtitle('STAR parameter optimization', 'Patient 226 mTEC-HI sample')
 
 plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 16),

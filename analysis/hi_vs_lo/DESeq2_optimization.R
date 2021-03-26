@@ -1,5 +1,6 @@
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 
 gene = readRDS('~/TE_thymus/analysis/cluster/objects/sig_diff_gene_count.rds')
 TE = readRDS('~/TE_thymus/analysis/cluster/objects/sig_diff_TE_count.rds')
@@ -24,7 +25,8 @@ plot = ggplot(data = sigdiff_count, aes(x = min_reads, y = gene_sigdiff_count, f
   scale_fill_brewer(palette = "Set1") +
   xlab('Minimum normalized reads per gene') +
   ylab('Number of differentially expressed genes') +
-  ggtitle('Effect of DESeq2 parameters on detection of differential expression', 'Gene expression')
+  ggtitle('Effect of DESeq2 parameters on detection of differential expression', 'Gene expression') +
+  scale_y_continuous(limits = c(0,8000), breaks = c(0, 2000, 4000, 6000, 8000), expand = expansion(mult = c(0, .1)))
 
 ## TE expression
 
@@ -34,7 +36,7 @@ plot = ggplot(data = sigdiff_count, aes(x = min_reads, y = TE_sigdiff_count, fil
   xlab('Minimum normalized reads per copy') +
   ylab('Number of differentially expressed copies') +
   ggtitle('Effect of DESeq2 parameters on detection of differential expression', 'TE expression') +
-  scale_y_continuous(limits = c(0,15000), breaks = c(0, 2500, 5000, 7500, 10000, 12500, 15000))
+  scale_y_continuous(limits = c(0,15000), breaks = c(0, 2500, 5000, 7500, 10000, 12500, 15000), expand = expansion(mult = c(0, .1)))
 
 plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 16),
                    plot.subtitle = element_text(size = 14),
