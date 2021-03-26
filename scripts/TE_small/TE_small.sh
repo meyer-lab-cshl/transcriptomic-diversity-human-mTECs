@@ -6,9 +6,9 @@
 #$ -o TE_small_output.txt
 #$ -e TE_small_output.txt
 
-cd $TE_HOME/data/FastP/5PSeq
+cd $TE_HOME/data/5Pseq/raw_fastq/
 
 tesmall \
--f pt212-hi_1.paired.fastp.fastq \
+-f pt212-hi_1.paired.fastq \
 -g hg38 \
 -l test
