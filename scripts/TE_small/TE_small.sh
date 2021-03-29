@@ -9,6 +9,6 @@
 cd $TE_HOME/data/
 
 tesmall \
--f SRR7408176.fastq \
+-f SRR7408176_parental_1.fastq \
 -g hg38 \
 -l TE_small_test
