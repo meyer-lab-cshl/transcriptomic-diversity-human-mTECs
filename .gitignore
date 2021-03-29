@@ -8,3 +8,4 @@ analysis/count_tables/
 .R*
 *_output.txt
 .Rproj.user
+*.fastq.gz
