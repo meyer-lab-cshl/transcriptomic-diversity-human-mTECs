@@ -6,7 +6,7 @@
 #$ -o align_reads_output.txt
 #$ -e align_reads_output.txt
 
-tissue=muscle
+tissue=ESCs
 
 cd $TE_HOME/data/RNA_seq/${tissue}/raw_fastq/
 
