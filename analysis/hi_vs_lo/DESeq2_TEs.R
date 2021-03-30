@@ -2,6 +2,7 @@ library(DESeq2)
 library(dplyr)
 library(tidyr)
 library(glue)
+library(stringr)
 
 #################################################################
 # Functions
@@ -100,6 +101,41 @@ process_DESeq2_results = function(results,
   }
   
   return(results_df)
+  
+}
+
+standardize_column_names = function(raw_counts){
+  
+  new_col_name = vector(, length(colnames(raw_counts)))
+  
+  for (i in 1:length(colnames(raw_counts))){
+    
+    if (colnames(raw_counts)[i] %in% mTEC){
+      
+      a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
+      b = str_split(colnames(raw_counts)[i], '_')[[1]][2]
+      
+    }
+    
+    else{
+      
+      a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
+      
+      if (colnames(raw_counts)[i] %in% testis){
+        
+        b = 'testis'
+        
+      }
+      
+    }
+    
+    new_col_name[i] = paste(a, b, sep = '_')
+    
+  }
+  
+  colnames(raw_counts) = new_col_name
+  
+  return(raw_counts)
   
 }
 
@@ -209,9 +245,6 @@ data_local = select(data_local, -ID)
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
 
-#min_read = 1
-#data = data[apply(data,1,function(x){max(x)}) > min_read,]
-
 # Run differential expression
 
 dds_transcripts = differential_expression(data, design=~tissue)
@@ -266,8 +299,25 @@ downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$l
 # TE_transcripts: GTEx data
 #################################################################
 
-data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/testis_test",header=T,row.names=1)
-colnames(data) = c('214_mTEC-HI', '221_mTEC-HI', '226_mTEC-HI', '214_mTEC-LO', '221_mTEC-LO', '226_mTEC-LO', '1399R.1626.SM.5P9GG_testis', '13OW8.0526.SM.5KM24_testis')
+raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_counts",header=T,row.names=1)
+
+testis = c('GTEX.1399R.1626.SM.5P9GG_Aligned.out.bam', 
+           'GTEX.13OW8.0526.SM.5KM24_Aligned.out.bam',
+           'GTEX.1GN73.1726.SM.9JGFR_Aligned.out.bam',
+           'GTEX.1GPI7.1426.SM.9JGGR_Aligned.out.bam',
+           'GTEX.1H11D.1626.SM.9JGHM_Aligned.out.bam',
+           'GTEX.1H1DG.2726.SM.9JGI1_Aligned.out.bam',
+           'GTEX.1IDJF.2226.SM.AHZ2T_Aligned.out.bam', 
+           'GTEX.1IDJH.2326.SM.D4P2K_Aligned.out.bam')
+
+mTEC = c('pt214_hi_fastp_1.fastq_Aligned.out.bam.T',
+         'pt221_hi_fastp_1.fastq_Aligned.out.bam.T',
+         'pt226_hi_fastp_1.fastq_Aligned.out.bam.T',
+         'pt214_lo_fastp_1.fastq_Aligned.out.bam.C',
+         'pt221_lo_fastp_1.fastq_Aligned.out.bam.C',
+         'pt226_lo_fastp_1.fastq_Aligned.out.bam.C')
+
+data = standardize_column_names(raw_counts = raw_counts)
 
 ## Run DESeq2
 

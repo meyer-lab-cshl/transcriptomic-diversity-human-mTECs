@@ -35,7 +35,7 @@ topVarianceGenes <- head(order(rowVars(assay(vs_dds_transcripts_TE)), decreasing
 
 matrix = assay(vs_dds_transcripts_TE)[topVarianceGenes, ]
 
-my_heatmap = pheatmap(assay(vs_dds_transcripts_TE)[topVarianceGenes, ], 
+my_heatmap = pheatmap(matrix, 
                       cluster_rows=TRUE,
                       show_rownames=FALSE, 
                       cluster_cols=TRUE,
@@ -43,10 +43,10 @@ my_heatmap = pheatmap(assay(vs_dds_transcripts_TE)[topVarianceGenes, ],
 
 ##2 
 
-topVarianceGenes = head(order(apply(df,1,var), decreasing=T),200)
+topVarianceGenes = head(order(apply(vs_dds_transcripts_TE_collapsed,1,var), decreasing=T),200)
 matrix = vs_dds_transcripts_TE_collapsed[topVarianceGenes, ]
 
-matrix = vs_dds_transcripts_TE_collapsed
+#matrix = vs_dds_transcripts_TE_collapsed
 
 my_heatmap = pheatmap(matrix, 
                       cluster_rows=TRUE,
