@@ -12,7 +12,7 @@ Transposable element expression in medullary thymic epithelial cells.
     + winAnchorMultimapNMax: 200
     + outFilterMultimapNmax: 100
     
-3. **Quantify gene and locus-level TE expression with TElocal**
+3. **Quantify gene and TE expression with TEcounts or TElocal**
     + GENCODE GRCh38 Repeatmasker TE annotation (downloaded from http://labshare.cshl.edu/shares/mhammelllab/www-data/TElocal/prebuilt_indices/)
     + GENCODE GRCh38 gene annotation
     
