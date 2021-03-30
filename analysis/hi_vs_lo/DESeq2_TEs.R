@@ -8,25 +8,25 @@ library(tidyr)
 
 ## Differential expression
 
-differential_expression = function(raw_count_table, min_reads = 2){
+differential_expression = function(raw_count_table, min_reads = 2, design = ~patient+tissue){
   
   ## Define sampleInfo
   
   ID = colnames(raw_count_table)
   sampleInfo = data.frame(ID,row.names=colnames(raw_count_table))
-  sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'group'), sep = '_'))
+  sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'tissue'), sep = '_'))
   sampleInfo$patient = factor(sampleInfo$patient)
   
   ## Construct DESeq dataset object
   
-  dds <- DESeqDataSetFromMatrix(countData = raw_count_table, colData = sampleInfo, design = ~patient + group)
-  dds$group = relevel(dds$group,ref="LO")
+  dds <- DESeqDataSetFromMatrix(countData = raw_count_table, colData = sampleInfo, design = design)
+  #dds$group = relevel(dds$group,ref="LO")
   
   ## Run differential expression analysis
   
   dds = DESeq(dds)
   
-  ## Pre-filter to remove rows with less than 'min_reads' total (default 10)
+  ## Pre-filter to remove rows with less than 'min_reads' total (default 2)
   
   dds = dds[ rowSums(counts(dds)) >= min_reads, ]
   
@@ -186,7 +186,7 @@ colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
 
 # Run differential expression
 
-dds_transcripts = differential_expression(data)
+dds_transcripts = differential_expression(data, design=~tissue)
 dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
 dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
 
@@ -200,6 +200,14 @@ results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts
 results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
 
 results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
+
+##
+
+vs_dds_TE = vst(dds_transcripts_TE, blind=FALSE)
+transformed_counts_TE = as.data.frame(assay(vs_dds_TE))
+
+vs_dds_gene = vst(dds_transcripts_gene, blind=FALSE)
+transformed_counts_gene = as.data.frame(assay(vs_dds_gene))
 
 #################################################################
 # Misc stuff I'm hoarding in case it's important
@@ -225,3 +233,47 @@ sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGene
 upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
 
 downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
+
+#################################################################
+# GTEx data
+#################################################################
+
+data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/testis_test",header=T,row.names=1)
+colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO', '1399R.1626.SM.5P9GG_testis', '13OW8.0526.SM.5KM24_testis')
+
+## Run DESeq2
+
+dds_transcripts = differential_expression(data, design=~tissue)
+dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
+dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
+
+## Normalized counts
+
+vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
+
+dds_transcripts_TE_HI = dds_transcripts_TE[ , dds_transcripts_TE$tissue %in% c("HI")]
+dds_transcripts_TE_LO = dds_transcripts_TE[ , dds_transcripts_TE$tissue %in% c("LO")]
+dds_transcripts_TE_testis = dds_transcripts_TE[ , dds_transcripts_TE$tissue %in% c("testis")]
+
+
+df = data.frame(HI = rowMeans(counts(dds_transcripts_TE_HI, normalized = T)),
+                LO = rowMeans(counts(dds_transcripts_TE_LO, normalized = T)),
+                testis = rowMeans(counts(dds_transcripts_TE_testis, normalized = T)))
+
+## Differential expression
+
+results_transcripts = results(dds_transcripts, 
+                              contrast = c('tissue', 'HI', 'LO'), 
+                              independentFiltering = F)
+
+results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
+results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
+
+results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
+results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
+
+results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
+
+results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
+
+

@@ -1,3 +1,5 @@
+library(pheatmap)
+
 #################################################################
 # Heatmap version 1 (ggplot)
 #################################################################
@@ -18,11 +20,10 @@ pheatmap(sig_transformed_counts[select,], cluster_rows=FALSE, show_rownames=TRUE
 
 ## Rows clustered
 
-my_heatmap = pheatmap(sig_transformed_counts, 
+my_heatmap = pheatmap(transformed_counts_TE, 
                       cluster_rows=TRUE,
-                      show_rownames=TRUE, 
-                      cluster_cols=TRUE,
-                      cutree_cols = 2)
+                      show_rownames=FALSE, 
+                      cluster_cols=TRUE)
 
 save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
   png(filename, width = width, height = height, res = res)
@@ -32,3 +33,27 @@ save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
 }
 
 save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/hi_vs_lo_TEs_heatmap.png")
+
+#################################################################
+# Heatmap version 3
+#################################################################
+
+topVarianceGenes <- head(order(rowVars(assay(vs_dds_transcripts_TE)), decreasing=T),200)
+
+matrix = assay(vs_dds_transcripts_TE)[topVarianceGenes, ]
+matrix = matrix - rowMeans(matrix)
+
+my_heatmap = pheatmap(matrix, 
+                      cluster_rows=TRUE,
+                      show_rownames=FALSE, 
+                      cluster_cols=TRUE)
+
+topVarianceGenes = head(order(apply(df,1,var), decreasing=T),50)
+
+matrix = df[topVarianceGenes, ]
+matrix = matrix - rowMeans(matrix)
+
+my_heatmap = pheatmap(matrix, 
+                      cluster_rows=TRUE,
+                      show_rownames=TRUE, 
+                      cluster_cols=FALSE)

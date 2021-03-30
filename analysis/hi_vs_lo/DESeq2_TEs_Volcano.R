@@ -71,7 +71,7 @@ ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/local_volcano.png",
 # TE transcripts
 #################################################################
 
-input = results_df
+input = results_df_transcripts_TE
 
 input = mutate(input, ID = sub("\\?", "", ID))
 input = mutate(input, class = sub("\\?", "", class))
@@ -82,13 +82,12 @@ volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), co
   geom_point(alpha = 0.6, aes(colour = overall_significant)) +
   xlab(expression('Log'[2]*' FC')) +
   ylab(expression('-Log'[10]*' P value')) +
-  xlim(-3, 3) +
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression') +
   scale_colour_manual(values = c('#9B9A99', "red")) +
   guides(colour = FALSE) +
   geom_label_repel(
-    data = subset(results_df, overall_significant == TRUE),
-    aes(label = subset(results_df, overall_significant == TRUE)$family),
+    data = subset(input, overall_significant == TRUE),
+    aes(label = subset(input, overall_significant == TRUE)$family),
     size = 3.5, 
     box.padding = unit(0.9, 'lines'), 
     point.padding = unit(0.2, 'lines'),
