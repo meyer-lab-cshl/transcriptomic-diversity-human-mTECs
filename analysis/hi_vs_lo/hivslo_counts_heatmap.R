@@ -1,15 +1,6 @@
 library(pheatmap)
 
 #################################################################
-# Heatmap version 1 (ggplot)
-#################################################################
-
-sig_normalized_counts_long <- melt(sig_normalized_counts, id.vars=c("ID"))
-
-ggplot(sig_normalized_counts_long, aes(x = Var2, y = Var1, fill = value)) +
-  geom_raster() + theme(axis.text.x=element_text(angle=65, hjust=1)) 
-
-#################################################################
 # Heatmap version 2 (pheatmap)
 #################################################################
 
@@ -38,22 +29,27 @@ save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/hi_vs_lo/Plots/
 # Heatmap version 3
 #################################################################
 
-topVarianceGenes <- head(order(rowVars(assay(vs_dds_transcripts_TE)), decreasing=T),200)
+## 1
+
+topVarianceGenes <- head(order(rowVars(assay(vs_dds_transcripts_TE)), decreasing=T),50)
 
 matrix = assay(vs_dds_transcripts_TE)[topVarianceGenes, ]
-matrix = matrix - rowMeans(matrix)
+
+my_heatmap = pheatmap(assay(vs_dds_transcripts_TE)[topVarianceGenes, ], 
+                      cluster_rows=TRUE,
+                      show_rownames=FALSE, 
+                      cluster_cols=TRUE,
+                      scale = 'row')
+
+##2 
+
+topVarianceGenes = head(order(apply(df,1,var), decreasing=T),200)
+matrix = vs_dds_transcripts_TE_collapsed[topVarianceGenes, ]
+
+matrix = vs_dds_transcripts_TE_collapsed
 
 my_heatmap = pheatmap(matrix, 
                       cluster_rows=TRUE,
                       show_rownames=FALSE, 
-                      cluster_cols=TRUE)
-
-topVarianceGenes = head(order(apply(df,1,var), decreasing=T),50)
-
-matrix = df[topVarianceGenes, ]
-matrix = matrix - rowMeans(matrix)
-
-my_heatmap = pheatmap(matrix, 
-                      cluster_rows=TRUE,
-                      show_rownames=TRUE, 
-                      cluster_cols=FALSE)
+                      cluster_cols=T,
+                      scale = 'row')

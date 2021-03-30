@@ -1,6 +1,7 @@
 library(DESeq2)
 library(dplyr)
 library(tidyr)
+library(glue)
 
 #################################################################
 # Functions
@@ -99,6 +100,33 @@ process_DESeq2_results = function(results,
   }
   
   return(results_df)
+  
+}
+
+collapse_tissue_replicates = function(vs_dds, mode = mean){
+  
+  counter = 0
+  for (i in unique(vs_dds_transcripts_TE$tissue)){
+    
+    entry = vs_dds_transcripts_TE[ , vs_dds_transcripts_TE$tissue %in% c(i)]
+    
+    if (counter == 0){
+      
+      output = data.frame(i = rowMeans(assay(entry)))
+      
+    }
+    
+    else{
+      
+      output[i] = rowMeans(assay(entry))
+      
+    }
+    
+    counter = counter + 1
+    
+  }
+  
+  return(output)
   
 }
 
@@ -235,11 +263,11 @@ upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log
 downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
 
 #################################################################
-# GTEx data
+# TE_transcripts: GTEx data
 #################################################################
 
 data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/testis_test",header=T,row.names=1)
-colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO', '1399R.1626.SM.5P9GG_testis', '13OW8.0526.SM.5KM24_testis')
+colnames(data) = c('214_mTEC-HI', '221_mTEC-HI', '226_mTEC-HI', '214_mTEC-LO', '221_mTEC-LO', '226_mTEC-LO', '1399R.1626.SM.5P9GG_testis', '13OW8.0526.SM.5KM24_testis')
 
 ## Run DESeq2
 
@@ -250,15 +278,7 @@ dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
 ## Normalized counts
 
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
-
-dds_transcripts_TE_HI = dds_transcripts_TE[ , dds_transcripts_TE$tissue %in% c("HI")]
-dds_transcripts_TE_LO = dds_transcripts_TE[ , dds_transcripts_TE$tissue %in% c("LO")]
-dds_transcripts_TE_testis = dds_transcripts_TE[ , dds_transcripts_TE$tissue %in% c("testis")]
-
-
-df = data.frame(HI = rowMeans(counts(dds_transcripts_TE_HI, normalized = T)),
-                LO = rowMeans(counts(dds_transcripts_TE_LO, normalized = T)),
-                testis = rowMeans(counts(dds_transcripts_TE_testis, normalized = T)))
+vs_dds_transcripts_TE_collapsed = collapse_tissue_replicates(vs_dds_transcripts_TE)
 
 ## Differential expression
 
