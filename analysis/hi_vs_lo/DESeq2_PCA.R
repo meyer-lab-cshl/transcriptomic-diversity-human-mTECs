@@ -1,8 +1,10 @@
+library(ggplot2)
+
 #################################################################
 # PCA
 #################################################################
 
-PCA = plotPCA(vs_dds, intgroup = 'group') + 
+PCA = plotPCA(vs_dds, intgroup = 'tissue') + 
   ggtitle('mTEC-hi vs mTEC-lo', 'TE expression PCA') +
   geom_text(aes(label = colnames(vs_dds)), nudge_x = 0.5, nudge_y = 0.2) +
   scale_colour_manual(values = c('#e41a1c', "#377eb8"))
