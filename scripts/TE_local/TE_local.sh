@@ -1,12 +1,12 @@
 #!/bin/bash
 #$ -cwd
 #$ -pe threads 1
-#$ -l m_mem_free=30G
+#$ -l m_mem_free=32G
 #$ -N TE_local
 #$ -o TE_local_output.txt
 #$ -e TE_local_output.txt
 
-cd $TE_HOME/data/hi_vs_lo                         
+cd $TE_HOME/data/RNA_seq/testis_jason/TE_local_test_set                    
 
 for FILE in *_Aligned.out.bam; do
   TElocal \
