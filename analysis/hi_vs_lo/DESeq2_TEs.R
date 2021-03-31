@@ -148,9 +148,9 @@ standardize_column_names = function(raw_counts){
 collapse_tissue_replicates = function(vs_dds, mode = mean){
   
   counter = 0
-  for (i in unique(vs_dds_transcripts_TE$tissue)){
+  for (i in unique(vs_dds$tissue)){
     
-    entry = vs_dds_transcripts_TE[ , vs_dds_transcripts_TE$tissue %in% c(i)]
+    entry = vs_dds[ , vs_dds$tissue %in% c(i)]
     
     if (counter == 0){
       
@@ -318,7 +318,8 @@ testis = c('GTEX.1399R.1626.SM.5P9GG_Aligned.out.bam',
            'GTEX.1IDJH.2326.SM.D4P2K_Aligned.out.bam')
 
 ovaries = c('GTEX.11P81.1526.SM.5P9GS_Aligned.out.bam',
-            'GTEX.1269C.1826.SM.5N9E1_Aligned.out.bam')
+            'GTEX.1269C.1826.SM.5N9E1_Aligned.out.bam',
+            'GTEX.131YS.2226.SM.5P9G8_Aligned.out.bam')
 
 mTEC = c('pt214_hi_fastp_1.fastq_Aligned.out.bam.T',
          'pt221_hi_fastp_1.fastq_Aligned.out.bam.T',
@@ -337,13 +338,16 @@ dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
 
 ## Normalized counts
 
+vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
+vs_dds_transcripts_gene_collapsed = collapse_tissue_replicates(vs_dds_transcripts_gene)
+
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 vs_dds_transcripts_TE_collapsed = collapse_tissue_replicates(vs_dds_transcripts_TE)
 
 ## Differential expression
 
 results_transcripts = results(dds_transcripts, 
-                              contrast = c('tissue', 'HI', 'LO'), 
+                              contrast = c('tissue', 'hi', 'lo'), 
                               independentFiltering = F)
 
 results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
