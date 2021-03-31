@@ -127,6 +127,12 @@ standardize_column_names = function(raw_counts){
         
       }
       
+      if (colnames(raw_counts)[i] %in% ovaries){
+        
+        b = 'ovaries'
+        
+      }
+      
     }
     
     new_col_name[i] = paste(a, b, sep = '_')
@@ -148,7 +154,8 @@ collapse_tissue_replicates = function(vs_dds, mode = mean){
     
     if (counter == 0){
       
-      output = data.frame(i = rowMeans(assay(entry)))
+      output = data.frame('placeholder' = rowMeans(assay(entry)))
+      names(output) = i
       
     }
     
@@ -309,6 +316,9 @@ testis = c('GTEX.1399R.1626.SM.5P9GG_Aligned.out.bam',
            'GTEX.1H1DG.2726.SM.9JGI1_Aligned.out.bam',
            'GTEX.1IDJF.2226.SM.AHZ2T_Aligned.out.bam', 
            'GTEX.1IDJH.2326.SM.D4P2K_Aligned.out.bam')
+
+ovaries = c('GTEX.11P81.1526.SM.5P9GS_Aligned.out.bam',
+            'GTEX.1269C.1826.SM.5N9E1_Aligned.out.bam')
 
 mTEC = c('pt214_hi_fastp_1.fastq_Aligned.out.bam.T',
          'pt221_hi_fastp_1.fastq_Aligned.out.bam.T',

@@ -43,13 +43,13 @@ my_heatmap = pheatmap(matrix,
 
 ##2 
 
-topVarianceGenes = head(order(apply(vs_dds_transcripts_TE_collapsed,1,var), decreasing=T),200)
+topVarianceGenes = head(order(apply(vs_dds_transcripts_TE_collapsed,1,var), decreasing=T),100)
 matrix = vs_dds_transcripts_TE_collapsed[topVarianceGenes, ]
 
-#matrix = vs_dds_transcripts_TE_collapsed
+matrix = vs_dds_transcripts_TE_collapsed
 
 my_heatmap = pheatmap(matrix, 
-                      cluster_rows=TRUE,
+                      cluster_rows=T,
                       show_rownames=FALSE, 
                       cluster_cols=T,
                       scale = 'row')
