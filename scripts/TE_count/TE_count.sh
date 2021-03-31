@@ -2,11 +2,11 @@
 #$ -cwd
 #$ -pe threads 4
 #$ -l m_mem_free=32G
-#$ -N TE_count
+#$ -N TE_count_T
 #$ -o TE_count_output.txt
 #$ -e TE_count_output.txt
 
-tissue=ovaries_jason
+tissue=testis_jason
 
 cd $TE_HOME/data/RNA_seq/${tissue}/
 

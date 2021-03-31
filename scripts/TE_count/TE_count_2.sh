@@ -1,16 +1,16 @@
 #!/bin/bash
 #$ -cwd
-#$ -pe threads 4
+#$ -pe threads 1
 #$ -l m_mem_free=32G
-#$ -N TE_count_2
+#$ -N TE_count_M
 #$ -o TE_count_2_output.txt
 #$ -e TE_count_2_output.txt
 
-tissue=testis_jason
+tissue=muscle 
 
-cd $TE_HOME/data/RNA_seq/${tissue}
+cd $TE_HOME/data/RNA_seq/${tissue}/bam_files 
 
-for FILE in GTEX*; do
+for FILE in *bam; do
 
   TEcount \
   -b ${FILE} \
@@ -19,3 +19,28 @@ for FILE in GTEX*; do
   --project TE_count_${FILE}
 
 done
+
+declare -a file_array=()
+
+for FILE in *cntTable; do
+  file_array+=($FILE)
+done
+
+counter=0
+while [ $((counter+1)) -lt ${#file_array[@]} ]; do
+
+  if [ $counter -eq 0 ]; then
+
+    join ${file_array[$counter]} ${file_array[$((counter+1))]} > output_$((counter+1)) 
+
+  else
+
+    join output_${counter} ${file_array[$((counter+1))]} > output_$((counter+1))
+
+  fi 
+
+  counter=$((counter+1))
+
+done
+
+
