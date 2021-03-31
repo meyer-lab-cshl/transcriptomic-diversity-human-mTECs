@@ -1,6 +1,6 @@
 #!/bin/bash
 #$ -cwd
-#$ -pe threads 1
+#$ -pe threads 4
 #$ -l m_mem_free=32G
 #$ -N TE_count
 #$ -o TE_count_output.txt
@@ -8,7 +8,7 @@
 
 tissue=ovaries_jason
 
-cd $TE_HOME/data/RNA_seq/${tissue}/test
+cd $TE_HOME/data/RNA_seq/${tissue}/
 
 for FILE in GTEX*; do
 
