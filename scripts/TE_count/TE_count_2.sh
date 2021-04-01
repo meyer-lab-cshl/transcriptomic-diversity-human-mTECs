@@ -2,11 +2,11 @@
 #$ -cwd
 #$ -pe threads 1
 #$ -l m_mem_free=32G
-#$ -N TE_count_M
+#$ -N TE_count_ESCs
 #$ -o TE_count_2_output.txt
 #$ -e TE_count_2_output.txt
 
-tissue=muscle 
+tissue=ESCs 
 
 cd $TE_HOME/data/RNA_seq/${tissue}/bam_files 
 
