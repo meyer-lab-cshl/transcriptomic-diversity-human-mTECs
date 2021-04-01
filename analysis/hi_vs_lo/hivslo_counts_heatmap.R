@@ -7,19 +7,7 @@ library(dplyr)
 
 ## Functions
 
-generate_heatmap_matrix = function(element_mode, tissue_collapse, filter_mode, number_of_elements = 50){
-  
-  if (element_mode == 'gene'){
-    
-    input = vs_dds_transcripts_gene
-    
-  }
-  
-  if (element_mode == 'TE'){
-    
-    input = vs_dds_transcripts_TE
-    
-  }
+generate_heatmap_matrix = function(input, element_mode, tissue_collapse, filter_mode, number_of_elements = 50){
   
   if (tissue_collapse == T){
     
@@ -41,7 +29,7 @@ generate_heatmap_matrix = function(element_mode, tissue_collapse, filter_mode, n
   
   if (filter_mode == 'variance'){
     
-    topVarianceGenes = head(order(rowVars(input), decreasing=T), number_of_elements)
+    topVarianceGenes = head(order(apply(input,1,var), decreasing=T),number_of_elements)
     matrix = input[topVarianceGenes, ]
     
   }
@@ -81,9 +69,10 @@ matrix = select(matrix, -c('gene', 'family', 'class'))
 
 ## Plot
 
-matrix = generate_heatmap_matrix(element_mode = 'TE',
-                                 tissue_collapse = F,
-                                 filter_mode = 'sig_diff')
+matrix = generate_heatmap_matrix(input = vs_dds_transcripts_TE,
+                                 element_mode = 'TE',
+                                 tissue_collapse = T,
+                                 filter_mode = 'none')
 
 row_annotation = data.frame(ID = rownames(matrix))
 rownames(row_annotation) = row_annotation$ID
@@ -92,6 +81,14 @@ row_annotation = separate(data = row_annotation,
                           into = c('gene', 'family', 'class'), 
                           sep = ':',
                           remove = T)
+
+
+row_annotation = separate(data = row_annotation, 
+                          col = 'ID', 
+                          into = c('element', 'gene', 'family', 'class'), 
+                          sep = ':',
+                          remove = T)
+
 row_annotation = mutate(row_annotation, class = sub("\\?", "", class))
 row_annotation = select(row_annotation, class)
 
@@ -99,7 +96,7 @@ my_heatmap = pheatmap(matrix,
                       cluster_rows=T,
                       show_rownames=F, 
                       cluster_cols=T,
-                      scale = 'row',
+                      scale = 'row')
                       annotation_row = row_annotation)
 
 save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
@@ -109,5 +106,5 @@ save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
   dev.off()
 }
 
-save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/heatmap_sig_diff_hi_and_lo.png")
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/heatmap_local_hi_and_lo.png")
 
