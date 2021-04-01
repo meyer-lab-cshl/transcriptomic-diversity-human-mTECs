@@ -110,10 +110,13 @@ standardize_column_names = function(raw_counts){
   
   for (i in 1:length(colnames(raw_counts))){
     
-    if (colnames(raw_counts)[i] %in% mTEC){
+    if (colnames(raw_counts)[i] %in% colnames(mTEC_counts)){
       
       a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
-      b = str_split(colnames(raw_counts)[i], '_')[[1]][2]
+      
+      b = 'mTEC'
+      c = str_split(colnames(raw_counts)[i], '_')[[1]][2]
+      b = paste(b, c, sep = '-')
       
     }
     
@@ -121,15 +124,21 @@ standardize_column_names = function(raw_counts){
       
       a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
       
-      if (colnames(raw_counts)[i] %in% testis){
+      if (colnames(raw_counts)[i] %in% colnames(testis_counts)){
         
         b = 'testis'
         
       }
       
-      if (colnames(raw_counts)[i] %in% ovaries){
+      if (colnames(raw_counts)[i] %in% colnames(ovaries_counts)){
         
         b = 'ovaries'
+        
+      }
+      
+      if (colnames(raw_counts)[i] %in% colnames(muscle_counts)){
+        
+        b = 'muscle'
         
       }
       
@@ -307,26 +316,10 @@ downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$l
 #################################################################
 
 raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_counts",header=T,row.names=1)
-
-testis = c('GTEX.1399R.1626.SM.5P9GG_Aligned.out.bam', 
-           'GTEX.13OW8.0526.SM.5KM24_Aligned.out.bam',
-           'GTEX.1GN73.1726.SM.9JGFR_Aligned.out.bam',
-           'GTEX.1GPI7.1426.SM.9JGGR_Aligned.out.bam',
-           'GTEX.1H11D.1626.SM.9JGHM_Aligned.out.bam',
-           'GTEX.1H1DG.2726.SM.9JGI1_Aligned.out.bam',
-           'GTEX.1IDJF.2226.SM.AHZ2T_Aligned.out.bam', 
-           'GTEX.1IDJH.2326.SM.D4P2K_Aligned.out.bam')
-
-ovaries = c('GTEX.11P81.1526.SM.5P9GS_Aligned.out.bam',
-            'GTEX.1269C.1826.SM.5N9E1_Aligned.out.bam',
-            'GTEX.131YS.2226.SM.5P9G8_Aligned.out.bam')
-
-mTEC = c('pt214_hi_fastp_1.fastq_Aligned.out.bam.T',
-         'pt221_hi_fastp_1.fastq_Aligned.out.bam.T',
-         'pt226_hi_fastp_1.fastq_Aligned.out.bam.T',
-         'pt214_lo_fastp_1.fastq_Aligned.out.bam.C',
-         'pt221_lo_fastp_1.fastq_Aligned.out.bam.C',
-         'pt226_lo_fastp_1.fastq_Aligned.out.bam.C')
+testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/testis_counts",header=T,row.names=1)
+ovaries_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/ovaries_counts",header=T,row.names=1)
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
+muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/muscle_counts",header=T,row.names=1)
 
 data = standardize_column_names(raw_counts = raw_counts)
 
@@ -347,7 +340,7 @@ vs_dds_transcripts_TE_collapsed = collapse_tissue_replicates(vs_dds_transcripts_
 ## Differential expression
 
 results_transcripts = results(dds_transcripts, 
-                              contrast = c('tissue', 'hi', 'lo'), 
+                              contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'), 
                               independentFiltering = F)
 
 results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)

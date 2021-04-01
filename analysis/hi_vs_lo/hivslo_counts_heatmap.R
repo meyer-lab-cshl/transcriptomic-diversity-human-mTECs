@@ -57,7 +57,6 @@ my_heatmap = pheatmap(matrix,
                       show_rownames=F, 
                       cluster_cols=T,
                       scale = 'row',
-                      cutree_rows = 2,
                       annotation_row = row_annotation)
 
 save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
