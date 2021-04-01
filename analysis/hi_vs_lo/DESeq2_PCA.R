@@ -17,4 +17,4 @@ PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                          panel.border = element_blank())
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/PCA.png", 
-       width = 20, height = 15, units = "cm")
+       width = 20, height = 20, units = "cm")
