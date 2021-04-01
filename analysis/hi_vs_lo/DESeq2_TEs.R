@@ -321,11 +321,11 @@ ovaries_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/ovar
 mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/muscle_counts",header=T,row.names=1)
 
-data = standardize_column_names(raw_counts = raw_counts)
+data = standardize_column_names(raw_counts = mTEC_counts)
 
 ## Run DESeq2
 
-dds_transcripts = differential_expression(data, design=~tissue)
+dds_transcripts = differential_expression(data, design=~patient+tissue)
 dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
 dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
 

@@ -1,31 +1,70 @@
 library(pheatmap)
+library(dplyr)
 
 #################################################################
-# Heatmap 
+# Heatmap of read counts
 #################################################################
 
-## Rows ordered by fold change w/out clustering
+## Functions
 
-select <- order(sig_results_df$abs_log2FoldChange, decreasing=TRUE)
-pheatmap(sig_transformed_counts[select,], cluster_rows=FALSE, show_rownames=TRUE, cluster_cols=FALSE)
+generate_heatmap_matrix = function(element_mode, tissue_collapse, filter_mode, number_of_elements = 50){
+  
+  if (element_mode == 'gene'){
+    
+    input = vs_dds_transcripts_gene
+    
+  }
+  
+  if (element_mode == 'TE'){
+    
+    input = vs_dds_transcripts_TE
+    
+  }
+  
+  if (tissue_collapse == T){
+    
+    input = collapse_tissue_replicates(input)
+    
+  }
+  
+  if (tissue_collapse == F){
+    
+    input = as.data.frame(assay(input))
+    
+  }
+  
+  if (filter_mode == 'none'){
+    
+    matrix = input
+    
+  }
+  
+  if (filter_mode == 'variance'){
+    
+    topVarianceGenes = head(order(rowVars(input), decreasing=T), number_of_elements)
+    matrix = input[topVarianceGenes, ]
+    
+  }
+  
+  if (filter_mode == 'sig_diff'){
+    
+    if (element_mode == 'gene'){
 
-## 1
-
-topVarianceGenes <- head(order(rowVars(assay(vs_dds_transcripts_TE)), decreasing=T),50)
-
-matrix = assay(vs_dds_transcripts_TE)[topVarianceGenes, ]
-
-## 2 
-
-topVarianceGenes = head(order(apply(vs_dds_transcripts_TE_collapsed,1,var), decreasing=T),100)
-matrix = vs_dds_transcripts_TE_collapsed[topVarianceGenes, ]
-
-matrix = vs_dds_transcripts_TE_collapsed
-
-## 3
-
-matrix = filter(vs_dds_transcripts_TE_collapsed, 
-                rownames(vs_dds_transcripts_TE_collapsed) %in% results_df_transcripts_TE_sigdiff$ID)
+      matrix = filter(input, rownames(input) %in% results_df_transcripts_gene_sigdiff$ID)
+      
+    }
+  
+    if (element_mode == 'TE'){
+      
+      matrix = filter(input, rownames(input) %in% results_df_transcripts_TE_sigdiff$ID)
+      
+    }  
+  
+  }
+  
+  return(matrix)
+  
+}
 
 ## LTRs only
 
@@ -41,6 +80,10 @@ matrix = filter(matrix, class == 'LTR')
 matrix = select(matrix, -c('gene', 'family', 'class'))
 
 ## Plot
+
+matrix = generate_heatmap_matrix(element_mode = 'TE',
+                                 tissue_collapse = F,
+                                 filter_mode = 'sig_diff')
 
 row_annotation = data.frame(ID = rownames(matrix))
 rownames(row_annotation) = row_annotation$ID
@@ -66,5 +109,5 @@ save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
   dev.off()
 }
 
-save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/heatmap_all_elements.png")
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/heatmap_sig_diff_hi_and_lo.png")
 
