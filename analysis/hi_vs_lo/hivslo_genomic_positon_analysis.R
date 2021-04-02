@@ -30,7 +30,7 @@ make_GRanges = function(mode, results_df){
     annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
     annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
     
-    df = merge(results_df, annotation, by = 'Geneid')
+    df = annotation
     
   }
   
@@ -165,14 +165,14 @@ build_count_table = function(group){
     if (i == 'diff_regulated'){
       
       input = as.data.frame(GRanges_TE_annotated) %>%
-        filter(significant == TRUE)
+        dplyr::filter(significant == TRUE)
       
     }
     
     if (i == 'up_regulated'){
       
       input = as.data.frame(GRanges_TE_annotated) %>%
-        filter((significant == TRUE) & (log2FoldChange > 0))
+        dplyr::filter((significant == TRUE) & (log2FoldChange > 0))
       
     }
     
@@ -250,10 +250,50 @@ saveRDS(GRanges_TE_sigdiff, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_sig
 
 ## Annotate by overlap
 
-GRanges_TE_annotated = splicejam::annotateGRfromGR(GR1 = GRanges_TE, GR2 = GRanges_gene)
+annotate_features = function(input, mode){
+  
+  if (mode == 'hannah'){
+    
+    features = readRDS('~/TE_thymus/analysis/features.rds')
+    
+    annotated_GRanges_TE = sort(input)
+    
+    annotated_GRanges_TE$TSS_10_genes <- overlapsAny(input, features$TSS10_genes)
+    annotated_GRanges_TE$TSS_10_trans <- overlapsAny(input, features$TSS10_transcripts)
+    annotated_GRanges_TE$TSS_100_genes <- overlapsAny(input, features$TSS100_genes)
+    annotated_GRanges_TE$TSS_100_trans <- overlapsAny(input, features$TSS100_transcripts)
+    annotated_GRanges_TE$first_exon <- overlapsAny(input, features$first_exon)
+    annotated_GRanges_TE$other_exon <- overlapsAny(input, features$other_exon)
+    annotated_GRanges_TE$intron <- overlapsAny(input, features$introns)
+    annotated_GRanges_TE$TTS_100_genes <- overlapsAny(input, features$TTS100_genes)
+    annotated_GRanges_TE$TTS_200_genes <- overlapsAny(input, features$TTS200_genes)
+    annotated_GRanges_TE$TTS_100_trans <- overlapsAny(input, features$TTS100_trans)
+    annotated_GRanges_TE$TTS_200_trans <- overlapsAny(input, features$TTS200_trans)
+    annotated_GRanges_TE$downstream_gene <- overlapsAny(input, features$downstream_genes)
+    annotated_GRanges_TE$upstream_gene <- overlapsAny(input, features$upstream_genes)
+    annotated_GRanges_TE$antisense <- overlapsAny(input, features$antisense)
+    
+  }
+  
+  if (mode == 'matty'){
+    
+    annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
+    annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
+    features = makeGRangesFromDataFrame(annotation, keep.extra.columns = T)
+    
+    annotated_GRanges_TE = splicejam::annotateGRfromGR(GR1 = sort(input), GR2 = features)
+    
+  }
+  
+  return(annotated_GRanges_TE)
+  
+}
 
-count_table = build_count_table(group = c('all', 'diff_regulated', 'up_regulated')) %>% 
-  filter(percent > 1)
+GRanges_TE_annotated = annotate_features(input = GRanges_TE, mode = 'matty')
+
+GRanges_TE_annotated = dplyr::mutate(Class = )
+
+count_table = build_count_table(group = c('all', 'diff_regulated', 'up_regulated')) %>% dplyr::filter(percent > 1)
 
 ## Plot stacked bars
 
@@ -362,9 +402,5 @@ correlation + theme_bw() + theme(plot.title = element_text(face = 'bold', size =
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/correlated_expression_sigdiff_only.png", 
        width = 25, height = 15, units = "cm")
-
-#################################################################
-# New thing
-#################################################################
 
 
