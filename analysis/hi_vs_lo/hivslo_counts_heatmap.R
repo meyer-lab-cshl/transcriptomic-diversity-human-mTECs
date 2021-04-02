@@ -7,6 +7,34 @@ library(dplyr)
 
 ## Functions
 
+collapse_tissue_replicates = function(vs_dds, mode = mean){
+  
+  counter = 0
+  for (i in unique(vs_dds$tissue)){
+    
+    entry = vs_dds[ , vs_dds$tissue %in% c(i)]
+    
+    if (counter == 0){
+      
+      output = data.frame('placeholder' = rowMeans(assay(entry)))
+      names(output) = i
+      
+    }
+    
+    else{
+      
+      output[i] = rowMeans(assay(entry))
+      
+    }
+    
+    counter = counter + 1
+    
+  }
+  
+  return(output)
+  
+}
+
 generate_heatmap_matrix = function(input, element_mode, tissue_collapse, filter_mode, number_of_elements = 50){
   
   if (tissue_collapse == T){
@@ -69,10 +97,11 @@ matrix = select(matrix, -c('gene', 'family', 'class'))
 
 ## Plot
 
-matrix = generate_heatmap_matrix(input = vs_dds_transcripts_TE,
+matrix = generate_heatmap_matrix(input = vs_dds_local_TE,
                                  element_mode = 'TE',
-                                 tissue_collapse = T,
-                                 filter_mode = 'none')
+                                 tissue_collapse = F,
+                                 filter_mode = 'variance',
+                                 number_of_elements = 1000)
 
 row_annotation = data.frame(ID = rownames(matrix))
 rownames(row_annotation) = row_annotation$ID

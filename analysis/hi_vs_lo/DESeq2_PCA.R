@@ -1,13 +1,12 @@
 library(ggplot2)
 library(DESeq2)
-library(limma)
 
 #################################################################
 # PCA
 #################################################################
 
-PCA = plotPCA(vs_dds_transcripts_TE, intgroup = 'tissue') + 
-  ggtitle('TE expression PCA', 'TEtranscripts') 
+PCA = plotPCA(vs_dds_local_TE, intgroup = 'tissue') + 
+  ggtitle('TE expression PCA', 'TElocal') 
 
 PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                          plot.subtitle = element_text(size = 14),
