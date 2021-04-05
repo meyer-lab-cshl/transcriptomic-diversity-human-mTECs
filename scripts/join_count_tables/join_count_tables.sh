@@ -6,7 +6,7 @@
 #$ -o join_count_output.txt
 #$ -e join_count_output.txt
 
-cd /grid/meyer/home/mpeacey/TE_thymus/data/RNA_seq/testis_jason/count_tables
+cd /grid/meyer/home/mpeacey/TE_thymus/data/RNA_seq/ESC/bam_files/TE_local_test_set
 
 declare -a file_array=()
 
