@@ -163,7 +163,7 @@ matrix = generate_heatmap_matrix(input = vs_dds_transcripts_TE,
                                  element_mode = 'TE',
                                  tissue_collapse = F,
                                  filter_mode = 'variance',
-                                 number_of_elements = 200)
+                                 number_of_elements = 1179)
 
 gg_color <- function(n) {
   hues = seq(15, 375, length = n + 1)
@@ -182,9 +182,9 @@ ann_colors = list(tissue=c('ESC' = '#F8766D',
 my_heatmap = pheatmap(matrix, 
                       cluster_rows=T,
                       show_rownames=F,
-                      show_colnames = F,
+                      show_colnames = T,
                       cluster_cols=T,
-                      scale = 'row',
+                      scale = 'row'),
                       annotation_col = col_annotation,
                       annotation_colors = ann_colors,
                       main = 'TE transcripts: top 200 elements by variance')

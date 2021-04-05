@@ -14,6 +14,10 @@ PCA = ggplot(pcaData, aes(PC1, PC2, fill = tissue)) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
   coord_fixed() + 
   labs(fill= "Tissue") +
+  scale_fill_brewer(palette = 'Set1')
+  
+  
+  
   scale_fill_manual(values = alpha(gg_color(6), 0.6)) 
 
 PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),

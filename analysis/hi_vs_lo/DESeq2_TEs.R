@@ -269,7 +269,6 @@ vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
 
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 
-
 ## Differential expression
 
 results_transcripts = results(dds_transcripts, 
@@ -315,6 +314,52 @@ assay(vs_dds_local_gene) = limma::removeBatchEffect(assay(vs_dds_local_gene), vs
 
 vs_dds_local_TE = vst(dds_local_TE, blind=FALSE)
 assay(vs_dds_local_TE) = limma::removeBatchEffect(assay(vs_dds_local_TE), vs_dds_local_TE$batch)
+
+## Differential expression
+
+results_local = results(dds_local, 
+                        independentFiltering = F)
+
+results_local = results(dds_local, 
+                        independentFiltering = F,
+                        contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'))
+
+results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
+results_local_TE = extract_from_DESeq2(mode = 'TE', input = results_local)
+
+results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
+results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
+
+results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
+results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
+results_df_local_gene_down = filter(results_df_local_gene, (significant == T) & (log2FoldChange < 0))
+results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
+
+results_df_local_TE_up = filter(results_df_local_TE, (significant == T) & (log2FoldChange > 0))
+results_df_local_TE_unchanged = filter(results_df_local_TE, significant == F)
+results_df_local_TE_down = filter(results_df_local_TE, (significant == T) & (log2FoldChange < 0))
+results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
+
+#################################################################
+# TE_local: just mTECs
+#################################################################
+
+## Data import
+
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable",header=T,row.names=1)
+
+data = standardize_column_names(raw_counts = mTEC_counts)
+
+## Run DESeq2
+
+dds_local = differential_expression(data, design=~patient+tissue)
+dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
+dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
+
+## Normalized counts
+
+vs_dds_local_gene = vst(dds_local_gene, blind=FALSE)
+vs_dds_local_TE = vst(dds_local_TE, blind=FALSE)
 
 ## Differential expression
 
