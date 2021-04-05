@@ -128,19 +128,19 @@ standardize_column_names = function(raw_counts){
       
       if (colnames(raw_counts)[i] %in% colnames(testis_counts)){
         
-        b = 'testis_GTEx'
+        b = 'Testis_GTEx'
         
       }
       
       if (colnames(raw_counts)[i] %in% colnames(ovaries_counts)){
         
-        b = 'ovaries_GTEx'
+        b = 'Ovary_GTEx'
         
       }
       
       if (colnames(raw_counts)[i] %in% colnames(muscle_counts)){
         
-        b = 'muscle_GTEx'
+        b = 'Muscle_GTEx'
         
       }
       
@@ -187,7 +187,6 @@ dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
 
 vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
 assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$batch)
-
 
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
