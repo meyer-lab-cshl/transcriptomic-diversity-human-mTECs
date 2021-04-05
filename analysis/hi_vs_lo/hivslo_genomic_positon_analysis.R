@@ -27,10 +27,10 @@ make_GRanges = function(mode, results_df){
   if (mode == 'gene'){
     
     annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
-    annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand'))
+    annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
     annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
     
-    df = merge(results_df, annotation, by = 'Geneid')
+    df = annotation
     
   }
   
@@ -150,9 +150,66 @@ correlate_fold_change = function(query, subject){
   
 }
 
+build_count_table = function(group){
+  
+  ## Input is determined by subsetting normalized_counts by logical conditions specified in 'group'
+  
+  for (i in group){
+    
+    if (i == 'all'){
+      
+      input = as.data.frame(GRanges_TE_annotated)
+      
+    }
+    
+    if (i == 'diff_regulated'){
+      
+      input = as.data.frame(GRanges_TE_annotated) %>%
+        dplyr::filter(significant == TRUE)
+      
+    }
+    
+    if (i == 'up_regulated'){
+      
+      input = as.data.frame(GRanges_TE_annotated) %>%
+        dplyr::filter((significant == TRUE) & (log2FoldChange > 0))
+      
+    }
+    
+    input = group_by(input, Class) %>% summarize(summary = n())
+    
+    ######
+    
+    input = as.data.frame(input)
+    input$group = i
+    
+    if (match(i, group) == 1){
+      
+      output = input
+      
+    }
+    
+    if (match(i, group) != 1) {
+      
+      output = bind_rows(output, input)
+      
+    }  
+    
+  }
+  
+  output = output %>%
+    group_by(group) %>%
+    mutate(percent = summary / sum(summary) * 100)
+  
+  return(output)
+  
+}
+
 #################################################################
 # GRanges
 ################################################################# 
+
+## Make GRanges_gene objects
 
 GRanges_gene = make_GRanges(mode = 'gene',
                             results_df = results_df_local_gene)
@@ -172,6 +229,8 @@ GRanges_gene_sigdiff = make_GRanges(mode = 'gene',
                                     results_df = results_df_local_gene_sigdiff)
 saveRDS(GRanges_gene_sigdiff, "~/TE_thymus/analysis/cluster/objects/GRanges_gene_sigdiff.rds")
 
+## Make GRanges_TE objects
+
 GRanges_TE = make_GRanges(mode = 'TE',
                           results_df = results_df_local_TE)
 saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/objects/GRanges_TE.rds")
@@ -189,36 +248,79 @@ GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
                                     results_df = results_df_local_TE_sigdiff)
 saveRDS(GRanges_TE_sigdiff, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_sigdiff.rds")
 
-## Annotate results_df_local_TE
+## Annotate by overlap
 
-up_hits = findOverlaps(GRanges_TE, GRanges_gene_up)
-up_hits = as.data.frame(up_hits)
-up_hits_query_index = unique(up_hits$queryHits)
+annotate_features = function(input, mode){
+  
+  if (mode == 'hannah'){
+    
+    features = readRDS('~/TE_thymus/analysis/features.rds')
+    
+    annotated_GRanges_TE = sort(input)
+    
+    annotated_GRanges_TE$TSS_10_genes <- overlapsAny(input, features$TSS10_genes)
+    annotated_GRanges_TE$TSS_10_trans <- overlapsAny(input, features$TSS10_transcripts)
+    annotated_GRanges_TE$TSS_100_genes <- overlapsAny(input, features$TSS100_genes)
+    annotated_GRanges_TE$TSS_100_trans <- overlapsAny(input, features$TSS100_transcripts)
+    annotated_GRanges_TE$first_exon <- overlapsAny(input, features$first_exon)
+    annotated_GRanges_TE$other_exon <- overlapsAny(input, features$other_exon)
+    annotated_GRanges_TE$intron <- overlapsAny(input, features$introns)
+    annotated_GRanges_TE$TTS_100_genes <- overlapsAny(input, features$TTS100_genes)
+    annotated_GRanges_TE$TTS_200_genes <- overlapsAny(input, features$TTS200_genes)
+    annotated_GRanges_TE$TTS_100_trans <- overlapsAny(input, features$TTS100_trans)
+    annotated_GRanges_TE$TTS_200_trans <- overlapsAny(input, features$TTS200_trans)
+    annotated_GRanges_TE$downstream_gene <- overlapsAny(input, features$downstream_genes)
+    annotated_GRanges_TE$upstream_gene <- overlapsAny(input, features$upstream_genes)
+    annotated_GRanges_TE$antisense <- overlapsAny(input, features$antisense)
+    
+  }
+  
+  if (mode == 'matty'){
+    
+    annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
+    annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
+    features = makeGRangesFromDataFrame(annotation, keep.extra.columns = T)
+    
+    annotated_GRanges_TE = splicejam::annotateGRfromGR(GR1 = sort(input), GR2 = features)
+    
+  }
+  
+  return(annotated_GRanges_TE)
+  
+}
 
-down_hits = findOverlaps(GRanges_TE, GRanges_gene_down)
-down_hits = as.data.frame(down_hits)
-down_hits_query_index = unique(down_hits$queryHits)
+GRanges_TE_annotated = annotate_features(input = GRanges_TE, mode = 'matty')
 
-unchanged_hits = findOverlaps(GRanges_TE, GRanges_gene_unchanged)
-unchanged_hits = as.data.frame(unchanged_hits)
-unchanged_hits_query_index = unique(unchanged_hits$queryHits)
+GRanges_TE_annotated = dplyr::mutate(Class = )
 
-overlap_with_up_gene = results_df_local_TE[up_hits_query_index, ]$ID
-overlap_with_down_gene = results_df_local_TE[down_hits_query_index, ]$ID
-overlap_with_unchanged_gene = results_df_local_TE[unchanged_hits_query_index, ]$ID
+count_table = build_count_table(group = c('all', 'diff_regulated', 'up_regulated')) %>% dplyr::filter(percent > 1)
 
-results_df_local_TE = mutate(results_df_local_TE, overlap_with_up_gene = case_when(ID %in% overlap_with_up_gene == T ~ TRUE,
-                                                                                   ID %in% overlap_with_up_gene == F ~ FALSE))
-results_df_local_TE = mutate(results_df_local_TE, overlap_with_down_gene = case_when(ID %in% overlap_with_down_gene == T ~ TRUE,
-                                                                                     ID %in% overlap_with_down_gene == F ~ FALSE))
-results_df_local_TE = mutate(results_df_local_TE, overlap_with_unchanged_gene = case_when(ID %in% overlap_with_unchanged_gene == T ~ TRUE,
-                                                                                     ID %in% overlap_with_unchanged_gene == F ~ FALSE))
+## Plot stacked bars
 
-results_df_local_TE = mutate(results_df_local_TE, overlap_status = case_when((overlap_with_up_gene == T) & (overlap_with_down_gene == F)  ~ 'up',
-                                                              (overlap_with_up_gene == F) & (overlap_with_down_gene == T) ~ 'down',
-                                                              (overlap_with_up_gene == F) & (overlap_with_down_gene == F) & (overlap_with_unchanged_gene == T) ~ 'unchanged',
-                                                              (overlap_with_up_gene == F) & (overlap_with_down_gene == F) & (overlap_with_unchanged_gene == F) ~ 'none'))
+bar_chart = ggplot(count_table, aes(x = group, y = percent, fill = Class)) + 
+  geom_col(colour = 'black', position = 'fill') +
+  scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
+  scale_fill_brewer(palette = "Set1") +
+  xlab('') +
+  ylab('Fraction of normalized reads') +
+  ggtitle('TEs in mTEC-HI cells', 'Subset by physical overlap with genes')
 
+bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                               plot.subtitle = element_text(size = 14),
+                               panel.grid.major.x = element_blank(),
+                               panel.grid.minor.x = element_blank(),
+                               panel.grid.major.y = element_line(color = 'grey'),
+                               panel.grid.minor.y = element_blank(),
+                               axis.text.x = element_text(size = 13),
+                               axis.text.y = element_text(size = 14),
+                               axis.title = element_text(size = 14),
+                               axis.line = element_line(size = 0.8),
+                               panel.border = element_blank(),
+                               legend.text = element_text(size = 12),
+                               legend.title = element_text(size = 14))
+
+#ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/21-03-25/slide_3.png", 
+#       width = 20, height = 13, units = "cm")
 
 #################################################################
 # regioneR

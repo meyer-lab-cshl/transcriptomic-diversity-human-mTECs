@@ -3,6 +3,7 @@ library(dplyr)
 library(tidyr)
 library(glue)
 library(stringr)
+library(limma)
 
 #################################################################
 # Functions
@@ -10,13 +11,13 @@ library(stringr)
 
 ## Differential expression
 
-differential_expression = function(raw_count_table, min_reads = 2, design = ~patient+tissue){
+differential_expression = function(raw_count_table, min_reads = 2, design = ~tissue){
   
   ## Define sampleInfo
   
   ID = colnames(raw_count_table)
   sampleInfo = data.frame(ID,row.names=colnames(raw_count_table))
-  sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'tissue'), sep = '_'))
+  sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'tissue', 'batch'), sep = '_'))
   sampleInfo$patient = factor(sampleInfo$patient)
   
   ## Construct DESeq dataset object
@@ -110,10 +111,14 @@ standardize_column_names = function(raw_counts){
   
   for (i in 1:length(colnames(raw_counts))){
     
-    if (colnames(raw_counts)[i] %in% mTEC){
+    if (colnames(raw_counts)[i] %in% colnames(mTEC_counts)){
       
       a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
-      b = str_split(colnames(raw_counts)[i], '_')[[1]][2]
+      
+      b = 'mTEC'
+      c = str_split(colnames(raw_counts)[i], '_')[[1]][2]
+      b = paste(b, c, sep = '-')
+      b = paste(b, 'new', sep = '_')
       
     }
     
@@ -121,15 +126,27 @@ standardize_column_names = function(raw_counts){
       
       a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
       
-      if (colnames(raw_counts)[i] %in% testis){
+      if (colnames(raw_counts)[i] %in% colnames(testis_counts)){
         
-        b = 'testis'
+        b = 'Testis_GTEx'
         
       }
       
-      if (colnames(raw_counts)[i] %in% ovaries){
+      if (colnames(raw_counts)[i] %in% colnames(ovaries_counts)){
         
-        b = 'ovaries'
+        b = 'Ovary_GTEx'
+        
+      }
+      
+      if (colnames(raw_counts)[i] %in% colnames(muscle_counts)){
+        
+        b = 'Muscle_GTEx'
+        
+      }
+      
+      if (colnames(raw_counts)[i] %in% colnames(ESC_counts)){
+        
+        b = 'ESC_UCSC'
         
       }
       
@@ -145,54 +162,89 @@ standardize_column_names = function(raw_counts){
   
 }
 
-collapse_tissue_replicates = function(vs_dds, mode = mean){
-  
-  counter = 0
-  for (i in unique(vs_dds$tissue)){
-    
-    entry = vs_dds[ , vs_dds$tissue %in% c(i)]
-    
-    if (counter == 0){
-      
-      output = data.frame('placeholder' = rowMeans(assay(entry)))
-      names(output) = i
-      
-    }
-    
-    else{
-      
-      output[i] = rowMeans(assay(entry))
-      
-    }
-    
-    counter = counter + 1
-    
-  }
-  
-  return(output)
-  
-}
+#################################################################
+# TE transcripts
+#################################################################
+
+## Data import
+
+raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_counts",header=T,row.names=1)
+testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/testis_counts",header=T,row.names=1)
+ovaries_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ovaries_counts",header=T,row.names=1)
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
+muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/muscle_counts",header=T,row.names=1)
+ESC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ESC_counts",header=T,row.names=1)
+
+data = standardize_column_names(raw_counts = raw_counts)
+
+## Run DESeq2
+
+dds_transcripts = differential_expression(data, design=~tissue)
+dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
+dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
+
+## Normalized counts
+
+vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
+assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$batch)
+
+vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
+assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
+
+## Differential expression
+
+results_transcripts = results(dds_transcripts, 
+                              contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'), 
+                              independentFiltering = F)
+
+results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
+results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
+
+results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
+results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
+
+results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
+
+results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
 
 #################################################################
 # TE_local
 #################################################################
 
-## Make count table
+## Data import
 
-data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local_hi_vs_lo.cntTable",
-                  header=T,row.names=1)
-colnames(data) = c('226_LO', '226_HI', '221_LO', '221_HI', '214_HI', '214_LO')
+raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_counts",header=T,row.names=1)
 
-#min_read = 1
-#pre_filtered_data = data[apply(data,1,function(x){max(x)}) > min_read,]
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable_old",header=T,row.names=1)
+testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/testis_local_count_table",header=T,row.names=1)
 
-# Run differential expression
+data = standardize_column_names(raw_counts = mTEC_counts)
 
-dds_local = differential_expression(data)
+## Run DESeq2
+
+dds_local = differential_expression(data, design=~patient+tissue)
 dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
 dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
 
-results_local = results(dds_local, independentFiltering = F)
+## Normalized counts
+
+vs_dds_local_gene = vst(dds_local_gene, blind=FALSE)
+assay(vs_dds_local_gene) = limma::removeBatchEffect(assay(vs_dds_local_gene), vs_dds_local_gene$batch)
+#assay(vs_dds_local_gene) = limma::removeBatchEffect(assay(vs_dds_local_gene), vs_dds_local_gene$patient)
+
+vs_dds_local_TE = vst(dds_local_TE, blind=FALSE)
+assay(vs_dds_local_TE) = limma::removeBatchEffect(assay(vs_dds_local_TE), vs_dds_local_TE$batch)
+#assay(vs_dds_local_TE) = limma::removeBatchEffect(assay(vs_dds_local_TE), vs_dds_local_TE$patient)
+
+## Differential expression
+
+results_local = results(dds_local, 
+                        independentFiltering = F)
+
+results_local = results(dds_local, 
+                        independentFiltering = F,
+                        contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'))
+
 results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
 results_local_TE = extract_from_DESeq2(mode = 'TE', input = results_local)
 
@@ -242,122 +294,3 @@ data_local = rename(data_local, '214_HI' = V1, '214_LO' = V2,
 data_local = unite(data_local, 'ID', c('gene', 'family', 'class'), sep = ':')
 row.names(data_local) = data_local$ID
 data_local = select(data_local, -ID)
-
-#################################################################
-# TE_transcipts
-#################################################################
-
-## Make count table
-
-data = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
-colnames(data) = c('214_HI', '221_HI', '226_HI', '214_LO', '221_LO', '226_LO')
-
-# Run differential expression
-
-dds_transcripts = differential_expression(data, design=~tissue)
-dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
-dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
-
-results_transcripts = results(dds_transcripts, independentFiltering = F)
-results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
-results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
-
-results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
-results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
-
-results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
-
-results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
-
-##
-
-vs_dds_TE = vst(dds_transcripts_TE, blind=FALSE)
-transformed_counts_TE = as.data.frame(assay(vs_dds_TE))
-
-vs_dds_gene = vst(dds_transcripts_gene, blind=FALSE)
-transformed_counts_gene = as.data.frame(assay(vs_dds_gene))
-
-#################################################################
-# Misc stuff I'm hoarding in case it's important
-#################################################################
-
-sigGenes_transcripts = results_df_transcripts[results_df_transcripts$significant == TRUE,]$gene
-
-diff_reg_transcripts = filter(results_df_local, gene %in% sigGenes_transcripts)
-diff_reg_local = filter(results_df_local, significant == TRUE)
-diff_reg_both = filter(diff_reg_local, gene %in% sigGenes_transcripts)
-
-sigLocus_transcripts = diff_reg_transcripts$ID
-sigLocus_local = diff_reg_local$ID
-
-## Transform raw count data 
-
-vs_dds <- vst(dds, blind=FALSE)
-transformed_counts = as.data.frame(assay(vs_dds))
-
-sigGenes = rownames(results_df[results_df$significant == TRUE,])
-sig_transformed_counts = assay(vs_dds)[rownames(transformed_counts) %in% sigGenes,]
-
-upGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange > 0),])
-
-downGenes = rownames(results_df[(results_df$significant == TRUE) & (results_df$log2FoldChange < 0),])
-
-#################################################################
-# TE_transcripts: GTEx data
-#################################################################
-
-raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_transcripts_counts",header=T,row.names=1)
-
-testis = c('GTEX.1399R.1626.SM.5P9GG_Aligned.out.bam', 
-           'GTEX.13OW8.0526.SM.5KM24_Aligned.out.bam',
-           'GTEX.1GN73.1726.SM.9JGFR_Aligned.out.bam',
-           'GTEX.1GPI7.1426.SM.9JGGR_Aligned.out.bam',
-           'GTEX.1H11D.1626.SM.9JGHM_Aligned.out.bam',
-           'GTEX.1H1DG.2726.SM.9JGI1_Aligned.out.bam',
-           'GTEX.1IDJF.2226.SM.AHZ2T_Aligned.out.bam', 
-           'GTEX.1IDJH.2326.SM.D4P2K_Aligned.out.bam')
-
-ovaries = c('GTEX.11P81.1526.SM.5P9GS_Aligned.out.bam',
-            'GTEX.1269C.1826.SM.5N9E1_Aligned.out.bam',
-            'GTEX.131YS.2226.SM.5P9G8_Aligned.out.bam')
-
-mTEC = c('pt214_hi_fastp_1.fastq_Aligned.out.bam.T',
-         'pt221_hi_fastp_1.fastq_Aligned.out.bam.T',
-         'pt226_hi_fastp_1.fastq_Aligned.out.bam.T',
-         'pt214_lo_fastp_1.fastq_Aligned.out.bam.C',
-         'pt221_lo_fastp_1.fastq_Aligned.out.bam.C',
-         'pt226_lo_fastp_1.fastq_Aligned.out.bam.C')
-
-data = standardize_column_names(raw_counts = raw_counts)
-
-## Run DESeq2
-
-dds_transcripts = differential_expression(data, design=~tissue)
-dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
-dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
-
-## Normalized counts
-
-vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
-vs_dds_transcripts_gene_collapsed = collapse_tissue_replicates(vs_dds_transcripts_gene)
-
-vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
-vs_dds_transcripts_TE_collapsed = collapse_tissue_replicates(vs_dds_transcripts_TE)
-
-## Differential expression
-
-results_transcripts = results(dds_transcripts, 
-                              contrast = c('tissue', 'hi', 'lo'), 
-                              independentFiltering = F)
-
-results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
-results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
-
-results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
-results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
-
-results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
-
-results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
-
-
