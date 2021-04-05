@@ -1,31 +1,86 @@
 library(pheatmap)
+library(dplyr)
 
 #################################################################
-# Heatmap 
+# Heatmap of read counts
 #################################################################
 
-## Rows ordered by fold change w/out clustering
+## Functions
 
-select <- order(sig_results_df$abs_log2FoldChange, decreasing=TRUE)
-pheatmap(sig_transformed_counts[select,], cluster_rows=FALSE, show_rownames=TRUE, cluster_cols=FALSE)
+collapse_tissue_replicates = function(vs_dds, mode = mean){
+  
+  counter = 0
+  for (i in unique(vs_dds$tissue)){
+    
+    entry = vs_dds[ , vs_dds$tissue %in% c(i)]
+    
+    if (counter == 0){
+      
+      output = data.frame('placeholder' = rowMeans(assay(entry)))
+      names(output) = i
+      
+    }
+    
+    else{
+      
+      output[i] = rowMeans(assay(entry))
+      
+    }
+    
+    counter = counter + 1
+    
+  }
+  
+  return(output)
+  
+}
 
-## 1
+generate_heatmap_matrix = function(input, element_mode, tissue_collapse, filter_mode, number_of_elements = 50){
+  
+  if (tissue_collapse == T){
+    
+    input = collapse_tissue_replicates(input)
+    
+  }
+  
+  if (tissue_collapse == F){
+    
+    input = as.data.frame(assay(input))
+    
+  }
+  
+  if (filter_mode == 'none'){
+    
+    matrix = input
+    
+  }
+  
+  if (filter_mode == 'variance'){
+    
+    topVarianceGenes = head(order(apply(input,1,var), decreasing=T),number_of_elements)
+    matrix = input[topVarianceGenes, ]
+    
+  }
+  
+  if (filter_mode == 'sig_diff'){
+    
+    if (element_mode == 'gene'){
 
-topVarianceGenes <- head(order(rowVars(assay(vs_dds_transcripts_TE)), decreasing=T),50)
-
-matrix = assay(vs_dds_transcripts_TE)[topVarianceGenes, ]
-
-## 2 
-
-topVarianceGenes = head(order(apply(vs_dds_transcripts_TE_collapsed,1,var), decreasing=T),100)
-matrix = vs_dds_transcripts_TE_collapsed[topVarianceGenes, ]
-
-matrix = vs_dds_transcripts_TE_collapsed
-
-## 3
-
-matrix = filter(vs_dds_transcripts_TE_collapsed, 
-                rownames(vs_dds_transcripts_TE_collapsed) %in% results_df_transcripts_TE_sigdiff$ID)
+      matrix = filter(input, rownames(input) %in% results_df_transcripts_gene_sigdiff$ID)
+      
+    }
+  
+    if (element_mode == 'TE'){
+      
+      matrix = filter(input, rownames(input) %in% results_df_transcripts_TE_sigdiff$ID)
+      
+    }  
+  
+  }
+  
+  return(matrix)
+  
+}
 
 ## LTRs only
 
@@ -42,6 +97,12 @@ matrix = select(matrix, -c('gene', 'family', 'class'))
 
 ## Plot
 
+matrix = generate_heatmap_matrix(input = vs_dds_local_TE,
+                                 element_mode = 'TE',
+                                 tissue_collapse = F,
+                                 filter_mode = 'variance',
+                                 number_of_elements = 1000)
+
 row_annotation = data.frame(ID = rownames(matrix))
 rownames(row_annotation) = row_annotation$ID
 row_annotation = separate(data = row_annotation, 
@@ -49,6 +110,14 @@ row_annotation = separate(data = row_annotation,
                           into = c('gene', 'family', 'class'), 
                           sep = ':',
                           remove = T)
+
+
+row_annotation = separate(data = row_annotation, 
+                          col = 'ID', 
+                          into = c('element', 'gene', 'family', 'class'), 
+                          sep = ':',
+                          remove = T)
+
 row_annotation = mutate(row_annotation, class = sub("\\?", "", class))
 row_annotation = select(row_annotation, class)
 
@@ -56,8 +125,7 @@ my_heatmap = pheatmap(matrix,
                       cluster_rows=T,
                       show_rownames=F, 
                       cluster_cols=T,
-                      scale = 'row',
-                      cutree_rows = 2,
+                      scale = 'row')
                       annotation_row = row_annotation)
 
 save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
@@ -67,5 +135,5 @@ save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
   dev.off()
 }
 
-save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/heatmap_all_elements.png")
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/heatmap_local_hi_and_lo.png")
 

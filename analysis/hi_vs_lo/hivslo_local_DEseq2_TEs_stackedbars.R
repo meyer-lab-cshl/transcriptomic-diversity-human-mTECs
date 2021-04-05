@@ -119,6 +119,9 @@ build_count_table = function(dds, results_df, group, mode, by){
       
     }
     
+    
+    
+    
     ######
     
     input = as.data.frame(input)
@@ -146,15 +149,68 @@ build_count_table = function(dds, results_df, group, mode, by){
   
 }
 
-count_table = build_count_table(dds = dds_local_TE,
-                                results_df = results_df_local_TE, 
-                                group = c('all', 'diff_regulated', 'up_regulated', 'down_regulated'), 
-                                mode = 'overlap',
-                                by = 'locus')
+
+build_count_table = function(group){
+  
+  ## Input is determined by subsetting normalized_counts by logical conditions specified in 'group'
+  
+  for (i in group){
+    
+    if (i == 'all'){
+      
+      input = as.data.frame(GRanges_TE_annotated)
+      
+    }
+    
+    if (i == 'diff_regulated'){
+      
+      input = as.data.frame(GRanges_TE_annotated) %>%
+        filter(significant == TRUE)
+      
+    }
+    
+    if (i == 'up_regulated'){
+      
+      input = as.data.frame(GRanges_TE_annotated) %>%
+        filter((significant == TRUE) & (log2FoldChange > 0))
+      
+    }
+    
+    input = group_by(input, Class) %>% summarize(summary = n())
+    
+    ######
+    
+    input = as.data.frame(input)
+    input$group = i
+    
+    if (match(i, group) == 1){
+      
+      output = input
+      
+    }
+    
+    if (match(i, group) != 1) {
+      
+      output = bind_rows(output, input)
+      
+    }  
+    
+  }
+  
+  output = output %>%
+    group_by(group) %>%
+    mutate(percent = summary / sum(summary) * 100)
+  
+  return(output)
+  
+}
+
+count_table = build_count_table(group = c('all', 'diff_regulated', 'up_regulated')) %>% 
+  filter(percent > 1)
 
 ## Plot stacked bars
 
-bar_chart = ggplot(count_table, aes(x = group, y = percent, fill = overlap_status)) + 
+bar_chart = ggplot(count_table, aes(x = group, y = percent, fill = Class)) + 
   geom_col(colour = 'black', position = 'fill') +
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
   scale_fill_brewer(palette = "Set1") +
