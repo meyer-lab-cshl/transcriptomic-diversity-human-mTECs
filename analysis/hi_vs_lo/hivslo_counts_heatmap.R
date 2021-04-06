@@ -7,7 +7,19 @@ library(dplyr)
 
 ## Functions
 
-collapse_tissue_replicates = function(vs_dds, mode = mean){
+collapse_tissue_replicates = function(vs_dds, mode = 'mean'){
+  
+  if (mode == 'mean'){
+    
+    summary_func = rowMeans
+    
+  }
+  
+  if (mode == 'median'){
+    
+    summary_func = rowMedians
+    
+  }
   
   counter = 0
   for (i in unique(vs_dds$tissue)){
@@ -16,14 +28,14 @@ collapse_tissue_replicates = function(vs_dds, mode = mean){
     
     if (counter == 0){
       
-      output = data.frame('placeholder' = rowMeans(assay(entry)))
+      output = data.frame('placeholder' = summary_func(assay(entry)))
       names(output) = i
       
     }
     
     else{
       
-      output[i] = rowMeans(assay(entry))
+      output[i] = summary_func(assay(entry))
       
     }
     
@@ -39,7 +51,7 @@ generate_heatmap_matrix = function(input, element_mode, tissue_collapse, filter_
   
   if (tissue_collapse == T){
     
-    input = collapse_tissue_replicates(input)
+    input = collapse_tissue_replicates(input, mode = 'mean')
     
   }
   
@@ -95,13 +107,8 @@ matrix = separate(data = matrix,
 matrix = filter(matrix, class == 'LTR')
 matrix = select(matrix, -c('gene', 'family', 'class'))
 
-## Plot
 
-matrix = generate_heatmap_matrix(input = vs_dds_local_TE,
-                                 element_mode = 'TE',
-                                 tissue_collapse = F,
-                                 filter_mode = 'variance',
-                                 number_of_elements = 1000)
+## Row annotation 
 
 row_annotation = data.frame(ID = rownames(matrix))
 rownames(row_annotation) = row_annotation$ID
@@ -121,19 +128,105 @@ row_annotation = separate(data = row_annotation,
 row_annotation = mutate(row_annotation, class = sub("\\?", "", class))
 row_annotation = select(row_annotation, class)
 
+## Column annotation
+
+col_annotation = data.frame(ID = colnames(matrix))
+rownames(col_annotation) = col_annotation$ID
+
+col_annotation = separate(data = col_annotation, 
+                          col = 'ID', 
+                          into = c('patient', 'tissue', 'batch'), 
+                          sep = '_',
+                          remove = T)
+
+col_annotation = select(col_annotation, tissue)
+
+#################################################################
+# Heatmap of read counts
+#################################################################
+
+matrix = generate_heatmap_matrix(input = vs_dds_transcripts_TE,
+                                 element_mode = 'TE',
+                                 tissue_collapse = F,
+                                 filter_mode = 'none')
+
 my_heatmap = pheatmap(matrix, 
                       cluster_rows=T,
-                      show_rownames=F, 
+                      show_rownames=F,
+                      show_colnames = T,
                       cluster_cols=T,
                       scale = 'row')
-                      annotation_row = row_annotation)
 
-save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
+## TEtranscripts: top 200 elements by variance
+
+matrix = generate_heatmap_matrix(input = vs_dds_transcripts_TE,
+                                 element_mode = 'TE',
+                                 tissue_collapse = F,
+                                 filter_mode = 'variance',
+                                 number_of_elements = 1179)
+
+gg_color <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+gg_color(6)
+
+ann_colors = list(tissue=c('ESC' = '#F8766D', 
+                           'mTEC-hi' = '#B79F00', 
+                           'mTEC-lo' = '#00BA38', 
+                           'Muscle' = '#00BFC4', 
+                           'Ovary' = '#619CFF', 
+                           'Testis' = '#F564E3'))
+
+my_heatmap = pheatmap(matrix, 
+                      cluster_rows=T,
+                      show_rownames=F,
+                      show_colnames = T,
+                      cluster_cols=T,
+                      scale = 'row'),
+                      annotation_col = col_annotation,
+                      annotation_colors = ann_colors,
+                      main = 'TE transcripts: top 200 elements by variance')
+
+## TElocal: top 1000 elements by variance
+
+matrix = generate_heatmap_matrix(input = vs_dds_local_TE,
+                                 element_mode = 'TE',
+                                 tissue_collapse = F,
+                                 filter_mode = 'variance',
+                                 number_of_elements = 1000)
+
+gg_color <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+gg_color(6)
+
+ann_colors = list(tissue=c('ESC' = '#F8766D', 
+                           'mTEC-hi' = '#B79F00', 
+                           'mTEC-lo' = '#00BA38', 
+                           'Muscle' = '#00BFC4', 
+                           'Ovary' = '#619CFF', 
+                           'Testis' = '#F564E3'))
+
+my_heatmap = pheatmap(matrix, 
+                      cluster_rows=T,
+                      show_rownames=F,
+                      show_colnames = F,
+                      cluster_cols=T,
+                      scale = 'row',
+                      annotation_col = col_annotation,
+                      annotation_colors = ann_colors,
+                      main = 'TE local: top 1000 elements by variance')
+
+save_pheatmap_png <- function(x, filename, width=1200, height=600, res = 150) {
   png(filename, width = width, height = height, res = res)
   grid::grid.newpage()
   grid::grid.draw(x$gtable)
   dev.off()
 }
 
-save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/21-04-01/heatmap_local_hi_and_lo.png")
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/Presentation/heatmap_local.png")
 
