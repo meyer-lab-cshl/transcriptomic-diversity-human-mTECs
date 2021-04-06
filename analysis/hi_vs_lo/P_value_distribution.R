@@ -24,7 +24,7 @@ input = mutate(input, log2FoldChange_transcripts = )
 
 ## Take a random subset
 
-random_element_subset = sample(results_df_transcripts_TE$gene, 20)
+random_element_subset = sample(results_df_transcripts_TE$gene, 30)
 
 local_input = filter(results_df_local_TE, gene %in% random_element_subset)
 
@@ -34,10 +34,12 @@ transcripts_input = filter(results_df_transcripts_TE, gene %in% random_element_s
 
 plot = ggplot(data = transcripts_input, aes(x = gene, y = log2FoldChange, fill = significant)) +
   geom_bar(stat = 'identity') + 
-  geom_point(data = local_input, aes(x = gene, y = log2FoldChange, color = significant), size = 0.5, alpha = 0.6, position = 'jitter') +
+  geom_jitter(data = local_input, aes(x = gene, y = log2FoldChange, color = significant), size = 0.5, alpha = 0.6, width = 0.3) +
   xlab('Element') +
-  ylab(expression('Log'[2]*' Fold Change')) +
-  ggtitle('TE expression in mTEC-HI vs mTEC-LO', 'TEtranscripts and TElocal compared (random subset of elements)')
+  ylab(expression('Log'[2]*' Fold Change')) 
+
+  
+##ggtitle('TE expression in mTEC-HI vs mTEC-LO', 'TEtranscripts and TElocal compared (random subset of elements)')
 
 plot = ggplot(data = transcripts_input, aes(x = gene, y = log2FoldChange)) +
   geom_bar(stat = 'identity', aes(fill = significant)) + 
@@ -70,12 +72,24 @@ plot = ggplot(data = transcripts_input, aes(x = gene, y = log2FoldChange)) +
 
 ## Plot
 
-plot + theme(axis.text.x = element_text(angle = 90, size = 10),
-             plot.title = element_text(face = 'bold', size = 20),
-             plot.subtitle = element_text(size = 14))
+plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 16),
+                          plot.subtitle = element_text(size = 12),
+                          panel.grid.major.x = element_blank(),
+                          panel.grid.minor.x = element_blank(),
+                          panel.grid.major.y = element_line(color = 'gray'),
+                          panel.grid.minor.y = element_blank(),
+                          axis.text.x = element_text(size = 12, angle = 90),
+                          axis.text.y = element_text(size = 13),
+                          axis.title.x = element_text(size = 15, margin = margin(t = 12.5)),
+                          axis.title.y = element_text(size = 15, margin = margin(r = 7.5)),
+                          axis.line = element_line(size = 0.8),
+                          panel.border = element_blank(),
+                          legend.text = element_text(size = 12),
+                          legend.title = element_text(size = 14),
+                          axis.ticks.length = unit(.15, 'cm'))
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/21-03-25/local_vs_transcripts_violin.png", 
-       width = 23, height = 12, units = "cm")
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/Presentation/local_vs_transcripts_violin.png", 
+       width = 11.5, height = 6, units = "in")
 
 #################################################################
 # Only elements detected by TE_transcripts

@@ -132,7 +132,7 @@ standardize_column_names = function(raw_counts){
         
       }
       
-      if (colnames(raw_counts)[i] %in% colnames(ovaries_counts)){
+      if (colnames(raw_counts)[i] %in% colnames(ovary_counts)){
         
         b = 'Ovary_GTEx'
         
@@ -162,15 +162,55 @@ standardize_column_names = function(raw_counts){
   
 }
 
+collapse_tissue_replicates = function(dds, mode = 'mean'){
+  
+  if (mode == 'mean'){
+    
+    summary_func = rowMeans
+    
+  }
+  
+  if (mode == 'median'){
+    
+    summary_func = rowMedians
+    
+  }
+  
+  counter = 0
+  for (i in unique(dds$tissue)){
+    
+    entry = dds[ , dds$tissue %in% c(i)]
+    
+    if (counter == 0){
+      
+      output = data.frame('placeholder' = summary_func(assay(entry)))
+      names(output) = i
+      
+    }
+    
+    else{
+      
+      output[i] = summary_func(assay(entry))
+      
+    }
+    
+    counter = counter + 1
+    
+  }
+  
+  return(output)
+  
+}
+
 #################################################################
-# TE transcripts
+# TE transcripts: all data
 #################################################################
 
 ## Data import
 
 raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_counts",header=T,row.names=1)
 testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/testis_counts",header=T,row.names=1)
-ovaries_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ovaries_counts",header=T,row.names=1)
+ovary_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ovaries_counts",header=T,row.names=1)
 mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/muscle_counts",header=T,row.names=1)
 ESC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ESC_counts",header=T,row.names=1)
@@ -208,6 +248,44 @@ results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, signif
 results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
 
 #################################################################
+# TE transcripts: just mTECs
+#################################################################
+
+## Data import
+
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
+
+data = standardize_column_names(raw_counts = mTEC_counts)
+
+## Run DESeq2
+
+dds_transcripts = differential_expression(data, design=~patient + tissue)
+dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
+dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
+
+## Normalized counts
+
+vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
+
+vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
+
+## Differential expression
+
+results_transcripts = results(dds_transcripts, 
+                              contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'), 
+                              independentFiltering = F)
+
+results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
+results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
+
+results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
+results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
+
+results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
+
+results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
+
+#################################################################
 # TE_local
 #################################################################
 
@@ -215,8 +293,60 @@ results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significan
 
 raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_counts",header=T,row.names=1)
 
-mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable_old",header=T,row.names=1)
-testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/testis_local_count_table",header=T,row.names=1)
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable",header=T,row.names=1)
+testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/testis_counts_local",header=T,row.names=1)
+ovary_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/ovary_counts_local",header=T,row.names=1)
+muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/muscle_counts_local",header=T,row.names=1)
+ESC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/ESC_counts_local",header=T,row.names=1)
+
+data = standardize_column_names(raw_counts = raw_counts)
+
+## Run DESeq2
+
+dds_local = differential_expression(data, design=~tissue)
+dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
+dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
+
+## Normalized counts
+
+vs_dds_local_gene = vst(dds_local_gene, blind=FALSE)
+assay(vs_dds_local_gene) = limma::removeBatchEffect(assay(vs_dds_local_gene), vs_dds_local_gene$batch)
+
+vs_dds_local_TE = vst(dds_local_TE, blind=FALSE)
+assay(vs_dds_local_TE) = limma::removeBatchEffect(assay(vs_dds_local_TE), vs_dds_local_TE$batch)
+
+## Differential expression
+
+results_local = results(dds_local, 
+                        independentFiltering = F)
+
+results_local = results(dds_local, 
+                        independentFiltering = F,
+                        contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'))
+
+results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
+results_local_TE = extract_from_DESeq2(mode = 'TE', input = results_local)
+
+results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
+results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
+
+results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
+results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
+results_df_local_gene_down = filter(results_df_local_gene, (significant == T) & (log2FoldChange < 0))
+results_df_local_gene_sigdiff = filter(results_df_local_gene, significant == T)
+
+results_df_local_TE_up = filter(results_df_local_TE, (significant == T) & (log2FoldChange > 0))
+results_df_local_TE_unchanged = filter(results_df_local_TE, significant == F)
+results_df_local_TE_down = filter(results_df_local_TE, (significant == T) & (log2FoldChange < 0))
+results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
+
+#################################################################
+# TE_local: just mTECs
+#################################################################
+
+## Data import
+
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable",header=T,row.names=1)
 
 data = standardize_column_names(raw_counts = mTEC_counts)
 
@@ -229,12 +359,7 @@ dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
 ## Normalized counts
 
 vs_dds_local_gene = vst(dds_local_gene, blind=FALSE)
-assay(vs_dds_local_gene) = limma::removeBatchEffect(assay(vs_dds_local_gene), vs_dds_local_gene$batch)
-#assay(vs_dds_local_gene) = limma::removeBatchEffect(assay(vs_dds_local_gene), vs_dds_local_gene$patient)
-
 vs_dds_local_TE = vst(dds_local_TE, blind=FALSE)
-assay(vs_dds_local_TE) = limma::removeBatchEffect(assay(vs_dds_local_TE), vs_dds_local_TE$batch)
-#assay(vs_dds_local_TE) = limma::removeBatchEffect(assay(vs_dds_local_TE), vs_dds_local_TE$patient)
 
 ## Differential expression
 
