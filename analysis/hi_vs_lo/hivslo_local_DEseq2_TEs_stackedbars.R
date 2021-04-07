@@ -205,8 +205,8 @@ build_count_table = function(group){
   
 }
 
-count_table = build_count_table(dds_local_TE, 
-                                results_df_local_TE, 
+count_table = build_count_table(dds_transcripts_TE, 
+                                results_df_transcripts_TE, 
                                 group = c('all', 'down_regulated', 'up_regulated'),
                                 mode = 'class',
                                 by = 'normalized_reads')
@@ -217,7 +217,7 @@ bar_chart = ggplot(count_table, aes(x = group, y = percent, fill = class)) +
   geom_col(colour = 'black', position = 'fill') +
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
   scale_fill_brewer(palette = 'Set1') +
-  xlab('mTEC-HI subset') +
+  xlab('Sub-family subset') +
   ylab('Fraction of normalized reads') +
   labs(fill= "Class") +
   scale_x_discrete(labels = c('All', 'Down', 'Up'))
@@ -240,7 +240,7 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                legend.text = element_text(size = 12),
                                legend.title = element_text(size = 14))
 
-ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/Presentation/local_class_distribution.png", 
+ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/transcripts_class_distribution.png", 
        width = 8, height = 4.5, units = "in")
 
 
