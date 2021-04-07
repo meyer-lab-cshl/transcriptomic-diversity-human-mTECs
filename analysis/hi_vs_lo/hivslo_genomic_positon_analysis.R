@@ -237,12 +237,15 @@ saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/objects/GRanges_TE.rds")
 
 GRanges_TE_up = make_GRanges(mode = 'TE',
                                results_df = results_df_local_TE_up)
+saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_up.rds")
 
 GRanges_TE_unchanged = make_GRanges(mode = 'TE',
                                       results_df = results_df_local_TE_unchanged)
+saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_unchanged.rds")
 
 GRanges_TE_down = make_GRanges(mode = 'TE',
                                  results_df = results_df_local_TE_down)
+saveRDS(GRanges_TE, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_down.rds")
 
 GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
                                     results_df = results_df_local_TE_sigdiff)
@@ -326,11 +329,11 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
 # regioneR
 #################################################################
 
-gene_groups = list(GRanges_gene_up, GRanges_gene_down)
-TE_groups = list(GRanges_TE_up, GRanges_TE_down)
+gene_groups = list(GRanges_gene_up, GRanges_gene_unchanged, GRanges_gene_down)
+TE_groups = list(GRanges_TE_up, GRanges_TE_unchanged, GRanges_TE_down)
 
-saveRDS(gene_groups, "~/TE_thymus/analysis/cluster/gene_groups.rds")
-saveRDS(TE_groups, "~/TE_thymus/analysis/cluster/TE_groups.rds")
+saveRDS(gene_groups, "~/TE_thymus/analysis/cluster/objects/gene_groups.rds")
+saveRDS(TE_groups, "~/TE_thymus/analysis/cluster/objects/TE_groups.rds")
 
 output = run_perm_test(gene_groups, TE_groups, mode = 'overlap')
 

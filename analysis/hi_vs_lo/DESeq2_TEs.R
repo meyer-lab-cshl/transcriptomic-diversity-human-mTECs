@@ -215,21 +215,23 @@ mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_coun
 muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/muscle_counts",header=T,row.names=1)
 ESC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ESC_counts",header=T,row.names=1)
 
-data = standardize_column_names(raw_counts = raw_counts)
+data = standardize_column_names(raw_counts = mTEC_counts)
 
 ## Run DESeq2
 
-dds_transcripts = differential_expression(data, design=~tissue)
+dds_transcripts = differential_expression(data, design=~patient + tissue)
 dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
 dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
 
 ## Normalized counts
 
 vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
-assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$batch)
+#assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$batch)
+assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$patient)
 
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
-assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
+#assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
+assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_gene$patient)
 
 ## Differential expression
 
@@ -346,7 +348,7 @@ results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
 
 ## Data import
 
-mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable",header=T,row.names=1)
+mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable_old",header=T,row.names=1)
 
 data = standardize_column_names(raw_counts = mTEC_counts)
 
@@ -362,9 +364,6 @@ vs_dds_local_gene = vst(dds_local_gene, blind=FALSE)
 vs_dds_local_TE = vst(dds_local_TE, blind=FALSE)
 
 ## Differential expression
-
-results_local = results(dds_local, 
-                        independentFiltering = F)
 
 results_local = results(dds_local, 
                         independentFiltering = F,
