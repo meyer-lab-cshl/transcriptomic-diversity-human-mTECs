@@ -30,7 +30,7 @@ make_GRanges = function(mode, results_df){
     annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
     annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
     
-    df = annotation
+    df =  merge(results_df, annotation, by = 'Geneid')
     
   }
   
@@ -43,8 +43,8 @@ make_GRanges = function(mode, results_df){
 run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
   
   output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
-  rownames(output) = c('gene_up', 'gene_down')
-  colnames(output) = c('TE_up', 'TE_down')
+  rownames(output) = c('UP gene', 'Unchanged gene', 'DOWN gene')
+  colnames(output) = c('UP TE', 'Unchanged TE', 'DOWN TE')
   
   row_number = 1
   number_of_tests = ncol(output) + nrow(output)
@@ -77,7 +77,7 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
         
         pt = permTest(A = TE_group, 
                       B = gene_group, 
-                      ntimes = 1000,
+                      ntimes = 2000,
                       randomize.function = resampleRegions,
                       universe = GRanges_TE,
                       evaluate.function = numOverlaps,
@@ -282,10 +282,14 @@ annotate_features = function(input, mode){
     
     annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
     annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
-    features = makeGRangesFromDataFrame(annotation, keep.extra.columns = T)
     
+    new_annotation = merge(annotation, results_df_local_gene, by = 'Geneid', all = T)
+    
+    features = makeGRangesFromDataFrame(new_annotation, keep.extra.columns = T)
+
     annotated_GRanges_TE = splicejam::annotateGRfromGR(GR1 = sort(input), GR2 = features)
-    
+      
+  
   }
   
   return(annotated_GRanges_TE)
@@ -293,8 +297,6 @@ annotate_features = function(input, mode){
 }
 
 GRanges_TE_annotated = annotate_features(input = GRanges_TE, mode = 'matty')
-
-GRanges_TE_annotated = dplyr::mutate(Class = )
 
 count_table = build_count_table(group = c('all', 'diff_regulated', 'up_regulated')) %>% dplyr::filter(percent > 1)
 
@@ -329,7 +331,19 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
 # regioneR
 #################################################################
 
-gene_groups = list(GRanges_gene_up, GRanges_gene_unchanged, GRanges_gene_down)
+GRanges_gene_up_extended = GRanges_gene_up
+start(GRanges_gene_up_extended) = GenomicRanges::start(GRanges_gene_up) - 2000
+end(GRanges_gene_up_extended) = GenomicRanges::end(GRanges_gene_up) + 2000
+
+GRanges_gene_down_extended = GRanges_gene_down
+start(GRanges_gene_down_extended) = GenomicRanges::start(GRanges_gene_down) - 2000
+end(GRanges_gene_down_extended) = GenomicRanges::end(GRanges_gene_down) + 2000
+
+GRanges_gene_unchanged_extended = GRanges_gene_unchanged
+start(GRanges_gene_unchanged_extended) = GenomicRanges::start(GRanges_gene_unchanged) - 2000
+end(GRanges_gene_unchanged_extended) = GenomicRanges::end(GRanges_gene_unchanged) + 2000
+
+gene_groups = list(GRanges_gene_up_extended, GRanges_gene_unchanged_extended, GRanges_gene_down_extended)
 TE_groups = list(GRanges_TE_up, GRanges_TE_unchanged, GRanges_TE_down)
 
 saveRDS(gene_groups, "~/TE_thymus/analysis/cluster/objects/gene_groups.rds")
@@ -348,6 +362,19 @@ my_heatmap = pheatmap(mat = output,
                       display_numbers = T,
                       fontsize_number = 15,
                       number_color = 'black')
+
+
+
+my_heatmap = pheatmap(mat = output, 
+                      cluster_rows=FALSE,
+                      show_rownames=TRUE, 
+                      cluster_cols=FALSE,
+                      color = colorRampPalette(rev(brewer.pal(n = 7, name =
+                                                                "RdYlBu")))(30),
+                      display_numbers = T,
+                      fontsize_number = 15,
+                      number_color = 'black',
+                      breaks = seq(-150, 150, by = 10))
 
 save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
   png(filename, width = width, height = height, res = res)
@@ -405,5 +432,14 @@ correlation + theme_bw() + theme(plot.title = element_text(face = 'bold', size =
 
 ggsave("/Users/mpeacey/TE_thymus/analysis/Plots/TE_local/correlated_expression_sigdiff_only.png", 
        width = 25, height = 15, units = "cm")
+
+
+###
+
+distanceToNearest(GRanges_TE, GRanges_gene_up) %>%
+  as.data.frame() %>%
+  ggplot(aes(x = distance)) + 
+  geom_histogram(binwidth = 1000) +
+  xlim(-1000, 250000)
 
 
