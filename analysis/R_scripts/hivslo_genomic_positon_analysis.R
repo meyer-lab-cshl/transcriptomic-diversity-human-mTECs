@@ -42,12 +42,13 @@ make_GRanges = function(mode, results_df){
 
 run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
   
-  output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
-  rownames(output) = c('UP gene', 'Unchanged gene', 'DOWN gene')
-  colnames(output) = c('UP TE', 'Unchanged TE', 'DOWN TE')
+  Z_score_output = matrix(, nrow = length(gene_groups), ncol = length(TE_groups))
+  rownames(Z_score_output) = c('UP gene', 'Unchanged gene', 'DOWN gene')
+  colnames(Z_score_output) = c('UP TE', 'Unchanged TE', 'DOWN TE')
   
+  p_value_output = Z_score_output
+
   row_number = 1
-  number_of_tests = ncol(output) + nrow(output)
   
   for (gene_group in gene_groups){
     
@@ -84,22 +85,10 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
                       alternative = 'greater',
                       verbose = TRUE)
         
-        p_value = pt$numOverlaps[[1]]
-        Z_score = -pt$numOverlaps[[6]]
+        p_value_output[row_number, column_number] = pt$numOverlaps[[1]]
+        Z_score_output[row_number, column_number] = pt$numOverlaps[[6]]
         
-        print(p_value)
-        
-      }
-      
-      if (p_value < (0.05/number_of_tests)){
-        
-        output[row_number, column_number] = Z_score
-        
-      }
-      
-      else{
-        
-        output[row_number, column_number] = NA
+        print(Z_score_output)
         
       }
       
@@ -110,6 +99,8 @@ run_perm_test = function(gene_groups, TE_groups, mode = 'overlap'){
     row_number = row_number + 1
     
   }
+  
+  output = list('Z score' = Z_score_output, 'p value' = p_value_output)
   
   return(output)
   
@@ -353,15 +344,15 @@ output = run_perm_test(gene_groups, TE_groups, mode = 'overlap')
 
 ## Heatmap
 
-my_heatmap = pheatmap(mat = output, 
+my_heatmap = pheatmap(mat = output[[1]], 
                       cluster_rows=FALSE,
                       show_rownames=TRUE, 
                       cluster_cols=FALSE,
-                      color = colorRampPalette(rev(brewer.pal(n = 7, name =
-                                                                "Blues")))(100),
                       display_numbers = T,
                       fontsize_number = 15,
                       number_color = 'black')
+
+ color = colorRampPalette(rev(brewer.pal(n = 7, name = "Blues")))(100),
 
 
 
