@@ -1,6 +1,5 @@
 library(DESeq2)
-library(dplyr)
-library(tidyr)
+library(tidyverse)
 library(glue)
 library(stringr)
 library(limma)
@@ -11,7 +10,79 @@ library(limma)
 
 ## Differential expression
 
+standardize_column_names = function(raw_counts){
+  
+  ##############################################################################
+  # Renames the columns of combined count tables from TEcount or TElocal to 
+  # format 'patient_tissue_batch'. 
+  ##############################################################################
+  
+  new_col_name = vector(, length(colnames(raw_counts)))
+  
+  for (i in 1:length(colnames(raw_counts))){
+    
+    if (colnames(raw_counts)[i] %in% colnames(mTEC_counts)){
+      
+      a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
+      
+      b = 'mTEC'
+      c = str_split(colnames(raw_counts)[i], '_')[[1]][2]
+      b = paste(b, c, sep = '-')
+      b = paste(b, 'new', sep = '_')
+      
+    }
+    
+    else{
+      
+      a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
+      
+      if (colnames(raw_counts)[i] %in% colnames(testis_counts)){
+        
+        b = 'Testis_GTEx'
+        
+      }
+      
+      if (colnames(raw_counts)[i] %in% colnames(ovary_counts)){
+        
+        b = 'Ovary_GTEx'
+        
+      }
+      
+      if (colnames(raw_counts)[i] %in% colnames(muscle_counts)){
+        
+        b = 'Muscle_GTEx'
+        
+      }
+      
+      if (colnames(raw_counts)[i] %in% colnames(ESC_counts)){
+        
+        b = 'ESC_UCSC'
+        
+      }
+      
+    }
+    
+    new_col_name[i] = paste(a, b, sep = '_')
+    
+  }
+  
+  colnames(raw_counts) = new_col_name
+  
+  return(raw_counts)
+  
+}
+
 differential_expression = function(raw_count_table, min_reads = 2, design = ~tissue){
+  
+  ##############################################################################
+  # Generates a DESeq2 dds object. Requires the count table to have standardized
+  # column names as produced by 'standardize_column_names'. By default, design 
+  # detects differences between tissues. For differential expression analysis 
+  # between mTEC-HI and -LO samples, you'll want to change the design to
+  # '~patient + tissue', but this can't be done when including GTEx data. After
+  # producing the dds object, filters lowly expressed genes/TEs by requiring
+  # a minimum number of reads (default 2) in a row.
+  ##############################################################################
   
   ## Define sampleInfo
   
@@ -105,62 +176,6 @@ process_DESeq2_results = function(results,
   
 }
 
-standardize_column_names = function(raw_counts){
-  
-  new_col_name = vector(, length(colnames(raw_counts)))
-  
-  for (i in 1:length(colnames(raw_counts))){
-    
-    if (colnames(raw_counts)[i] %in% colnames(mTEC_counts)){
-      
-      a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
-      
-      b = 'mTEC'
-      c = str_split(colnames(raw_counts)[i], '_')[[1]][2]
-      b = paste(b, c, sep = '-')
-      b = paste(b, 'new', sep = '_')
-      
-    }
-    
-    else{
-      
-      a = str_split(colnames(raw_counts)[i], '_')[[1]][1]
-      
-      if (colnames(raw_counts)[i] %in% colnames(testis_counts)){
-        
-        b = 'Testis_GTEx'
-        
-      }
-      
-      if (colnames(raw_counts)[i] %in% colnames(ovary_counts)){
-        
-        b = 'Ovary_GTEx'
-        
-      }
-      
-      if (colnames(raw_counts)[i] %in% colnames(muscle_counts)){
-        
-        b = 'Muscle_GTEx'
-        
-      }
-      
-      if (colnames(raw_counts)[i] %in% colnames(ESC_counts)){
-        
-        b = 'ESC_UCSC'
-        
-      }
-      
-    }
-    
-    new_col_name[i] = paste(a, b, sep = '_')
-    
-  }
-  
-  colnames(raw_counts) = new_col_name
-  
-  return(raw_counts)
-  
-}
 
 collapse_tissue_replicates = function(dds, mode = 'mean'){
   
