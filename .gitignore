@@ -3,7 +3,7 @@
 .RData
 .Ruserdata
 thymus-tss.Rproj
-tra/Tissue-specific-expression-human-gtex_cache
-tra/Tissue-specific-expression-human-gtex_files
-tra/GTEx_Analysis_v8_gene_mean_expression.Rdata
+gene-lists/tra/Tissue-specific-expression-human-gtex_cache
+gene-lists/tra/Tissue-specific-expression-human-gtex_files
+gene-lists/tra/GTEx_Analysis_v8_gene_mean_expression.Rdata
 
