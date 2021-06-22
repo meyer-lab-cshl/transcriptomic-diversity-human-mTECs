@@ -62,38 +62,6 @@ rule collapse_reads:
             --out-info {output.info}
         """
 
-rule process_counts:
-    input:
-        counts="{dir}/collapsed/{sample}_collapsed_fwd_countsPerPos.tsv",
-    output:
-        bedgraph="{dir}/tss/bedgraphs/{sample}_fwd.bedgraph",
-        counts="{dir}/tss/summary/{sample}_fwd.summary.counts.csv",
-        positions="{dir}/tss/raw_positions/{sample}_fwd.positions.csv",
-    shell:
-        """
-        Rscript ~/analysis/tss/common-scripts/process_counts.r \
-            --species human \
-            --type pos \
-            --ifile {input.counts} \
-            --odir {wildcards.dir}/tss \
-            --sample {wildcards.sample}_fwd
-        """
-
-rule combine_counts:
-    input:
-        positions=expand("{{dir}}/tss/raw_positions/{sample}_fwd.positions.csv",
-            sample=SAMPLE),
-    output:
-        positions="{dir}/tss/combined/all_samples_fwd.positions.csv",
-    shell:
-        """
-        Rscript ~/analysis/tss/common-scripts/combine_counts.r \
-            --indir {wildcards.dir}/tss/raw_positions \
-            --ofile {output.positions} \
-            --suffix _fwd.positions.csv \
-            --verbose
-        """
-
 rule strand_reads:
     input:
         sam="{dir}/collapsed/{sample}_Aligned.sortedByCoord.dedup.unique.collapsed.fwd.sam",
