@@ -10,10 +10,10 @@ Each subdirectory contains analysis organised in either a snakemake workflow
 (with the workflow depicted as a DAG in the respective README.md) or
 consecutively labelled scripts.
 
-## 5Pseq-alignment
+## 5P-Cap-seq-alignment
 * Alignment and quality control of 5Pseq data from 5 human tissue donors
 
-## 5Pseq-processing
+## 5P-Cap-seq-processing
 *
 
 ## gene-lists
