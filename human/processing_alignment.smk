@@ -14,8 +14,6 @@ rule all:
             reads=['fwd', 'rev'],
             pdir=DIRECTORY,
             sample=SAMPLE),
-        expand("{pdir}/tss/combined/all_samples_fwd.positions.csv",
-            pdir=DIRECTORY),
         expand("{pdir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.{reads}.sam",
             reads=['fwd', 'rev'],
             pdir=DIRECTORY,
