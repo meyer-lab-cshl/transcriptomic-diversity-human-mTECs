@@ -2,6 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+.*
 thymus-tss.Rproj
 gene-lists/tra/Tissue-specific-expression-human-gtex_cache
 gene-lists/tra/Tissue-specific-expression-human-gtex_files
