@@ -1,25 +1,23 @@
-# Genome-wide TSS in medullary TEC and peripheral tissues
+# Increased mis-initiation and non-promiscuous splicing in human medullary thymus epithelial cells
 
-Antigen epitopes missing in the thymus can result in autoimmunity by allowing auto-reactive T cell escape into the periphery.
-Here, we will generate comprehensive epitope maps of the human thymus. Using 5Pseq and RNAseq, we will first map transcription
-start sites and splicing events in the thymus and compare them to corresponding maps for peripheral tissues (FANTOM data).
-This comparison will allow us to detect mis-initiation and splicing events leading to potentially altered epitope maps in the thymus.
+Using 5P-Cap-seq and RNAseq, we mapped transcription start regions and splicing
+events in the thymus and compared them to corresponding maps for peripheral
+tissues (FANTOM5 and GTEx data respectively).
 
-This repository contains the data processing steps, from RNAseq reads to transcription start site maps. It is divided by data
-into subdirectories. Each subdirectory contains analysis organised in a snakemake workflow, with the workflow depicted as a DAG in the 
-respective README.md
+This repository contains the data processing steps, from RNAseq reads to
+transcription start site maps. It is divided by data into subdirectories.
+Each subdirectory contains analysis organised in either a snakemake workflow
+(with the workflow depicted as a DAG in the respective README.md) or
+consecutively labelled scripts.
 
-## human
-* Analysis of 5Pseq data from 5 human tissue donors
+## 5P-Cap-seq-alignment
+* Alignment and quality control of 5Pseq data from 5 human tissue donors
 
-## mouse
-* Analysis of 5Pseq data from mouse embryonic stem cells
+## 5P-Cap-seq-processing
+*
 
-## fantom
-* Processing of human and mouse fantom5 samples
-
-## tra
-Scripts for estimating tissue specifc antigens based on:
-  * tau measure (paper included)
-  * Sansom 2014 paper (Rmd provided by Sansom)
+## gene-lists
+* gene lists derived from public datasets, and re-mapping to GRCh38
+* estimating tissue specifc antigens based on tissue exclusivity index tau and
+    22 tissues from GTEx
 
