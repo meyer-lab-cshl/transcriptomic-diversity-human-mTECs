@@ -1,0 +1,40 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	overview_count_reads
+	1
+
+[Mon Jun 28 10:00:41 2021]
+rule overview_count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/overview.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq
+
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:00:42 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	overview_count_reads
+	1
+
+[Mon Jun 28 10:08:28 2021]
+rule overview_count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/overview.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq
+
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:08:30 2021]
+Finished job 0.
+1 of 1 steps (100%) done

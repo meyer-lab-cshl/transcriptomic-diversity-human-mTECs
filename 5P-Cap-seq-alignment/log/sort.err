@@ -1,0 +1,198 @@
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	sort
+	1
+
+[Mon Jun 28 09:41:53 2021]
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-hi
+    threads: 4
+    resources: mem_mb=120000
+
+Using shell: /usr/bin/bash
+Using shell: /usr/bin/bash
+Using shell: /usr/bin/bash
+Using shell: /usr/bin/bash
+Using shell: /usr/bin/bash
+Provided cores: 96
+Using shell: /usr/bin/bash
+Rules claiming more threads will be scaled down.
+Provided cores: 96
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Provided cores: 96
+Using shell: /usr/bin/bash
+Job counts:
+	count	jobs
+	1	sort
+	1
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+
+Job counts:
+	count	jobs
+	1	sort
+	1
+Rules claiming more threads will be scaled down.
+[Mon Jun 28 09:41:53 2021]
+Job counts:
+	count	jobs
+	1	sort
+	1
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt221-lo
+    threads: 4
+    resources: mem_mb=120000
+Job counts:
+	count	jobs
+	1	sort
+	1
+
+
+
+Rules claiming more threads will be scaled down.
+Provided cores: 96
+Job counts:
+	count	jobs
+	1	sort
+	1
+[Mon Jun 28 09:41:53 2021]
+
+
+Rules claiming more threads will be scaled down.
+[Mon Jun 28 09:41:53 2021]
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-lo
+    threads: 4
+    resources: mem_mb=120000
+[Mon Jun 28 09:41:53 2021]
+
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-lo
+    threads: 4
+    resources: mem_mb=120000
+[Mon Jun 28 09:41:53 2021]
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-hi
+    threads: 4
+    resources: mem_mb=120000
+
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-hi
+    threads: 4
+    resources: mem_mb=120000
+Job counts:
+	count	jobs
+	1	sort
+	1
+
+
+Job counts:
+	count	jobs
+	1	sort
+	1
+
+[Mon Jun 28 09:41:53 2021]
+
+[Mon Jun 28 09:41:53 2021]
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-lo
+    threads: 4
+    resources: mem_mb=120000
+Provided cores: 96
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-hi
+    threads: 4
+    resources: mem_mb=120000
+
+
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	sort
+	1
+
+[Mon Jun 28 09:41:53 2021]
+rule sort:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.sam
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-lo
+    threads: 4
+    resources: mem_mb=120000
+
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[bam_sort_core] merging from 0 files and 4 in-memory blocks...
+[Mon Jun 28 09:41:56 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:41:56 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:41:56 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:41:56 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:41:56 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:41:57 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:41:57 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:41:58 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 09:42:02 2021]
+Finished job 0.
+1 of 1 steps (100%) done

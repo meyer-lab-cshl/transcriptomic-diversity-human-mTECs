@@ -1,0 +1,740 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:21 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:21 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:21 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:21 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:22 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:22 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt221-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:22 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-lo
+
+Building DAG of jobs...
+Building DAG of jobs...
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+Using shell: /usr/bin/bash
+Using shell: /usr/bin/bash
+
+[Mon Jun 28 09:58:24 2021]
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Provided cores: 96
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-hi
+
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 09:58:24 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt221-hi
+
+
+[Mon Jun 28 09:58:24 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-lo
+
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[E::hts_open_format] [E::hts_open_format] Failed to open file "example.bam" : No such file or directory
+Failed to open file "example.bam" : No such file or directorysamtools idxstats: failed to open "example.bam"
+: No such file or directory
+samtools idxstats: failed to open "example.bam": No such file or directory
+[E::hts_open_format] Failed to open file "example.bam" : No such file or directory
+[E::hts_open_format] samtools idxstats: failed to open "example.bam": No such file or directory
+Failed to open file "example.bam" : No such file or directory
+samtools idxstats: failed to open "example.bam": No such file or directory
+[E::hts_open_format] Failed to open file "example.bam" : No such file or directory
+samtools idxstats: failed to open "example.bam": No such file or directory
+[E::hts_open_format] [E::hts_open_format] Failed to open file "example.bam" : No such file or directoryFailed to open file "example.bam" : No such file or directory
+
+samtools idxstats: samtools idxstats: failed to open "example.bam": No such file or directory
+failed to open "example.bam": No such file or directory
+[E::hts_open_format] Failed to open file "example.bam" : No such file or directory
+samtools idxstats: failed to open "example.bam": No such file or directory
+[E::hts_open_format] Failed to open file "example.bam" : No such file or directory
+samtools idxstats: failed to open "example.bam": No such file or directory
+[E::hts_open_format] Failed to open file "example.bam" : No such file or directory
+samtools idxstats: failed to open "example.bam": No such file or directory
+[Mon Jun 28 09:58:28 2021]
+Error in rule count_reads:
+    jobid: 0
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+[Mon Jun 28 09:58:28 2021]
+[Mon Jun 28 09:58:28 2021]
+[Mon Jun 28 09:58:28 2021]
+[Mon Jun 28 09:58:28 2021]
+[Mon Jun 28 09:58:28 2021]
+[Mon Jun 28 09:58:28 2021]
+[Mon Jun 28 09:58:28 2021]
+[Mon Jun 28 09:58:28 2021]
+Error in rule count_reads:
+    jobid: 0
+Error in rule count_reads:
+Error in rule count_reads:
+Shutting down, this might take some time.
+Error in rule count_reads:
+Error in rule count_reads:
+[Mon Jun 28 09:58:28 2021]
+Error in rule count_reads:
+Error in rule count_reads:
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+Exiting because a job execution failed. Look above for error message
+    jobid: 0
+Error in rule count_reads:
+    jobid: 0
+    jobid: 0
+    jobid: 0
+Error in rule count_reads:
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    jobid: 0
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+
+
+    conda-env: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+Shutting down, this might take some time.
+
+Shutting down, this might take some time.
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+Exiting because a job execution failed. Look above for error message
+
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+Shutting down, this might take some time.
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+Shutting down, this might take some time.
+    shell:
+        
+        samtools idxstats example.bam |             cut -f3 |             awk 'BEGIN {total=0} {total += $1} END {print total}' > /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+        
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Exiting because a job execution failed. Look above for error message
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+
+
+Shutting down, this might take some time.
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+Exiting because a job execution failed. Look above for error message
+Exiting because a job execution failed. Look above for error message
+Removing output files of failed job count_reads since they might be corrupted:
+/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+Exiting because a job execution failed. Look above for error message
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:30 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:30 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:31 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:31 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:31 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt221-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:31 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:31 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:31 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:31 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:00:32 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt221-lo
+
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:00:32 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:00:32 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:00:32 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:00:32 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:00:32 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:00:32 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:00:33 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:00:33 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:00:33 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:00:34 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:18 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:18 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:18 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt221-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:18 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-hi
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:19 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt212-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt212-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:19 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt214-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt214-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:19 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt221-lo
+
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:19 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-lo
+
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:08:20 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:08:20 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:08:20 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:08:21 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:08:21 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:08:21 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:08:21 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+Building DAG of jobs...
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Using shell: /usr/bin/bash
+Provided cores: 96
+Provided cores: 96
+Rules claiming more threads will be scaled down.
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+Job counts:
+	count	jobs
+	1	count_reads
+	1
+
+[Mon Jun 28 10:08:22 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt226-hi_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt226-hi
+
+
+[Mon Jun 28 10:08:22 2021]
+rule count_reads:
+    input: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam, /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai
+    output: /mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq/deduplicated/pt87-lo_Aligned.sortedByCoord.dedup.unique.reads.txt
+    jobid: 0
+    wildcards: dir=/mnt/grid/meyer/hpc/home/data/hmeyer/data/tss/human/5Pseq, sample=pt87-lo
+
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+Activating conda environment: /grid/meyer/home/hmeyer/analysis/thymus-epitope-mapping/5P-Cap-seq-alignment/.snakemake/conda/7eeb1bc6
+[Mon Jun 28 10:08:27 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:08:27 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+[Mon Jun 28 10:08:27 2021]
+Finished job 0.
+1 of 1 steps (100%) done
