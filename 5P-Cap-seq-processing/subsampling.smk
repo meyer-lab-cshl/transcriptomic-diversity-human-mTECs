@@ -6,18 +6,48 @@
 
 configfile: "config/config_subsample.yml"
 
+checkpoint generate_subsampling_matrix:
+    input:
+        expand("{dir}/subsampling/overview.dedup.unique.reads.txt",
+            dir=config['directory'])
+    output:
+        expand("{dir}/subsampling/subsampling_matrix.txt",
+            dir=config['directory'])
+    log:
+        expand("{dir}/subsampling/log/subsampling_matrix.out",
+            dir=config['directory'])
+    conda:
+        "envs/subsampling.yaml"
+    script:
+        "subsampling/subsampling_matrix.R"
+
+def subsample_reads(wildcards):
+    filename = checkpoints.generate_subsampling_matrix.get().output[0]
+    directory = config['directory']
+    files = []
+    with open(filename) as f:
+        lines = f.readlines()
+        for l in lines:
+            columns = l.strip().split("\t")
+            sample = columns[0]
+            reads = columns[1]
+            print(f"{directory} {reads} {sample}")
+            files.append(f"{directory}/subsampling/reads{reads}/Paraclu_BED/{sample}_TPM_paraclu_simplified_bed.txt")
+    return files
+
 rule all:
     input:
         expand("{pdir}/deduplicated/overview.dedup.unique.reads.txt",
             pdir=config['directory']),
-        expand("{pdir}/subsampling/reads{reads}/Paraclu_BED/{sample}_TPM_paraclu_simplified_bed.txt",
+        #expand("{pdir}/subsampling/reads{reads}/Paraclu_BED/{sample}_TPM_paraclu_simplified_bed.txt",
         #expand("{pdir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
-            pdir=config['directory'],
-            reads=[500000],
-            sample=config['samples']),
-        expand("{pdir}/subsampling/reads{reads}/Merged_CTSS_BED/All_thymus_merged.txt",
-            pdir=config['directory'],
-            reads=[500000])
+        #    pdir=config['directory'],
+        #    reads=[100000, 500000, 2000000],
+        #    sample=config['samples']),
+        subsample_reads,
+        #expand("{pdir}/subsampling/reads{reads}/Merged_CTSS_BED/All_thymus_merged.txt",
+        #    pdir=config['directory'],
+        #    reads=[100000, 500000, 2000000])
 
 rule count_reads:
     input:
@@ -49,11 +79,15 @@ rule overview_count_reads:
 
 rule subsample:
     input:
-        counts="{dir}/subsampling/overview.dedup.unique.reads.txt",
-        bam="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
-        bai="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai",
+        counts="{dir}/subsampling/subsampling_matrix.txt",
+        #counts="{dir}/subsampling/overview.dedup.unique.reads.txt",
+        #bam="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
+        #bai="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai",
     output:
         "{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
+        #directory("{dir}/subsampling/reads{reads}")
+    wildcard_constraints:
+        reads="\d+"
     threads: 2
     resources:
         mem_mb = 1000
@@ -63,10 +97,8 @@ rule subsample:
         """
         subsampling/subsample.sh \
             -c {input.counts} \
-            -s {wildcards.sample} \
             -r {wildcards.reads} \
             -t {threads} \
-            -i {input.bam} \
             -o {output}
         """
 
@@ -74,11 +106,14 @@ rule ctss_normalize:
     input:
         expand("{{dir}}/subsampling/reads{{reads}}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
             sample=config['samples'])
+        #glob_wildcards("{{dir}}/subsampling/reads{{reads}}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam")
     output:
         powerlaw="{dir}/subsampling/reads{reads}/ctss/PowerLaw.pdf",
         powerlawnorm="{dir}/subsampling/reads{reads}/ctss/PowerLaw_Normalized.pdf",
         tpm="{dir}/subsampling/reads{reads}/ctss/TPM.csv",
         tagcounts="{dir}/subsampling/reads{reads}/ctss/tagCount.csv",
+    wildcard_constraints:
+        reads="\d+"
     conda:
         "envs/ctss.yaml"
     log:
