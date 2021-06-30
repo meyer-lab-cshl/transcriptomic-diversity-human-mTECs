@@ -10,17 +10,19 @@ library(BSgenome.Hsapiens.UCSC.hg38)
 library(CAGEr)
 library(limma)
 
-sessionInfo()
+#sessionInfo()
 ################
 ## analysis ####
 ################
 
-cat(unlist(snakemake@input))
+input <- unlist(snakemake@input)
 # Create CAGEr exp
+samplenames <- gsub("(.*)_.*", "\\1", basename(input))
+
 ce <- CAGEexp(genomeName     = "BSgenome.Hsapiens.UCSC.hg38",
-              inputFiles     = unlist(snakemake@input),
+              inputFiles     = input,
               inputFilesType = "bamPairedEnd",
-              sampleLabels   = sub("-", "_", snakemake@params[['samples']])
+              sampleLabels   = sub("-", "_", samplenames)
 )
 
 # Call CTSS
