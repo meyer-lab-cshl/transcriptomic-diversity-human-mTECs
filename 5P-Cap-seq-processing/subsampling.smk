@@ -18,7 +18,6 @@ checkpoint generate_subsampling_matrix:
     script:
         "subsampling/subsampling_matrix.R"
 
-
 def subsample_reads(wilcards):
     filename = checkpoints.generate_subsampling_matrix.get().output[0]
     directory = config['directory']
@@ -56,7 +55,6 @@ rule all:
         expand("{pdir}/subsampling/subsampling_cluster_summary.txt",
             pdir=config['directory']),
 
-
 rule count_reads:
     input:
         sort="{dir}/alignments/{sample}_Aligned.sortedByCoord.out.bam",
@@ -71,7 +69,6 @@ rule count_reads:
             cut -f3 | \
             awk -v s={wildcards.sample} 'BEGIN {{total=0}} {{total += $1}} END {{print s,"\t",total}}' > {output}
         """
-
 
 rule overview_count_reads:
     input:
@@ -153,7 +150,6 @@ rule process_dedup:
         samtools index {output.sort} -@ {threads}
         """
 
-
 rule ctss_normalize:
     input:
         ctss_files
@@ -171,7 +167,6 @@ rule ctss_normalize:
     script:
         "subsampling/ctss_normalize.R"
 
-
 rule ctss_format:
     input:
         tpm="{dir}/subsampling/reads{reads}/ctss/TPM.csv",
@@ -181,11 +176,8 @@ rule ctss_format:
         "{dir}/subsampling/reads{reads}/CAGEr_out/DFs/{sample}_Counts_and_TPM.txt",
     conda:
         "envs/ctss.yaml"
-    #log:
-    #    "{dir}/subsampling/reads{reads}/log/ctss_format.out",
     script:
         "subsampling/ctss_format.R"
-
 
 rule call_clusters:
     input:
