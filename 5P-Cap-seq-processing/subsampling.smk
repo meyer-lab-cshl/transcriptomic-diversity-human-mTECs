@@ -295,4 +295,17 @@ rule cluster_summary:
         done
         """
 
+rule visualize_subsampling:
+    input:
+        tags="{dir}/subsampling/subsampling_tags_summary.csv",
+        clusters="{dir}/subsampling/subsampling_cluster_summary.csv"
+    output:
+        tags="{dir}/subsampling/subsampling_tags_summary.pdf",
+        clusters="{dir}/subsampling/subsampling_cluster_summary.pdf"
+    conda:
+        "envs/tidyverse.yaml"
+    log:
+        "{dir}/subsampling/log/visualize_subsampling.out",
+    script:
+        "subsampling/visualize_subsampling.R"
 
