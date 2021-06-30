@@ -6,5 +6,5 @@
 
 <p align="center">
 <img
-src="dag/subsampling_dag.png" height="400">
+src="dag/subsampling_dag.png" height="800">
 </p>
