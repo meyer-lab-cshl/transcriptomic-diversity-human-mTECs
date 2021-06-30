@@ -13,9 +13,3 @@ src="dag/alignment_dag.png" height="400">
 <img
 src="dag/processing_alignment_dag.png" height="400">
 </p>
-
-
-<p align="center">
-<img
-src="dag/tss_dag.png" height="100">
-</p>
