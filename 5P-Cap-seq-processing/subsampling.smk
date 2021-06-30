@@ -18,7 +18,7 @@ checkpoint generate_subsampling_matrix:
     script:
         "subsampling/subsampling_matrix.R"
 
-def subsample_reads(wilcards):
+def cluster_files(wilcards):
     filename = checkpoints.generate_subsampling_matrix.get().output[0]
     directory = config['directory']
     files = []
@@ -31,7 +31,7 @@ def subsample_reads(wilcards):
             files.append(f"{directory}/subsampling/reads{reads}/Paraclu_BED/{sample}_TPM_paraclu_simplified_bed.txt")
     return files
 
-def ctss_files(wildcards):
+def molecule_files(wildcards):
     filename = checkpoints.generate_subsampling_matrix.get().output[0]
     directory = config['directory']
     files = []
@@ -45,15 +45,29 @@ def ctss_files(wildcards):
                 files.append(f"{directory}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam")
     return files
 
+def tag_files(wildcards):
+    filename = checkpoints.generate_subsampling_matrix.get().output[0]
+    directory = config['directory']
+    files = []
+    with open(filename) as f:
+        lines = f.readlines()
+        for l in lines[1:]:
+            columns = l.strip().split("\t")
+            sample = columns[0]
+            reads = columns[1]
+            files.append(f"{directory}/subsampling/reads{reads}/ctss/tagCount.csv")
+    return files
+
 rule all:
     input:
-        expand("{pdir}/subsampling/overview.reads.txt",
-            pdir=config['directory']),
-        expand("{dir}/subsampling/subsampling_matrix.txt",
-            dir=config['directory']),
-        subsample_reads,
-        expand("{pdir}/subsampling/subsampling_cluster_summary.txt",
-            pdir=config['directory']),
+        #expand("{pdir}/subsampling/overview.reads.txt",
+        #    pdir=config['directory']),
+        #expand("{dir}/subsampling/subsampling_matrix.txt",
+        #    dir=config['directory']),
+        cluster_files,
+        expand("{pdir}/subsampling/subsampling_{analysis}_summary.pdf",
+            pdir=config['directory'],
+            analysis=['tags', 'cluster'])
 
 rule count_reads:
     input:
@@ -152,7 +166,7 @@ rule process_dedup:
 
 rule ctss_normalize:
     input:
-        ctss_files
+        molecule_files
     output:
         powerlaw="{dir}/subsampling/reads{reads}/ctss/PowerLaw.pdf",
         powerlawnorm="{dir}/subsampling/reads{reads}/ctss/PowerLaw_Normalized.pdf",
@@ -178,6 +192,18 @@ rule ctss_format:
         "envs/ctss.yaml"
     script:
         "subsampling/ctss_format.R"
+
+rule tags_summary:
+    input:
+        tag_files
+    output:
+        "{dir}/subsampling/subsampling_tags_summary.csv"
+    conda:
+        "envs/tidyverse.yaml"
+    log:
+        "{dir}/subsampling/log/tags_summary.out",
+    script:
+        "subsampling/summary_tags.R"
 
 rule call_clusters:
     input:
@@ -253,19 +279,20 @@ rule consensus_clusters:
 
 rule cluster_summary:
     input:
-        subsample_reads
+        cluster_files
     output:
-        "{dir}/subsampling/subsampling_cluster_summary.txt"
+        "{dir}/subsampling/subsampling_cluster_summary.csv"
     shell:
         """
-        echo "sample\treads\tclusters" > {output}
+        echo "sample,reads,clusters" > {output}
         for file in {input}; do
             filename=${{file##*/}}
             sample=${{filename%%_*}}
             tmp=${{file##*/reads}}
             reads=${{tmp%%/*}}
             clusters=$(wc -l $file | cut -d " "  -f 1)
-            echo "$sample\t$reads\t$clusters" >> {output}
+            echo "$sample,$reads,$clusters" >> {output}
         done
         """
+
 
