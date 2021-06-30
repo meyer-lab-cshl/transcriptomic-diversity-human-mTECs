@@ -1,14 +1,11 @@
 # how to run from ./:
-# snakemake -s subsampling.smk --profile uge
-#
-# --jobs 500 --latency-wait 90 --cluster-config config/cluster.json --cluster 'qsub {cluster.nodes} -N {cluster.name}  -l {cluster.resources}
-# -o {cluster.output} -e {cluster.error} -cwd' --keep-going --rerun-incomplete --use-conda
+# snakemake -s subsampling.smk --profile uge --use-conda --until all
 
 configfile: "config/config_subsample.yml"
 
 checkpoint generate_subsampling_matrix:
     input:
-        expand("{dir}/subsampling/overview.dedup.unique.reads.txt",
+        expand("{dir}/subsampling/overview.reads.txt",
             dir=config['directory'])
     output:
         expand("{dir}/subsampling/subsampling_matrix.txt",
@@ -21,40 +18,51 @@ checkpoint generate_subsampling_matrix:
     script:
         "subsampling/subsampling_matrix.R"
 
-def subsample_reads(wildcards):
+
+def subsample_reads(wilcards):
     filename = checkpoints.generate_subsampling_matrix.get().output[0]
     directory = config['directory']
     files = []
     with open(filename) as f:
         lines = f.readlines()
-        for l in lines:
+        for l in lines[1:]:
             columns = l.strip().split("\t")
             sample = columns[0]
             reads = columns[1]
-            print(f"{directory} {reads} {sample}")
             files.append(f"{directory}/subsampling/reads{reads}/Paraclu_BED/{sample}_TPM_paraclu_simplified_bed.txt")
+    return files
+
+def ctss_files(wildcards):
+    filename = checkpoints.generate_subsampling_matrix.get().output[0]
+    directory = config['directory']
+    files = []
+    with open(filename) as f:
+        lines = f.readlines()
+        for l in lines[1:]:
+            columns = l.strip().split("\t")
+            sample = columns[0]
+            reads = columns[1]
+            if reads == wildcards.reads:
+                files.append(f"{directory}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam")
     return files
 
 rule all:
     input:
-        expand("{pdir}/deduplicated/overview.dedup.unique.reads.txt",
+        expand("{pdir}/subsampling/overview.reads.txt",
             pdir=config['directory']),
-        #expand("{pdir}/subsampling/reads{reads}/Paraclu_BED/{sample}_TPM_paraclu_simplified_bed.txt",
-        #expand("{pdir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
-        #    pdir=config['directory'],
-        #    reads=[100000, 500000, 2000000],
-        #    sample=config['samples']),
+        expand("{dir}/subsampling/subsampling_matrix.txt",
+            dir=config['directory']),
         subsample_reads,
-        #expand("{pdir}/subsampling/reads{reads}/Merged_CTSS_BED/All_thymus_merged.txt",
-        #    pdir=config['directory'],
-        #    reads=[100000, 500000, 2000000])
+        expand("{pdir}/subsampling/subsampling_cluster_summary.txt",
+            pdir=config['directory']),
+
 
 rule count_reads:
     input:
-        sort="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
-        index="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai",
+        sort="{dir}/alignments/{sample}_Aligned.sortedByCoord.out.bam",
+        index="{dir}/alignments/{sample}_Aligned.sortedByCoord.out.bam.bai",
     output:
-        "{dir}/subsampling/{sample}_Aligned.sortedByCoord.dedup.unique.reads.txt"
+        "{dir}/subsampling/{sample}_Aligned.sortedByCoord.reads.txt"
     conda:
         "envs/subsampling.yaml"
     shell:
@@ -64,12 +72,13 @@ rule count_reads:
             awk -v s={wildcards.sample} 'BEGIN {{total=0}} {{total += $1}} END {{print s,"\t",total}}' > {output}
         """
 
+
 rule overview_count_reads:
     input:
-        expand("{{dir}}/subsampling/{sample}_Aligned.sortedByCoord.dedup.unique.reads.txt",
+        expand("{{dir}}/subsampling/{sample}_Aligned.sortedByCoord.reads.txt",
             sample=config['samples'])
     output:
-        "{dir}/subsampling/overview.dedup.unique.reads.txt"
+        "{dir}/subsampling/overview.reads.txt"
     conda:
         "envs/subsampling.yaml"
     shell:
@@ -80,12 +89,10 @@ rule overview_count_reads:
 rule subsample:
     input:
         counts="{dir}/subsampling/subsampling_matrix.txt",
-        #counts="{dir}/subsampling/overview.dedup.unique.reads.txt",
-        #bam="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
-        #bai="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai",
+        bam="{dir}/alignments/{sample}_Aligned.sortedByCoord.out.bam",
+        bai="{dir}/alignments/{sample}_Aligned.sortedByCoord.out.bam.bai",
     output:
-        "{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
-        #directory("{dir}/subsampling/reads{reads}")
+        "{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.bam",
     wildcard_constraints:
         reads="\d+"
     threads: 2
@@ -97,16 +104,59 @@ rule subsample:
         """
         subsampling/subsample.sh \
             -c {input.counts} \
+            -s {wildcards.sample} \
             -r {wildcards.reads} \
+            -i {input.bam} \
             -t {threads} \
             -o {output}
         """
 
+rule dedup:
+    input:
+        bam="{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.bam",
+        index="{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.bam.bai",
+    output:
+        bam="{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.bam",
+    resources:
+        mem_mb = 12000
+    threads: 4
+    conda:
+        "envs/subsampling.yaml"
+    shell:
+        """
+        umi_tools dedup \
+            -I {input.bam} \
+            -L {wildcards.dir}/deduplicated/extract.log \
+            -S {output.bam} \
+            --paired \
+            --output-stats={wildcards.dir}/subsampling/reads{wildcards.reads}/{wildcards.sample}_Aligned.sortedByCoord.stats_
+        """
+
+rule process_dedup:
+    input:
+        bam="{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.bam",
+    output:
+        fwd=temp("{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.sam"),
+        unique=temp("{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.bam"),
+        sort="{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
+        index="{dir}/subsampling/reads{reads}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai",
+    resources:
+        mem_mb = 12000
+    threads: 4
+    conda:
+        "envs/subsampling.yaml"
+    shell:
+        """
+        samtools view -b -q 255 {input.bam} > {output.unique}
+        samtools view -h -f 0x40 {output.unique} > {output.fwd}
+        samtools sort {output.fwd} -o {output.sort} -@ {threads} -m 20G
+        samtools index {output.sort} -@ {threads}
+        """
+
+
 rule ctss_normalize:
     input:
-        expand("{{dir}}/subsampling/reads{{reads}}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
-            sample=config['samples'])
-        #glob_wildcards("{{dir}}/subsampling/reads{{reads}}/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam")
+        ctss_files
     output:
         powerlaw="{dir}/subsampling/reads{reads}/ctss/PowerLaw.pdf",
         powerlawnorm="{dir}/subsampling/reads{reads}/ctss/PowerLaw_Normalized.pdf",
@@ -118,26 +168,24 @@ rule ctss_normalize:
         "envs/ctss.yaml"
     log:
         "{dir}/subsampling/reads{reads}/log/ctss_normalize.out",
-    params:
-        samples = config['samples']
     script:
         "subsampling/ctss_normalize.R"
+
 
 rule ctss_format:
     input:
         tpm="{dir}/subsampling/reads{reads}/ctss/TPM.csv",
         tagcounts="{dir}/subsampling/reads{reads}/ctss/tagCount.csv",
     output:
-        expand("{{dir}}/subsampling/reads{{reads}}/for_Paraclu/{sample}_TPM_for_Paraclu.txt",
-            sample=config['samples']),
-        expand("{{dir}}/subsampling/reads{{reads}}/CAGEr_out/DFs/{sample}_Counts_and_TPM.txt",
-            sample=config['samples'])
+        "{dir}/subsampling/reads{reads}/for_Paraclu/{sample}_TPM_for_Paraclu.txt",
+        "{dir}/subsampling/reads{reads}/CAGEr_out/DFs/{sample}_Counts_and_TPM.txt",
     conda:
         "envs/ctss.yaml"
-    log:
-        "{dir}/subsampling/reads{reads}/log/ctss_format.out",
+    #log:
+    #    "{dir}/subsampling/reads{reads}/log/ctss_format.out",
     script:
         "subsampling/ctss_format.R"
+
 
 rule call_clusters:
     input:
@@ -211,5 +259,21 @@ rule consensus_clusters:
         rm {output}_tmp*
         """
 
-
+rule cluster_summary:
+    input:
+        subsample_reads
+    output:
+        "{dir}/subsampling/subsampling_cluster_summary.txt"
+    shell:
+        """
+        echo "sample\treads\tclusters" > {output}
+        for file in {input}; do
+            filename=${{file##*/}}
+            sample=${{filename%%_*}}
+            tmp=${{file##*/reads}}
+            reads=${{tmp%%/*}}
+            clusters=$(wc -l $file | cut -d " "  -f 1)
+            echo "$sample\t$reads\t$clusters" >> {output}
+        done
+        """
 
