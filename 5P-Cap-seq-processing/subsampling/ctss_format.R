@@ -1,6 +1,6 @@
-log <- file(snakemake@log[[1]], open="wt")
-sink(log)
-sink(log, type="message")
+#log <- file(snakemake@log[[1]], open="wt")
+#sink(log)
+#sink(log, type="message")
 
 #################
 ## libraries ####
@@ -21,14 +21,22 @@ df_tagCounts <- read.csv(snakemake@input[['tagcounts']])
 samples_low <- c('pt212_lo','pt221_lo','pt226_lo','pt87_lo','pt214_lo')
 samples_high <- c('pt212_hi','pt221_hi','pt226_hi','pt87_hi','pt214_hi')
 samples <- c(samples_low, samples_high)
-
 batch <- c(1, 2, 2, 1, 1, 1, 2, 2, 1, 1)
-df_batch <- removeBatchEffect(log2(df[,samples] + 0.01), batch)
-df_batch <- 2^df_batch
+names(batch) <- samples
+
+current_samples <- colnames(df_tagCounts)[grepl("pt", colnames(df_tagCounts))]
+batch <- batch[names(batch) %in% current_samples]
+
+if (all(c(1,2) %in% batch)) {
+    df_batch <- removeBatchEffect(log2(df[,current_samples] + 0.01), batch)
+    df_batch <- 2^df_batch
+} else {
+    df_batch <- df
+}
 
 # Prepare output for Paraclu
 features <- c('chr', 'strand', 'pos')
-for (subject in samples) {
+for (subject in current_samples) {
     x <- df[,features]
     x$TPM <- df_batch[,subject]
     x$tagCounts <- df_tagCounts[,subject]
