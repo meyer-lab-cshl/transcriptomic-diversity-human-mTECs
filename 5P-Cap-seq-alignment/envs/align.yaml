@@ -1,7 +1,0 @@
-channels:
-  - bioconda
-  - conda-forge
-dependencies:
-    - star = 2.7.1
-    - samtools = 1.9
-    - sambamba = 0.8.0

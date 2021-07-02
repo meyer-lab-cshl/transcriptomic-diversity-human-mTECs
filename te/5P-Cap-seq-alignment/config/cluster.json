@@ -1,0 +1,180 @@
+{
+    "__default__" :
+    {
+        "resources" : "m_mem_free=5G",
+        "nodes" : "",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "demultiplex" :
+    {
+        "resources" : "m_mem_free=30G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "demultiplexing_and_trim" :
+    {
+        "resources" : "m_mem_free=30G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "fastq_screen" :
+    {
+        "resources" : "m_mem_free=1G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "umi_group" :
+    {
+        "resources" : "m_mem_free=10G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "dedup" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "index" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "trim" :
+    {
+        "resources" : "m_mem_free=20G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "fastq_pair" :
+    {
+        "resources" : "m_mem_free=10G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "qc" :
+    {
+        "resources" : "m_mem_free=10G",
+        "name" : "{rule}.{wildcards.sample}.{wildcards.read}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
+    },
+    "rnaseq_metrics_raw" :
+    {
+        "resources" : "m_mem_free=1G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "rnaseq_metrics_dedup" :
+    {
+        "resources" : "m_mem_free=1G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "generate_genome" :
+    {
+        "resources" : "m_mem_free=20G",
+        "nodes" : "-pe threads 4",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "align" :
+    {
+        "resources" : "m_mem_free=30G",
+        "nodes" : "-pe threads 4",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "overview_STAR_results" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "add_feature" :
+    {
+        "resources" : "m_mem_free=55G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "unique_reads" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "split_reads" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "collapse_reads" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.read}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.read}.err"
+    },
+    "process_counts" :
+    {
+        "resources" : "m_mem_free=2G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "combine_counts" :
+    {
+        "resources" : "m_mem_free=10G",
+        "name" : "{rule}",
+        "output" : "log/{rule}.out",
+        "error" : "log/{rule}.err"
+    },
+    "strand_reads" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+    "convert_bam" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}.{wildcards.strand}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.err"
+    },
+    "make_bedgraph" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}.{wildcards.strand}",
+        "output" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.out",
+        "error" : "log/{rule}.{wildcards.sample}.{wildcards.strand}.err"
+    },
+    "merge_bedgraph" :
+    {
+        "resources" : "m_mem_free=5G",
+        "name" : "{rule}.{wildcards.sample}",
+        "output" : "log/{rule}.{wildcards.sample}.out",
+        "error" : "log/{rule}.{wildcards.sample}.err"
+    },
+}
