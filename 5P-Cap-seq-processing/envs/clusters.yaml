@@ -1,7 +1,0 @@
-channels:
-  - bioconda
-  - conda-forge
-dependencies:
-    - paraclu = 10
-    - bedops = 2.4.39
-    - bedtools = 2.30
