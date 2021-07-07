@@ -270,7 +270,7 @@ results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significan
 
 ## Data import
 
-mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
+mTEC_counts = read.table("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 
 data = standardize_column_names(raw_counts = mTEC_counts)
 
