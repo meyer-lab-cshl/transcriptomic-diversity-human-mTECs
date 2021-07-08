@@ -150,6 +150,31 @@ build_count_table = function(dds, results_df, group, mode, by){
   
 }
 
+build_count_table_2 = function(dds, results_df){
+  
+  normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
+  
+  normalized_counts = cbind(ID = rownames(normalized_counts), normalized_counts)
+  
+  ## Merge with results_df, determine mean and remove unnecessary columns
+  
+  normalized_counts = merge(normalized_counts, results_df, by = 'ID')
+  normalized_counts$lo = rowMeans(normalized_counts[5:7])
+  normalized_counts$hi = rowMeans(normalized_counts[2:4])
+  normalized_counts = select(normalized_counts, c('class', 'lo', 'hi'))
+  
+  normalized_counts = mutate(normalized_counts, class = sub("\\?", "", class))
+  
+  input = group_by(normalized_counts, class) %>% summarize(lo = sum(lo), hi = sum(hi))
+  
+  output = input %>%
+    mutate(percent_lo = lo / sum(lo) * 100) %>%
+    mutate(percent_hi = hi / sum(hi) * 100)
+  
+  return(output)
+  
+}
+
 #################################################################
 # PCA w/ GTEx data (A)
 #################################################################
@@ -213,11 +238,13 @@ volcano_plot = ggplot() +
 ## Version 2
 
 input_v2 = mutate(input, grouped_class = case_when(class == 'DNA' ~ 'DNA', 
-                                                   class == 'LINE' ~ 'LINE',
+                                                   class == 'LINE' ~ 'LINE/SINE',
                                                    class == 'LTR' ~ 'LTR',
-                                                   class == 'SINE' ~ 'SINE',
+                                                   class == 'SINE' ~ 'LINE/SINE',
                                                    class == 'Retroposon' ~ 'Other',
                                                    class == 'Satellite' ~ 'Other'))
+
+input_v2$grouped_class = factor(input_v2$grouped_class, levels = c('LTR', 'DNA', 'LINE/SINE', 'Other'))
 
 volcano_plot = ggplot() +
   geom_point(data = input_v2, aes(x = log2FoldChange, y = -log10(padj)), color = alpha('#9B9A99', 0.6)) +
@@ -227,7 +254,7 @@ volcano_plot = ggplot() +
   xlab(expression('log'[2]*'(fold-change)')) +
   ylab(expression('-log'[10]*'(FDR)')) +
   xlim(-2, 3) +
-  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff', '#000000', '#FF0000', '#00FF00')) +
+  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff', '#55A257', '#E93C00')) +
   labs(fill= "")
 
 #ggtitle('mTEC-hi vs mTEC-lo', 'TE transcripts') 
@@ -243,11 +270,11 @@ volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size 
                                   panel.border = element_blank(),
                                   legend.text = element_text(size = 15),
                                   legend.title = element_text(size = 18),
-                                  legend.position = c(0.15, 0.93),
+                                  legend.position = c(0.2, 0.93),
                                   panel.grid.major = element_blank(),
                                   panel.grid.minor = element_blank())
 
-ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/B_volcano.png", 
+ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/B_volcano_v2.png", 
        width = 5.25, height = 5.25, units = "in")
 
 #################################################################
@@ -260,17 +287,31 @@ count_table = build_count_table(dds_transcripts_TE,
                                 mode = 'class',
                                 by = 'normalized_reads')
 
-count_table = mutate(count_table, grouped_class = )
+count_table = mutate(count_table, grouped_class = case_when(class == 'DNA' ~ 'DNA', 
+                                                      class == 'LINE' ~ 'LINE/SINE',
+                                                      class == 'LTR' ~ 'LTR',
+                                                      class == 'SINE' ~ 'LINE/SINE',
+                                                      class == 'Retroposon' ~ 'Other',
+                                                      class == 'Satellite' ~ 'Other',
+                                                      class == 'Unknown' ~ 'Other',
+                                                      class == 'RC' ~ 'Other',
+                                                      class == 'RNA' ~ 'Other'))
 
-bar_chart = ggplot(count_table, aes(x = group, y = percent, fill = class)) + 
+count_table = group_by(count_table, group, grouped_class) %>% 
+  summarize(sum = sum(percent))
+
+count_table$grouped_class = factor(count_table$grouped_class, levels = c('Other', 'LINE/SINE', 'DNA', 'LTR'))
+
+bar_chart = ggplot(count_table, aes(x = group, y = sum, fill = grouped_class)) + 
   geom_col(colour = 'black', position = 'fill') +
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
-  scale_fill_brewer(palette = 'Set1') +
-  xlab('Sub-family subset') +
-  ylab('Fraction of normalized reads') +
-  labs(fill= "Class") +
-  scale_x_discrete(labels = c('All', 'Down', 'Up')) +
-  geom_hline(yintercept = 1, linetype = 'dashed')
+  scale_fill_manual(values = c('#E93C00', '#55A257', '#dd8452ff', '#4c72b0ff')) +
+  xlab('') +
+  ylab('Fraction of normalized reads in mTEC-HI cells') +
+  labs(fill= "") +
+  scale_x_discrete(labels = c('All', 'Downregulated', 'Upregulated')) +
+  geom_hline(yintercept = 1, linetype = 'dashed') +
+  guides(fill = guide_legend(reverse = TRUE))
 
 bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                plot.subtitle = element_text(size = 14),
@@ -283,4 +324,8 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
                                axis.line = element_line(size = 0.8),
                                panel.border = element_blank(),
                                legend.text = element_text(size = 12),
-                               legend.title = element_text(size = 14))
+                               legend.title = element_text(size = 14),
+                               legend.position="top")
+
+ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/C_stacked-bars.png", 
+       width = 5, height = 5, units = "in")
