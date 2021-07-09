@@ -9,20 +9,15 @@
 TE_HOME=/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis
 GTEX=/grid/meyer/home/jacarter/GTEx/Aligned_TE
 
-cd $GTEX/
+cd $GTEX/Lung/
 
-for TISSUE in *; do
-
-  cd ${TISSUE}
-
-  for FILE in GTEX*; do
-
+for FILE in *.bam;do
+    
     TEcount \
     -b ${FILE} \
     --GTF $TE_HOME/index/annotations/human.GRCh38.gtf \
     --TE $TE_HOME/index/annotations/TEtranscripts_prebuilt_indices/GRCh38_GENCODE_rmsk_TE.gtf \
-    --project TEcount_~{TISSUE}_${FILE}
-
-  done
+    --project TEcount_${FILE}
+    --o $TE_HOME/data
 
 done
