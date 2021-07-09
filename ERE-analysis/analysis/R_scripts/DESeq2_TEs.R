@@ -108,9 +108,13 @@ differential_expression = function(raw_count_table, min_reads = 2, design = ~tis
   
 }
 
-## Split into gene and TE
-
-extract_from_DESeq2 = function(mode, input){
+extract_subset = function(mode, input){
+  
+  ##############################################################################
+  # Takes a dataframe or DeSeq2 object ('input') and extracts a subset of elements
+  # depending on 'mode'. 'gene' extracts genes, 'TE' extracts all annotated repeats,
+  # and 'ERE' extracts endogenous retroelements (i.e. LTRs, LINEs, SINEs)
+  ##############################################################################
   
   if (mode == 'gene'){
     
@@ -121,6 +125,15 @@ extract_from_DESeq2 = function(mode, input){
   if (mode == 'TE'){
     
     output = input[grepl("^(?!ENSG).*$",rownames(input), perl = TRUE),]
+    
+  }
+  
+  if (mode == 'ERE'){
+    
+    output = input[grepl("^(?!ENSG).*$",rownames(input), perl = TRUE),]
+    output = output[!grepl("Satellite",rownames(output), perl = TRUE),]
+    output = output[!grepl("DNA",rownames(output), perl = TRUE),]
+    output = output[!grepl("DNA",rownames(output), perl = TRUE),]
     
   }
   
@@ -270,15 +283,18 @@ results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significan
 
 ## Data import
 
-mTEC_counts = read.table("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
+count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable"
 
+mTEC_counts = read.table(count_table_directory,header=T,row.names=1)
 data = standardize_column_names(raw_counts = mTEC_counts)
 
 ## Run DESeq2
 
-dds_transcripts = differential_expression(data, design=~patient + tissue)
-dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
-dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
+TE_data = extract_subset(mode = 'TE', input = data)
+ERE_data = extract_subset(mode = 'ERE', input = data)
+
+dds_transcripts_TE = differential_expression(TE_data, design=~patient + tissue)
+dds_transcripts_ERE = differential_expression(ERE_data, design=~patient + tissue)
 
 ## Normalized counts
 
@@ -288,19 +304,17 @@ vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 
 ## Differential expression
 
-results_transcripts = results(dds_transcripts, 
+results_transcripts_TE = results(dds_transcripts_TE, 
                               contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'), 
                               independentFiltering = F)
-
-results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
-results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
-
-results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
 results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
-
-results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
-
 results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
+
+results_transcripts_ERE = results(dds_transcripts_ERE, 
+                                 contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'), 
+                                 independentFiltering = F)
+results_df_transcripts_ERE = process_DESeq2_results(results = results_transcripts_ERE, mode = 'TE_transcripts')
+results_df_transcripts_ERE_sigdiff = filter(results_df_transcripts_ERE, significant == T)
 
 #################################################################
 # TE_local

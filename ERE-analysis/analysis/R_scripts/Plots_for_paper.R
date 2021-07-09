@@ -7,6 +7,13 @@ library(ggplot2)
 library(ggrepel)
 library(dplyr)
 
+library(GenomicRanges)
+library(regioneR)
+library(tidyr)
+library(pheatmap)
+library(RColorBrewer)
+library(glue)
+
 #################################################################
 # Functions
 #################################################################
@@ -237,14 +244,17 @@ volcano_plot = ggplot() +
 
 ## Version 2
 
-input_v2 = mutate(input, grouped_class = case_when(class == 'DNA' ~ 'DNA', 
-                                                   class == 'LINE' ~ 'LINE/SINE',
+input_v2 = mutate(input, grouped_class = case_when(class == 'LINE' ~ 'LINE',
                                                    class == 'LTR' ~ 'LTR',
-                                                   class == 'SINE' ~ 'LINE/SINE',
+                                                   class == 'SINE' ~ 'SINE',
                                                    class == 'Retroposon' ~ 'Other',
-                                                   class == 'Satellite' ~ 'Other'))
+                                                   class == 'Satellite' ~ 'Other',
+                                                   class == 'RC' ~ 'Other',
+                                                   class == 'DNA' ~ 'DNA',
+                                                   class == 'RNA' ~ 'Other',
+                                                   class == 'Unknown' ~ 'Other'))
 
-input_v2$grouped_class = factor(input_v2$grouped_class, levels = c('LTR', 'DNA', 'LINE/SINE', 'Other'))
+input_v2$grouped_class = factor(input_v2$grouped_class, levels = c('LTR', 'DNA', 'LINE', 'SINE', 'Other'))
 
 volcano_plot = ggplot() +
   geom_point(data = input_v2, aes(x = log2FoldChange, y = -log10(padj)), color = alpha('#9B9A99', 0.6)) +
@@ -254,7 +264,7 @@ volcano_plot = ggplot() +
   xlab(expression('log'[2]*'(fold-change)')) +
   ylab(expression('-log'[10]*'(FDR)')) +
   xlim(-2, 3) +
-  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff', '#55A257', '#E93C00')) +
+  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff', '#55A257', '#E93C00', '#000000')) +
   labs(fill= "")
 
 #ggtitle('mTEC-hi vs mTEC-lo', 'TE transcripts') 
@@ -281,8 +291,8 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
 # Stacked bars (C)
 #################################################################
 
-count_table = build_count_table(dds_transcripts_TE, 
-                                results_df_transcripts_TE, 
+count_table = build_count_table(dds_transcripts_ERE, 
+                                results_df_transcripts_ERE, 
                                 group = c('all', 'down_regulated', 'up_regulated'),
                                 mode = 'class',
                                 by = 'normalized_reads')
@@ -302,16 +312,18 @@ count_table = group_by(count_table, group, grouped_class) %>%
 
 count_table$grouped_class = factor(count_table$grouped_class, levels = c('Other', 'LINE/SINE', 'DNA', 'LTR'))
 
-bar_chart = ggplot(count_table, aes(x = group, y = sum, fill = grouped_class)) + 
+bar_chart = ggplot(count_table, aes(x = group, y = percent, fill = class)) + 
   geom_col(colour = 'black', position = 'fill') +
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
-  scale_fill_manual(values = c('#E93C00', '#55A257', '#dd8452ff', '#4c72b0ff')) +
   xlab('') +
   ylab('Fraction of normalized reads in mTEC-HI cells') +
   labs(fill= "") +
+  scale_fill_brewer(palette = 'Set1')+
   scale_x_discrete(labels = c('All', 'Downregulated', 'Upregulated')) +
   geom_hline(yintercept = 1, linetype = 'dashed') +
   guides(fill = guide_legend(reverse = TRUE))
+
+scale_fill_manual(values = c('#E93C00', '#55A257', '#dd8452ff', '#4c72b0ff'))
 
 bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                plot.subtitle = element_text(size = 14),
@@ -329,3 +341,24 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/C_stacked-bars.png", 
        width = 5, height = 5, units = "in")
+
+## Chi-square test
+
+contingency = pivot_wider(count_table, id_cols = grouped_class, names_from = group, values_from = sum) %>% 
+  mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
+  as.data.frame()
+
+rownames(contingency) = contingency$grouped_class
+contingency = dplyr::select(contingency, -grouped_class)
+
+chisq.test(contingency)
+
+chisq.posthoc.test::chisq.posthoc.test(contingency)
+
+#################################################################
+# Genomic position analysis (D)
+#################################################################
+
+
+
+
