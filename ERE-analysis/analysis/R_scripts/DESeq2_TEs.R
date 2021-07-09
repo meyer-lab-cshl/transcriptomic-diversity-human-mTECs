@@ -145,7 +145,7 @@ extract_subset = function(mode, input){
 
 process_DESeq2_results = function(results,
                                   mode,
-                                  p_value_cutoff = 0.1, 
+                                  p_value_cutoff = 0.05, 
                                   log_fold_change_cutoff = 0.58){
   
   ## Add statistical and biological significance labels
