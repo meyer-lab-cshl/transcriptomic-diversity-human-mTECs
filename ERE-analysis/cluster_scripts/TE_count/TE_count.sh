@@ -7,9 +7,8 @@
 #$ -e TE_count_output.txt
 
 TE_HOME=/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis
-GTEX=/grid/meyer/home/jacarter/GTEx/Aligned_TE
 
-cd $GTEX/Lung/
+cd $TE_HOME/data/Lung/
 
 for FILE in *.bam;do
     
@@ -18,6 +17,5 @@ for FILE in *.bam;do
     --GTF $TE_HOME/index/annotations/human.GRCh38.gtf \
     --TE $TE_HOME/index/annotations/TEtranscripts_prebuilt_indices/GRCh38_GENCODE_rmsk_TE.gtf \
     --project TEcount_${FILE}
-    --o $TE_HOME/data
 
 done
