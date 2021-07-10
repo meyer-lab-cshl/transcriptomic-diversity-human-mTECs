@@ -7,10 +7,16 @@
 #$ -e TE_count_output.txt
 
 ## TE_HOME/data contains directories, each corresponding to a tissue. 
-## Each tissue directory contains a group of aligned .bam files.
+## Each tissue directory contains a group of aligned .bam files. These
+## files should be named in the following format:
+##
+## unique-identifier_tissue_batch_Aligned.out.bam
+## e.g. SRR488685_ESC_UCSC_Aligned.out.bam
+##
+## TE_HOME/index/annotations contains two .gtf files:
 
 TE_HOME=/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/
-cd $TE_HOME/data
+cd $TE_HOME/data/test
 
 ## The first loop iterates through each tissue directory.
 
@@ -56,6 +62,8 @@ for TISSUE in *;do
     counter=$((counter+1))
 
   done
+  
+  mv output$((counter)) ${TISSUE}.cntTable
 
   cd ..
   
