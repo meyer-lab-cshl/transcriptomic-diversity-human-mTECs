@@ -157,30 +157,109 @@ build_count_table = function(dds, results_df, group, mode, by){
   
 }
 
-build_count_table_2 = function(dds, results_df){
+make_GRanges = function(mode, results_df){
   
-  normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
+  if (mode == 'TE'){
+    
+    annotation = read.table(file = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
+    annotation = separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':')
+    annotation = separate(annotation, start.stop, into = c('start', 'end'), sep = '-')
+    annotation = rename(annotation, locus = TE)
+    
+    df = merge(results_df, annotation, by = 'locus')
+    
+  }
   
-  normalized_counts = cbind(ID = rownames(normalized_counts), normalized_counts)
+  if (mode == 'gene'){
+    
+    annotation = read.table(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
+    annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
+    annotation = rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
+    
+    df =  merge(results_df, annotation, by = 'Geneid')
+    
+  }
   
-  ## Merge with results_df, determine mean and remove unnecessary columns
+  if (mode == 'TSS'){
+    
+    df = select(results_df, c('Chr', 'Start', 'Stop', 'Strand'))
+    
+  }
   
-  normalized_counts = merge(normalized_counts, results_df, by = 'ID')
-  normalized_counts$lo = rowMeans(normalized_counts[5:7])
-  normalized_counts$hi = rowMeans(normalized_counts[2:4])
-  normalized_counts = select(normalized_counts, c('class', 'lo', 'hi'))
-  
-  normalized_counts = mutate(normalized_counts, class = sub("\\?", "", class))
-  
-  input = group_by(normalized_counts, class) %>% summarize(lo = sum(lo), hi = sum(hi))
-  
-  output = input %>%
-    mutate(percent_lo = lo / sum(lo) * 100) %>%
-    mutate(percent_hi = hi / sum(hi) * 100)
+  output = makeGRangesFromDataFrame(df, keep.extra.columns = T)
   
   return(output)
   
 }
+
+run_perm_test = function(TSS_groups, TE_groups, mode = 'distance'){
+  
+  Z_score_output = matrix(, nrow = length(TSS_groups), ncol = length(TE_groups))
+  rownames(Z_score_output) = c('High TSS', 'Low TSS')
+  colnames(Z_score_output) = c('UP TE', 'Unchanged TE', 'DOWN TE')
+  
+  p_value_output = Z_score_output
+  
+  row_number = 1
+  
+  for (TSS_group in TSS_groups){
+    
+    column_number = 1
+    
+    for (TE_group in TE_groups){
+      
+      print(glue('Starting row {row_number}, column {column_number}'))
+      
+      if (mode == 'distance'){
+        
+        pt = permTest(A = TSS_group, 
+                      B = TE_group, 
+                      ntimes = 1000,
+                      randomize.function = resampleRegions,
+                      universe = GRanges_TSS_all,
+                      evaluate.function = meanDistance,
+                      alternative = 'less',
+                      verbose = TRUE)
+        
+        print(pt$meanDistance[[1]])
+        
+        p_value_output[row_number, column_number] = pt$meanDistance[[1]]
+        Z_score_output[row_number, column_number] = pt$meanDistance[[6]]
+        
+      }
+      
+      if (mode == 'overlap'){
+        
+        pt = permTest(A = TE_group, 
+                      B = gene_group, 
+                      ntimes = 2000,
+                      randomize.function = resampleRegions,
+                      universe = GRanges_TE,
+                      evaluate.function = numOverlaps,
+                      alternative = 'greater',
+                      verbose = TRUE)
+        
+        p_value_output[row_number, column_number] = pt$numOverlaps[[1]]
+        Z_score_output[row_number, column_number] = pt$numOverlaps[[6]]
+        
+        print(Z_score_output)
+        
+      }
+      
+      column_number = column_number + 1
+      
+    }
+    
+    row_number = row_number + 1
+    
+  }
+  
+  output = list('Z score' = Z_score_output, 'p value' = p_value_output)
+  
+  return(output)
+  
+}
+
 
 #################################################################
 # PCA w/ GTEx data (A)
@@ -357,6 +436,42 @@ chisq.posthoc.test::chisq.posthoc.test(contingency)
 #################################################################
 # Genomic position analysis (D)
 #################################################################
+
+GRanges_TE = make_GRanges(mode = 'TE',
+                          results_df = results_df_local_TE)
+GRanges_TE_start = GRanges_TE
+end(GRanges_TE_start) = GenomicRanges::start(GRanges_TE_start) + 100
+
+GRanges_TE_up = make_GRanges(mode = 'TE',
+                             results_df = results_df_local_TE_up)
+GRanges_TE_up_start = GRanges_TE_up
+end(GRanges_TE_up_start) = GenomicRanges::start(GRanges_TE_up_start) + 100
+
+GRanges_TE_down = make_GRanges(mode = 'TE',
+                             results_df = results_df_local_TE_down)
+GRanges_TE_down_start = GRanges_TE_down
+end(GRanges_TE_down_start) = GenomicRanges::start(GRanges_TE_down_start) + 100
+
+GRanges_TE_unchanged = make_GRanges(mode = 'TE',
+                             results_df = results_df_local_TE_unchanged)
+GRanges_TE_unchanged_start = GRanges_TE_unchanged
+end(GRanges_TE_unchanged_start) = GenomicRanges::start(GRanges_TE_unchanged_start) + 100
+
+df_high = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_high.csv')
+GRanges_TSS_high = make_GRanges(mode = 'TSS',
+                                results_df = df_high)
+
+df_low = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_low.csv')
+GRanges_TSS_low = make_GRanges(mode = 'TSS',
+                                results_df = df_low)
+
+
+df_all = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_all.csv')
+GRanges_TSS_all = make_GRanges(mode = 'TSS',
+                               results_df = df_all)
+
+output = run_perm_test(TSS_groups = list(GRanges_TSS_high, GRanges_TSS_low),
+                       TE_groups = list(GRanges_TE_up_start, GRanges_TE_unchanged_start, GRanges_TE_down_start))
 
 #################################################################
 # Fraction of reads mapping to TEs (supplement A?)

@@ -15,8 +15,12 @@ index/
 software/TElocal-master
 analysis/*.txt
 analysis/annotation_tables/
+analysis/TSS/
 analysis/count_tables/
 .DS*
 .R*
 *_output.txt
 *.fastq.gz
+ERE-analysis/analysis/annotation_tables/
+ERE-analysis/analysis/count_tables/TE_local_hi_vs_lo.cntTable
+*cntTable
