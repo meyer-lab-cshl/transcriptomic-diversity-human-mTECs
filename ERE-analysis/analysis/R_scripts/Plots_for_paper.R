@@ -260,7 +260,6 @@ run_perm_test = function(TSS_groups, TE_groups, mode = 'distance'){
   
 }
 
-
 #################################################################
 # PCA w/ GTEx data (A)
 #################################################################
@@ -274,7 +273,7 @@ PCA = ggplot(pcaData, aes(PC1, PC2, fill = tissue)) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
   coord_fixed() + 
   labs(fill= "Tissue") +
-  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff')) 
+  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff'))
 
 PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                          plot.subtitle = element_text(size = 14),
@@ -445,7 +444,8 @@ end(GRanges_TE_start) = GenomicRanges::start(GRanges_TE_start) + 100
 GRanges_TE_up = make_GRanges(mode = 'TE',
                              results_df = results_df_local_TE_up)
 GRanges_TE_up_start = GRanges_TE_up
-end(GRanges_TE_up_start) = GenomicRanges::start(GRanges_TE_up_start) + 100
+end(GRanges_TE_up_start) = GenomicRanges::start(GRanges_TE_up) + 100
+start(GRanges_TE_up_start) = GenomicRanges::start(GRanges_TE_up) - 100
 
 GRanges_TE_down = make_GRanges(mode = 'TE',
                              results_df = results_df_local_TE_down)
@@ -472,6 +472,15 @@ GRanges_TSS_all = make_GRanges(mode = 'TSS',
 
 output = run_perm_test(TSS_groups = list(GRanges_TSS_high, GRanges_TSS_low),
                        TE_groups = list(GRanges_TE_up_start, GRanges_TE_unchanged_start, GRanges_TE_down_start))
+
+pt = permTest(A = GRanges_TSS_high, 
+              B = GRanges_TE_up_start, 
+              ntimes = 100,
+              randomize.function = resampleRegions,
+              universe = GRanges_TSS_all,
+              evaluate.function = numOverlaps,
+              alternative = 'greater',
+              verbose = TRUE)
 
 #################################################################
 # Fraction of reads mapping to TEs (supplement A?)
