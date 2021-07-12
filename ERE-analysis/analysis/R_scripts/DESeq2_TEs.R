@@ -236,14 +236,20 @@ collapse_tissue_replicates = function(dds, mode = 'mean'){
 
 ## Data import
 
-raw_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_counts",header=T,row.names=1)
+count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/"
+tissues = c('mTEC')
+
+all_counts = read.table(glue('{count_table_directory}TE_transcripts_counts'),header=T,row.names=1)
+
+
+
 testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/testis_counts",header=T,row.names=1)
 ovary_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ovaries_counts",header=T,row.names=1)
 mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
 muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/muscle_counts",header=T,row.names=1)
 ESC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ESC_counts",header=T,row.names=1)
 
-data = standardize_column_names(raw_counts = mTEC_counts)
+data = standardize_column_names(raw_counts = all)
 
 ## Run DESeq2
 
@@ -261,31 +267,15 @@ vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 #assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
 assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_gene$patient)
 
-## Differential expression
-
-results_transcripts = results(dds_transcripts, 
-                              contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'), 
-                              independentFiltering = F)
-
-results_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = results_transcripts)
-results_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = results_transcripts)
-
-results_df_transcripts_gene = process_DESeq2_results(results = results_transcripts_gene, mode = 'Gene')
-results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
-
-results_df_transcripts_gene_sigdiff = filter(results_df_transcripts_gene, significant == T)
-
-results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
-
 #################################################################
-# TE transcripts: just mTECs
+# Differential expression analysis: mTEC HI vs LO
 #################################################################
 
 ## Data import
 
-count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_transcripts_hi_vs_lo.cntTable"
+count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/"
 
-mTEC_counts = read.table(count_table_directory,header=T,row.names=1)
+mTEC_counts = read.table(glue('{count_table_directory}TE_transcripts_hi_vs_lo.cntTable'),header=T,row.names=1)
 data = standardize_column_names(raw_counts = mTEC_counts)
 
 ## Run DESeq2
@@ -330,13 +320,13 @@ ovary_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_loc
 muscle_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/muscle_counts_local",header=T,row.names=1)
 ESC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/ESC_counts_local",header=T,row.names=1)
 
-data = standardize_column_names(raw_counts = raw_counts)
+data = standardize_column_names(raw_counts = mTEC_counts)
+
+TE_data = extract_subset(mode = 'TE', input = data)
 
 ## Run DESeq2
 
-dds_local = differential_expression(data, design=~tissue)
-dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
-dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
+dds_local_TE = differential_expression(TE_data, design=~patient + tissue)
 
 ## Normalized counts
 
@@ -348,10 +338,7 @@ assay(vs_dds_local_TE) = limma::removeBatchEffect(assay(vs_dds_local_TE), vs_dds
 
 ## Differential expression
 
-results_local = results(dds_local, 
-                        independentFiltering = F)
-
-results_local = results(dds_local, 
+results_local_TE = results(dds_local_TE, 
                         independentFiltering = F,
                         contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'))
 

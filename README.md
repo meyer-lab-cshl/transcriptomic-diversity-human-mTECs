@@ -23,5 +23,3 @@ consecutively labelled scripts.
     
 ## Endogenous retroviral elements in mTECs
 ERE expression in medullary thymic epithelial cells.
-
-
