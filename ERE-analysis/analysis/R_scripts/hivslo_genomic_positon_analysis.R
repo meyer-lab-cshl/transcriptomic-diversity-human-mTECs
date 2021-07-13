@@ -242,6 +242,15 @@ GRanges_TE_sigdiff = make_GRanges(mode = 'TE',
                                     results_df = results_df_local_TE_sigdiff)
 saveRDS(GRanges_TE_sigdiff, "~/TE_thymus/analysis/cluster/objects/GRanges_TE_sigdiff.rds")
 
+pt = permTest(A = GRanges_TE_down, 
+              B = GRanges_gene_down, 
+              ntimes = 100,
+              randomize.function = resampleRegions,
+              universe = GRanges_TE,
+              evaluate.function = numOverlaps,
+              alternative = 'greater',
+              verbose = TRUE)
+
 ## Annotate by overlap
 
 annotate_features = function(input, mode){

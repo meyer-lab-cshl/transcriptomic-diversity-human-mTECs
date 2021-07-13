@@ -364,15 +364,14 @@ results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
 
 ## Data import
 
-mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable_old",header=T,row.names=1)
-
+mTEC_counts = read.table("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local_hi_vs_lo.cntTable",header=T,row.names=1)
 data = standardize_column_names(raw_counts = mTEC_counts)
 
 ## Run DESeq2
 
 dds_local = differential_expression(data, design=~patient+tissue)
-dds_local_gene = extract_from_DESeq2(mode = 'gene', input = dds_local)
-dds_local_TE = extract_from_DESeq2(mode = 'TE', input = dds_local)
+dds_local_gene = extract_subset(mode = 'gene', input = dds_local)
+dds_local_TE = extract_subset(mode = 'TE', input = dds_local)
 
 ## Normalized counts
 
@@ -385,8 +384,8 @@ results_local = results(dds_local,
                         independentFiltering = F,
                         contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'))
 
-results_local_gene = extract_from_DESeq2(mode = 'gene', input = results_local)
-results_local_TE = extract_from_DESeq2(mode = 'TE', input = results_local)
+results_local_gene = extract_subset(mode = 'gene', input = results_local)
+results_local_TE = extract_subset(mode = 'TE', input = results_local)
 
 results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
 results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')

@@ -18,6 +18,13 @@ library(glue)
 # Functions
 #################################################################
 
+save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+
 build_count_table = function(dds, results_df, group, mode, by){
   
   normalized_counts = as.data.frame(counts(dds, normalized = TRUE))
@@ -192,31 +199,36 @@ make_GRanges = function(mode, results_df){
   
 }
 
-run_perm_test = function(TSS_groups, TE_groups, mode = 'distance'){
+run_perm_test = function(group_A, group_B, universe, mode = 'distance', iterations = 100){
   
-  Z_score_output = matrix(, nrow = length(TSS_groups), ncol = length(TE_groups))
-  rownames(Z_score_output) = c('High TSS', 'Low TSS')
-  colnames(Z_score_output) = c('UP TE', 'Unchanged TE', 'DOWN TE')
+  ## Group_A and group_B are named lists of GRanges objects
+  
+  Z_score_output = matrix(, nrow = length(group_A), ncol = length(group_B))
+  rownames(Z_score_output) = names(group_A)
+  colnames(Z_score_output) = names(group_B)
   
   p_value_output = Z_score_output
+  evaluation_output = Z_score_output
   
   row_number = 1
   
-  for (TSS_group in TSS_groups){
+  for (A_entry in group_A){
+    
+    total = length(A_entry)
     
     column_number = 1
     
-    for (TE_group in TE_groups){
+    for (B_entry in group_B){
       
       print(glue('Starting row {row_number}, column {column_number}'))
       
       if (mode == 'distance'){
         
-        pt = permTest(A = TSS_group, 
-                      B = TE_group, 
-                      ntimes = 1000,
+        pt = permTest(A = A_entry, 
+                      B = B_entry, 
+                      ntimes = iterations,
                       randomize.function = resampleRegions,
-                      universe = GRanges_TSS_all,
+                      universe = universe,
                       evaluate.function = meanDistance,
                       alternative = 'less',
                       verbose = TRUE)
@@ -225,24 +237,24 @@ run_perm_test = function(TSS_groups, TE_groups, mode = 'distance'){
         
         p_value_output[row_number, column_number] = pt$meanDistance[[1]]
         Z_score_output[row_number, column_number] = pt$meanDistance[[6]]
+        evaluation_output[row_number, column_number] = pt$meanDistance[[4]]
         
       }
       
       if (mode == 'overlap'){
         
-        pt = permTest(A = TE_group, 
-                      B = gene_group, 
-                      ntimes = 2000,
+        pt = permTest(A = A_entry, 
+                      B = B_entry, 
+                      ntimes = iterations,
                       randomize.function = resampleRegions,
-                      universe = GRanges_TE,
+                      universe = universe,
                       evaluate.function = numOverlaps,
                       alternative = 'greater',
                       verbose = TRUE)
         
         p_value_output[row_number, column_number] = pt$numOverlaps[[1]]
         Z_score_output[row_number, column_number] = pt$numOverlaps[[6]]
-        
-        print(Z_score_output)
+        evaluation_output[row_number, column_number] = (pt$numOverlaps[[4]]/total)*100
         
       }
       
@@ -254,7 +266,7 @@ run_perm_test = function(TSS_groups, TE_groups, mode = 'distance'){
     
   }
   
-  output = list('Z score' = Z_score_output, 'p value' = p_value_output)
+  output = list('Z score' = Z_score_output, 'p value' = p_value_output, 'evaluation' = evaluation_output)
   
   return(output)
   
@@ -436,6 +448,8 @@ chisq.posthoc.test::chisq.posthoc.test(contingency)
 # Genomic position analysis (D)
 #################################################################
 
+## Generate GRanges objects
+
 GRanges_TE = make_GRanges(mode = 'TE',
                           results_df = results_df_local_TE)
 GRanges_TE_start = GRanges_TE
@@ -457,30 +471,70 @@ GRanges_TE_unchanged = make_GRanges(mode = 'TE',
 GRanges_TE_unchanged_start = GRanges_TE_unchanged
 end(GRanges_TE_unchanged_start) = GenomicRanges::start(GRanges_TE_unchanged_start) + 100
 
-df_high = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_high.csv')
-GRanges_TSS_high = make_GRanges(mode = 'TSS',
-                                results_df = df_high)
+## A: Overlap between genes and TEs
 
-df_low = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_low.csv')
-GRanges_TSS_low = make_GRanges(mode = 'TSS',
-                                results_df = df_low)
+perm_test_output_A = run_perm_test(group_A = list(TE_up = GRanges_TE_up, TE_unchanged = GRanges_TE_unchanged, TE_down = GRanges_TE_down),
+                       group_B = list(gene_up = GRanges_gene_up, gene_unchanged = GRanges_gene_unchanged, gene_down = GRanges_gene_down),
+                       universe = GRanges_TE,
+                       mode = 'overlap',
+                       iterations = 1000)
+
+round(perm_test_output_A$evaluation)
+
+my_heatmap = pheatmap(mat = perm_test_output_A[[1]], 
+                      cluster_rows=FALSE,
+                      show_rownames=TRUE, 
+                      cluster_cols=FALSE,
+                      display_numbers = signif(perm_test_output_A$evaluation, digits = 3),
+                      fontsize_number = 15,
+                      number_color = 'black')
+
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/gene_TE_overlap.png")
+
+## Overlap between TSSs and TEs
+
+df_all = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_all.csv') 
+GRanges_TSS = makeGRangesFromDataFrame(df_all, keep.extra.columns = T)
+
+df_high = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_high.csv') 
+GRanges_TSS_high = makeGRangesFromDataFrame(df_high, keep.extra.columns = T)
+
+df_low = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_low.csv') 
+GRanges_TSS_low = makeGRangesFromDataFrame(df_low, keep.extra.columns = T)
+
+output = run_perm_test(group_A = list(TE_up = GRanges_TE_up, TE_down = GRanges_TE_down),
+                       group_B = list(TSS_high = GRanges_TSS_high, TSS_low = GRanges_TSS_low),
+                       universe = GRanges_TE,
+                       mode = 'overlap')
+
+## Frequency
+
+patients = c('pt87', 'pt212', 'pt214', 'pt221', 'pt226')
+conditions = c('lo', 'hi')
+
+for (patient in patients){
+  
+  for (condition in conditions){
+    
+    search_string = glue('{patient}_{condition}')
+    
+    for (i in 1:nrow(df_all)){
+    
+      if (grepl(search_string, df_all[i, 'Samples'], fixed=TRUE)){
+        
+        print(TRUE)
+        
+      }
+      
+    }
+    
+  }
+  
+}
 
 
-df_all = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_all.csv')
-GRanges_TSS_all = make_GRanges(mode = 'TSS',
-                               results_df = df_all)
+df_all['up_TE_overlap'] = overlapsAny(GRanges_TSS, GRanges_TE_up)
 
-output = run_perm_test(TSS_groups = list(GRanges_TSS_high, GRanges_TSS_low),
-                       TE_groups = list(GRanges_TE_up_start, GRanges_TE_unchanged_start, GRanges_TE_down_start))
-
-pt = permTest(A = GRanges_TSS_high, 
-              B = GRanges_TE_up_start, 
-              ntimes = 100,
-              randomize.function = resampleRegions,
-              universe = GRanges_TSS_all,
-              evaluate.function = numOverlaps,
-              alternative = 'greater',
-              verbose = TRUE)
 
 #################################################################
 # Fraction of reads mapping to TEs (supplement A?)
