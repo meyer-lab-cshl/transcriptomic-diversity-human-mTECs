@@ -487,7 +487,9 @@ for (i in 1:length(labels)){
   p = perm_test_output_A[[2]][i]
   print(p)
   
-  if (p < 0.05){
+  significance_threshold = 0.05 / length(labels)
+  
+  if (p < significance_threshold){
     
     p_value = as.character(signif(p, digits = 1))
     annotation = glue('p = {p_value}')
@@ -514,6 +516,7 @@ my_heatmap = pheatmap(mat = perm_test_output_A[[1]],
                       cluster_cols=FALSE,
                       display_numbers = labels,
                       fontsize_number = 15,
+                      fontsize = 15,
                       number_color = 'black',
                       border_color = 'black',
                       angle_col = '0',
