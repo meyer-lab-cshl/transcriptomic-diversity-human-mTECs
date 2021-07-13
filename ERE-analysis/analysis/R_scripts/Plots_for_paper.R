@@ -479,15 +479,46 @@ perm_test_output_A = run_perm_test(group_A = list(TE_up = GRanges_TE_up, TE_unch
                        mode = 'overlap',
                        iterations = 1000)
 
-round(perm_test_output_A$evaluation)
+labels = signif(perm_test_output_A$evaluation, digits = 3)
 
-my_heatmap = pheatmap(mat = perm_test_output_A[[1]], 
+for (i in 1:length(labels)){
+
+  old_value = labels[i]
+  p = perm_test_output_A[[2]][i]
+  print(p)
+  
+  if (p < 0.05){
+    
+    p_value = as.character(signif(p, digits = 1))
+    annotation = glue('p = {p_value}')
+    
+  }
+
+  else{
+    
+    annotation = 'ns'
+    
+  }
+  
+  new_value = glue('{old_value}%, {annotation}')
+  labels[i] = new_value
+  
+}
+
+print(labels)
+
+my_heatmap = pheatmap(mat = perm_test_output_A[[1]],
+                      color = colorRampPalette(rev(c("#FC8D59","#FEE090","#FFFFBF","#E0F3F8","#91BFDB")))(100),
                       cluster_rows=FALSE,
                       show_rownames=TRUE, 
                       cluster_cols=FALSE,
-                      display_numbers = signif(perm_test_output_A$evaluation, digits = 3),
+                      display_numbers = labels,
                       fontsize_number = 15,
-                      number_color = 'black')
+                      number_color = 'black',
+                      border_color = 'black',
+                      angle_col = '0',
+                      labels_row = c('  Up', '   - ', '  Down'),
+                      labels_col = c('Up', '-', 'Down'))
 
 save_pheatmap_png(my_heatmap, "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/gene_TE_overlap.png")
 
