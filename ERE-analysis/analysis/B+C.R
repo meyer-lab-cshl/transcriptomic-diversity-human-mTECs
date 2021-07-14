@@ -16,6 +16,10 @@ for (i in functions){
 # DESeq2
 #################################################################
 
+## 'count_table_directory' should contain the text file 'TE_transcripts_hi_vs_lo.cntTable' containing
+## the raw counts for mTEC-HI and -LO conditions. Each entry should be labelled in the format 
+## '{unique ID}_{tissue}_{batch}'. e.g. 'pt214_mTEC-hi_our-data'
+
 count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/"
 data = read.table(glue('{count_table_directory}TE_transcripts_hi_vs_lo.cntTable'),header=T,row.names=1)
 

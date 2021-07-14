@@ -42,20 +42,20 @@ percentVar = round(100 * attr(pcaData, "percentVar"))
 ## Use this to have only a subset of tissues in color: useful when you have lots of tissues
 ## and you're only interested in a few.
 
-colored_tissues = c('Adrenal.Gland')
+colored_tissues = c('mTEC.hi', 'mTEC.lo', 'ESC', 'Testis')
 
 pcaData = mutate(pcaData, color = case_when(tissue %in% colored_tissues ~ T,
                                    !(tissue %in% colored_tissues) ~ F))
 
 PCA = ggplot(pcaData, aes(PC1, PC2)) + 
-  geom_point(data = subset(pcaData, color == F), aes(), size=4, shape = 21, stroke = 1) +
+  geom_point(data = pcaData, aes(x = PC1, y = PC2), color = '#9A9A9A', size = 2) +
+  geom_point(data = subset(pcaData, color == F), size=4, shape = 21, stroke = 0) +
   geom_point(data = subset(pcaData, color == T), aes(fill = tissue), size=4, shape = 21, stroke = 0) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
   coord_fixed() + 
-  labs(fill= "Tissue")
-
-  #scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff'))
+  labs(fill= "Tissue") +
+  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff', '#55A257', '#E93C00'))
 
 PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                          plot.subtitle = element_text(size = 14),
