@@ -11,9 +11,9 @@ for (i in functions){
   
 }
 
-############################################################################################
-##                                        PCA 
-############################################################################################
+#################################################################
+# DESeq2
+#################################################################
 
 ## 'count_table_directory' should contain the text file 'TE_transcripts_counts' containing
 ## the raw counts from each tissue of interest. Each entry should be labelled in the format 
@@ -33,6 +33,10 @@ dds_transcripts_TE = differential_expression(TE_data, design=~tissue)
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 
 assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
+
+#################################################################
+# PCA w/ GTEx data (A)
+#################################################################
 
 ## Plot
 
@@ -72,3 +76,7 @@ PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/A_pca.png", 
        width = 5.25, height = 6, units = "in")
+
+#################################################################
+# Fraction of reads mapping to TEs (supplement A?)
+#################################################################
