@@ -1,70 +1,12 @@
 library(DESeq2)
 library(ggplot2)
 
-extract_subset = function(mode, input){
-  
-  ##############################################################################
-  # Takes a dataframe or DeSeq2 object ('input') and extracts a subset of elements
-  # depending on 'mode'. 'gene' extracts genes, 'TE' extracts all annotated repeats,
-  # and 'ERE' extracts endogenous retroelements (i.e. LTRs, LINEs, SINEs)
-  ##############################################################################
-  
-  if (mode == 'gene'){
-    
-    output = input[grep("^ENSG",rownames(input)),]
-    
-  }
-  
-  if (mode == 'TE'){
-    
-    output = input[grepl("^(?!ENSG).*$",rownames(input), perl = TRUE),]
-    
-  }
-  
-  if (mode == 'ERE'){
-    
-    output = input[grepl("^(?!ENSG).*$",rownames(input), perl = TRUE),]
-    output = output[!grepl("Satellite",rownames(output), perl = TRUE),]
-    output = output[!grepl("DNA",rownames(output), perl = TRUE),]
-    output = output[!grepl("DNA",rownames(output), perl = TRUE),]
-    
-  }
-  
-  return(output)
-  
-}
+functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
+functions = c('extract_subset', 'differential_expression')
 
-differential_expression = function(raw_count_table, min_reads = 2, design = ~tissue){
+for (i in functions){
   
-  ##############################################################################
-  # Generates a DESeq2 dds object.  By default, design 
-  # detects differences between tissues. For differential expression analysis 
-  # between mTEC-HI and -LO samples, you'll want to change the design to
-  # '~patient + tissue', but this can't be done when including GTEx data. After
-  # producing the dds object, filters lowly expressed genes/TEs by requiring
-  # a minimum number of reads (default 2) in a row.
-  ##############################################################################
-  
-  ## Define sampleInfo
-  
-  ID = colnames(raw_count_table)
-  sampleInfo = data.frame(ID,row.names=colnames(raw_count_table))
-  sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'tissue', 'batch'), sep = '_'))
-  sampleInfo$patient = factor(sampleInfo$patient)
-  
-  ## Construct DESeq dataset object
-  
-  dds <- DESeqDataSetFromMatrix(countData = raw_count_table, colData = sampleInfo, design = design)
-  
-  ## Run differential expression analysis
-  
-  dds = DESeq(dds)
-  
-  ## Pre-filter to remove rows with less than 'min_reads' total (default 2)
-  
-  dds = dds[ rowSums(counts(dds)) >= min_reads, ]
-  
-  return(dds)
+  load(glue('{functions_directory}{i}'))
   
 }
 
@@ -101,8 +43,9 @@ PCA = ggplot(pcaData, aes(PC1, PC2, fill = tissue)) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
   coord_fixed() + 
-  labs(fill= "Tissue") +
-  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff'))
+  labs(fill= "Tissue")
+
+  #scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff'))
 
 PCA + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                          plot.subtitle = element_text(size = 14),
