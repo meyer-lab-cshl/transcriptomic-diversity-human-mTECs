@@ -1,5 +1,6 @@
 library(DESeq2)
 library(ggplot2)
+library(dplyr)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
 functions = c('extract_subset', 'differential_expression')
@@ -38,8 +39,17 @@ assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts
 pcaData = plotPCA(vs_dds_transcripts_TE, intgroup='tissue', returnData=TRUE)
 percentVar = round(100 * attr(pcaData, "percentVar"))
 
-PCA = ggplot(pcaData, aes(PC1, PC2, fill = tissue)) + 
-  geom_point(size=4, shape = 21, stroke = 0) +
+## Use this to have only a subset of tissues in color: useful when you have lots of tissues
+## and you're only interested in a few.
+
+colored_tissues = c('Adrenal.Gland')
+
+pcaData = mutate(pcaData, color = case_when(tissue %in% colored_tissues ~ T,
+                                   !(tissue %in% colored_tissues) ~ F))
+
+PCA = ggplot(pcaData, aes(PC1, PC2)) + 
+  geom_point(data = subset(pcaData, color == F), aes(), size=4, shape = 21, stroke = 1) +
+  geom_point(data = subset(pcaData, color == T), aes(fill = tissue), size=4, shape = 21, stroke = 0) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
   coord_fixed() + 
