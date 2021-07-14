@@ -241,8 +241,6 @@ tissues = c('mTEC')
 
 all_counts = read.table(glue('{count_table_directory}TE_transcripts_counts'),header=T,row.names=1)
 
-
-
 testis_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/testis_counts",header=T,row.names=1)
 ovary_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/ovaries_counts",header=T,row.names=1)
 mTEC_counts = read.table("/Users/mpeacey/TE_thymus/analysis/count_tables/TE_count/TE_transcripts_hi_vs_lo.cntTable",header=T,row.names=1)
@@ -253,19 +251,15 @@ data = standardize_column_names(raw_counts = all)
 
 ## Run DESeq2
 
-dds_transcripts = differential_expression(data, design=~patient + tissue)
-dds_transcripts_gene = extract_from_DESeq2(mode = 'gene', input = dds_transcripts)
-dds_transcripts_TE = extract_from_DESeq2(mode = 'TE', input = dds_transcripts)
+TE_data = extract_subset(mode = 'TE', input = data)
+
+dds_transcripts_TE = differential_expression(TE_data, design=~tissue)
+
 
 ## Normalized counts
 
-vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
-#assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$batch)
-assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$patient)
-
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
-#assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
-assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_gene$patient)
+assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
 
 #################################################################
 # Differential expression analysis: mTEC HI vs LO
