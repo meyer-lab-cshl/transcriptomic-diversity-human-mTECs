@@ -182,7 +182,7 @@ TE.counts = extract_subset(mode = 'TE', input = data)
 TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
 TE.counts = separate(data = TE.counts, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
 TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
-TE.counts = subset(TE.counts, class == 'LTR')
+TE.counts = subset(TE.counts, class == 'LTR' | class == 'LINE')
 
 ## Annotations
 
@@ -238,7 +238,7 @@ sum.repeat.counts = hits %>%
 #sum.repeat.counts<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/sum.repeat.counts.tsv", header= T, stringsAsFactors = F)
 
 covariates <- NULL
-prefix = "LTRs"
+prefix = "EREs"
 
 lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        gene.counts = gene.counts,
@@ -246,18 +246,20 @@ lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        covariates = covariates,
                        prefix = prefix)
 
-lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/SampleRun -lm-results.tsv", header= T, sep="\t")
-
-lm_results = mutate(lm_results, significant = case_when(model.p.value < 0.05 ~ T,
-                                                        model.p.value >= 0.05 ~ F))
+lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/LTRs -lm-results.tsv", header= T, sep="\t") %>%
+  mutate(adjusted.p.value = p.adjust(model.p.value, method = 'BH', n = nrow(lm_results))) %>%
+  mutate(significant = case_when(adjusted.p.value < 0.05 ~ T,
+                                 adjusted.p.value >= 0.05 ~ F))
 
 volcano_plot = ggplot() +
-  geom_point(data = lm_results, aes(x = r.squared, y = -log10(model.p.value)), color = alpha('#9B9A99', 0.6)) +
-  geom_point(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), fill = significant), size = 2.5, alpha = 1, shape = 21, stroke = 0) +
-  geom_point(data = subset(lm_results, significant == FALSE), aes(x = r.squared, y = -log10(model.p.value)), size = 1, alpha = 1, shape = 21, stroke = 0) +
+  geom_point(data = lm_results, aes(x = r.squared, y = -log10(adjusted.p.value)), color = alpha('#9B9A99', 0.6)) +
+  geom_point(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(adjusted.p.value), fill = significant), size = 2.5, alpha = 1, shape = 21, stroke = 0) +
+  geom_point(data = subset(lm_results, significant == FALSE), aes(x = r.squared, y = -log10(adjusted.p.value)), size = 1, alpha = 1, shape = 21, stroke = 0) +
   geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
   xlab(expression('R squared')) +
   ylab(expression('-log'[10]*'(p-value)'))
+
+# ggrepel::geom_label_repel(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), label = GeneName))
 
 volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                   plot.subtitle = element_text(size = 14),
