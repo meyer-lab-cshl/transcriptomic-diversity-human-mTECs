@@ -258,4 +258,4 @@ lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        covariates = covariates,
                        prefix = prefix)
 
-lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/SampleRun_-lm-results.tsv", header= T)
+lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/SampleRun -lm-results.tsv", header= T)
