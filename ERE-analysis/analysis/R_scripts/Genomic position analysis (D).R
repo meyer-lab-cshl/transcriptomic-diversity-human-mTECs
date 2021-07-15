@@ -5,6 +5,7 @@ library(regioneR)
 library(pheatmap)
 library(RColorBrewer)
 library(glue)
+library(TEffectR)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
 functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'make_GRanges', 'run_perm_test')
@@ -158,9 +159,11 @@ my_heatmap = pheatmap(mat = perm_test_output_A[[1]],
                       labels_row = c('  Up', '   - ', '  Down'),
                       labels_col = c('Up', '-', 'Down'))
 
-## TEeffectR
+###############
+## TEeffectR ##
+###############
 
-library(TEffectR)
+## Annotations
 
 gene.annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1) %>%
   select(c('Chromosome', 'Start', 'End', 'Strand', 'Geneid', 'GeneSymbol')) %>%
@@ -171,15 +174,23 @@ gene.annotation.GRanges.upstream = gene.annotation.GRanges
 end(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges)
 start(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges) - 5000
 
+repeatmasker.annotation <- TEffectR::rm_format(filepath = "~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/hg38.fa.out")
+
+
+
 gene.counts = extract_subset(mode = 'gene', input = data)
-TE.counts = extract_subset(mode = 'TE', input = data)
 
+TE.counts = extract_subset(mode = 'TE', input = data) 
+TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
+TE.counts = separate(data = TE.counts, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
+TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
+TE.counts = subset(TE.counts, family == 'CR1')
 
-#subject = subset(GRanges_TE, family == 'CR1')
+subject = makeGRangesFromDataFrame(TE.counts, keep.extra.columns = T)
 
 for (gene in 1:length(gene.annotation.GRanges.upstream)){
   
-  query = gene.annotation.GRanges[gene]
+  query = gene.annotation.GRanges.upstream[gene]
   
   hits= as.data.frame(findOverlaps(query, subject))
   
