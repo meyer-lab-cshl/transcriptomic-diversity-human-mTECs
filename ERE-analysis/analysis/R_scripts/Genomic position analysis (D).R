@@ -7,7 +7,7 @@ library(RColorBrewer)
 library(glue)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
-functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'make_GRanges')
+functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'make_GRanges', 'run_perm_test')
 
 for (i in functions){
   
@@ -132,11 +132,71 @@ GRanges_TSS = makeGRangesFromDataFrame(df_all, keep.extra.columns = T)
 
 df_high = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_high.csv') 
 GRanges_TSS_high = makeGRangesFromDataFrame(df_high, keep.extra.columns = T)
+start(GRanges_TSS_high_extended) = GenomicRanges::start(GRanges_TSS_high) - 1000
+end(GRanges_TSS_high_extended) = GenomicRanges::start(GRanges_TSS_high) + 1000
 
 df_low = read.csv(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/TSS/df_low.csv') 
 GRanges_TSS_low = makeGRangesFromDataFrame(df_low, keep.extra.columns = T)
 
-output = run_perm_test(group_A = list(TE_up = GRanges_TE_up, TE_down = GRanges_TE_down),
-                       group_B = list(TSS_high = GRanges_TSS_high, TSS_low = GRanges_TSS_low),
-                       universe = GRanges_TE,
-                       mode = 'overlap')
+perm_test_output_B = run_perm_test(group_A = list(TE_up = GRanges_TE_up_extended, TE_unchanged = GRanges_TE_unchanged_extended, TE_down = GRanges_TE_down),
+                                   group_B = list(tss_high = GRanges_TSS_high, tss_low = GRanges_TSS_low),
+                                   universe = GRanges_TE,
+                                   mode = 'overlap',
+                                   iterations = 1000)
+
+my_heatmap = pheatmap(mat = perm_test_output_A[[1]],
+                      color = colorRampPalette(rev(c("#FC8D59","#FEE090","#FFFFBF","#E0F3F8","#91BFDB")))(100),
+                      cluster_rows=FALSE,
+                      show_rownames=TRUE, 
+                      cluster_cols=FALSE,
+                      display_numbers = labels,
+                      fontsize_number = 15,
+                      fontsize = 15,
+                      number_color = 'black',
+                      border_color = 'black',
+                      angle_col = '0',
+                      labels_row = c('  Up', '   - ', '  Down'),
+                      labels_col = c('Up', '-', 'Down'))
+
+## TEeffectR
+
+library(TEffectR)
+
+gene.annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1) %>%
+  select(c('Chromosome', 'Start', 'End', 'Strand', 'Geneid', 'GeneSymbol')) %>%
+  rename(chr = Chromosome, start = Start, end = End, strand = Strand, geneID = Geneid, geneName = GeneSymbol) 
+
+gene.annotation.GRanges = makeGRangesFromDataFrame(gene.annotation, keep.extra.columns = T)
+gene.annotation.GRanges.upstream = gene.annotation.GRanges
+end(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges)
+start(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges) - 5000
+
+gene.counts = extract_subset(mode = 'gene', input = data)
+TE.counts = extract_subset(mode = 'TE', input = data)
+
+
+#subject = subset(GRanges_TE, family == 'CR1')
+
+for (gene in 1:length(gene.annotation.GRanges.upstream)){
+  
+  query = gene.annotation.GRanges[gene]
+  
+  hits= as.data.frame(findOverlaps(query, subject))
+  
+  TE_indices = hits$subjectHits
+  
+  
+  
+}
+
+overlaps = TEffectR::get_overlaps(g=gene.annotation, r=repeatmasker.annotation, strand = "strandness", distance = 5000)
+
+
+
+prefix = "SampleRun"
+
+lm == TEffectR::apply_lm(gene.annotation = gene.annot,
+                       gene.counts = gene.counts,
+                       repeat.counts = sum.repeat.counts,
+                       covariates = covariates,
+                       prefix = prefix)
