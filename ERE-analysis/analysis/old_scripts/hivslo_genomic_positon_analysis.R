@@ -14,7 +14,7 @@ library(glue)
 make_GRanges = function(mode, results_df){
   
   if (mode == 'TE'){
-    
+  
     annotation = read.table(file = "/Users/mpeacey/TE_thymus/analysis/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt", header = 1)
     annotation = separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':')
     annotation = separate(annotation, start.stop, into = c('start', 'end'), sep = '-')

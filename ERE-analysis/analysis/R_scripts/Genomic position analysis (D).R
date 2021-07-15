@@ -158,45 +158,104 @@ my_heatmap = pheatmap(mat = perm_test_output_A[[1]],
                       labels_row = c('  Up', '   - ', '  Down'),
                       labels_col = c('Up', '-', 'Down'))
 
-## TEeffectR
+###############
+## TEeffectR ##
+###############
 
+library(stringr)
+library(biomaRt)
+library(biomartr)
+library(dplyr)
+library(Rsamtools)
+library(edgeR)
+library(rlist)
+library(limma)
 library(TEffectR)
+library(tidyr)
+library(GenomicRanges)
 
-gene.annotation = read.table(file = '/Users/mpeacey/TE_thymus/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1) %>%
+## Counts
+
+samples = colnames(data)
+
+new_names = vector()
+for (i in 1:length(samples)){
+  
+  new_names[i] = glue::glue('Sample{i}')
+  
+  
+}
+
+names(data) = new_names
+
+gene.counts = extract_subset(mode = 'gene', input = data)
+
+TE.counts = extract_subset(mode = 'TE', input = data) 
+TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
+TE.counts = separate(data = TE.counts, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
+TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
+TE.counts = subset(TE.counts, family == 'ERV1')
+
+## Annotations
+
+gene.annotation = read.table(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1) %>%
   select(c('Chromosome', 'Start', 'End', 'Strand', 'Geneid', 'GeneSymbol')) %>%
-  rename(chr = Chromosome, start = Start, end = End, strand = Strand, geneID = Geneid, geneName = GeneSymbol) 
+  dplyr::rename(chr = Chromosome, start = Start, end = End, strand = Strand, geneID = Geneid, geneName = GeneSymbol)
+
+repeat.annotation = read.table(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt', header = 1) %>%
+  separate(chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':') %>%
+  separate(start.stop, into = c('start', 'end'), sep = '-') %>%
+  dplyr::rename(locus = TE)
+
+#repeatmasker.annotation <- TEffectR::rm_format(filepath = "~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/hg38.fa.out")
+
+## Make GRanges objects
+
+TE.counts.GRanges = merge(TE.counts, repeat.annotation, by = 'locus') %>%
+  makeGRangesFromDataFrame(keep.extra.columns = T)
+TE.counts.GRanges.start = TE.counts.GRanges
+end(TE.counts.GRanges.start) = start(TE.counts.GRanges)
+start(TE.counts.GRanges.start) = start(TE.counts.GRanges)
 
 gene.annotation.GRanges = makeGRangesFromDataFrame(gene.annotation, keep.extra.columns = T)
 gene.annotation.GRanges.upstream = gene.annotation.GRanges
 end(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges)
 start(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges) - 5000
 
-gene.counts = extract_subset(mode = 'gene', input = data)
-TE.counts = extract_subset(mode = 'TE', input = data)
+## Build sum.repeat.counts
 
+query = gene.annotation.GRanges.upstream
+subject = TE.counts.GRanges.start
 
-#subject = subset(GRanges_TE, family == 'CR1')
+hits = as.data.frame(findOverlaps(query, subject))
 
-for (gene in 1:length(gene.annotation.GRanges.upstream)){
-  
-  query = gene.annotation.GRanges[gene]
-  
-  hits= as.data.frame(findOverlaps(query, subject))
-  
-  TE_indices = hits$subjectHits
-  
-  
-  
-}
+sum.repeat.counts = hits %>%
+  mutate(queryHits = gene.annotation[queryHits, 'geneName']) %>%
+  dplyr::rename(geneName = queryHits) %>%
+  mutate(subjectHits = TE.counts[subjectHits, 2]) %>%
+  dplyr::rename(locus = subjectHits) %>%
+  merge(TE.counts, by = 'locus') %>%
+  select(-c('ID', 'gene', 'family')) %>%
+  dplyr::rename(repeatName = locus, repeatClass = class)
 
-overlaps = TEffectR::get_overlaps(g=gene.annotation, r=repeatmasker.annotation, strand = "strandness", distance = 5000)
+## RUn TEffectR
 
+# read your gene annotation file
+#gene.annotation<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/gene.annotation.tsv", header= T, stringsAsFactors = F)
 
+# read your gene expression file
+#gene.counts<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/gene.counts.tsv", header= T, row.names=1, stringsAsFactors = F)
 
+# read your summarised repeat annotation file
+#sum.repeat.counts<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/sum.repeat.counts.tsv", header= T, stringsAsFactors = F)
+
+covariates <- NULL
 prefix = "SampleRun"
 
-lm == TEffectR::apply_lm(gene.annotation = gene.annot,
+lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        gene.counts = gene.counts,
                        repeat.counts = sum.repeat.counts,
                        covariates = covariates,
                        prefix = prefix)
+
+lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/SampleRun_-lm-results.tsv", header= T)
