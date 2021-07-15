@@ -20,7 +20,7 @@ for (i in functions){
 #################################################################
 
 count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/"
-data = read.table(glue('{count_table_directory}TE_local_hi_vs_lo.cntTable'),header=T,row.names=1)
+data = read.table(glue::glue('{count_table_directory}TE_local_hi_vs_lo.cntTable'),header=T,row.names=1)
 
 dds_local = differential_expression(data, design=~patient+tissue)
 
@@ -176,25 +176,13 @@ library(GenomicRanges)
 
 ## Counts
 
-samples = colnames(data)
-
-new_names = vector()
-for (i in 1:length(samples)){
-  
-  new_names[i] = glue::glue('Sample{i}')
-  
-  
-}
-
-names(data) = new_names
-
 gene.counts = extract_subset(mode = 'gene', input = data)
 
 TE.counts = extract_subset(mode = 'TE', input = data) 
 TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
 TE.counts = separate(data = TE.counts, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
 TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
-TE.counts = subset(TE.counts, family == 'ERV1')
+TE.counts = subset(TE.counts, class == 'LTR')
 
 ## Annotations
 
@@ -250,7 +238,7 @@ sum.repeat.counts = hits %>%
 #sum.repeat.counts<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/sum.repeat.counts.tsv", header= T, stringsAsFactors = F)
 
 covariates <- NULL
-prefix = "SampleRun"
+prefix = "LTRs"
 
 lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        gene.counts = gene.counts,
@@ -258,4 +246,31 @@ lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        covariates = covariates,
                        prefix = prefix)
 
-lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/SampleRun -lm-results.tsv", header= T)
+lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/SampleRun -lm-results.tsv", header= T, sep="\t")
+
+lm_results = mutate(lm_results, significant = case_when(model.p.value < 0.05 ~ T,
+                                                        model.p.value >= 0.05 ~ F))
+
+volcano_plot = ggplot() +
+  geom_point(data = lm_results, aes(x = r.squared, y = -log10(model.p.value)), color = alpha('#9B9A99', 0.6)) +
+  geom_point(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), fill = significant), size = 2.5, alpha = 1, shape = 21, stroke = 0) +
+  geom_point(data = subset(lm_results, significant == FALSE), aes(x = r.squared, y = -log10(model.p.value)), size = 1, alpha = 1, shape = 21, stroke = 0) +
+  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
+  xlab(expression('R squared')) +
+  ylab(expression('-log'[10]*'(p-value)'))
+
+volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                                  plot.subtitle = element_text(size = 14),
+                                  axis.text.x = element_text(size = 14),
+                                  axis.text.y = element_text(size = 14),
+                                  axis.title = element_text(size = 14),
+                                  axis.line = element_line(size = 0.8),
+                                  panel.border = element_blank(),
+                                  legend.text = element_text(size = 15),
+                                  legend.title = element_text(size = 18),
+                                  legend.position = c(0.2, 0.93),
+                                  panel.grid.major = element_blank(),
+                                  panel.grid.minor = element_blank())
+
+ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/TEeffectR_LTRs.png", 
+       width = 7, height = 5.25, units = "in")
