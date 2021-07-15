@@ -1,6 +1,7 @@
 library(DESeq2)
 library(ggplot2)
-library(dplyr)
+library(tidyverse)
+library(glue)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
 functions = c('extract_subset', 'differential_expression')
@@ -46,7 +47,7 @@ percentVar = round(100 * attr(pcaData, "percentVar"))
 ## Use this to have only a subset of tissues in color: useful when you have lots of tissues
 ## and you're only interested in a few.
 
-colored_tissues = c('mTEC.hi', 'mTEC.lo', 'ESC', 'Testis')
+colored_tissues = c('mTEC.hi', 'mTEC.lo', 'ESC', 'Testis', 'Brain.Caudate..basal.ganglia.')
 
 pcaData = mutate(pcaData, color = case_when(tissue %in% colored_tissues ~ T,
                                    !(tissue %in% colored_tissues) ~ F))
