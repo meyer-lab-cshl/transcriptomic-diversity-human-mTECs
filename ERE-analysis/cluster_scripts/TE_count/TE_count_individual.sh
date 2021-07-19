@@ -15,11 +15,13 @@
 ##
 ## TE_HOME/index/annotations contains two .gtf files:
 
-TE_HOME=/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/
+TE_HOME=/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis
 
-TISSUE=mTEC
+TISSUE=$1
 
-cd $TE_HOME/$TISSUE/
+echo $TISSUE
+
+cd $TE_HOME/data/$TISSUE/
 
 for FILE in *.bam;do
 
