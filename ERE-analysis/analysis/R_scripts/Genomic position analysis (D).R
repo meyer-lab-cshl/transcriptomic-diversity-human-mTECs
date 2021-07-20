@@ -182,7 +182,7 @@ TE.counts = extract_subset(mode = 'TE', input = data)
 TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
 TE.counts = separate(data = TE.counts, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
 TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
-TE.counts = subset(TE.counts, class == 'LTR' | class == 'LINE')
+TE.counts = subset(TE.counts, class == 'LTR')
 
 ## Annotations
 
@@ -238,7 +238,7 @@ sum.repeat.counts = hits %>%
 #sum.repeat.counts<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/sum.repeat.counts.tsv", header= T, stringsAsFactors = F)
 
 covariates <- NULL
-prefix = "EREs"
+prefix = "LTRs"
 
 lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        gene.counts = gene.counts,
@@ -247,19 +247,22 @@ lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
                        prefix = prefix)
 
 lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/LTRs -lm-results.tsv", header= T, sep="\t") %>%
-  mutate(adjusted.p.value = p.adjust(model.p.value, method = 'BH', n = nrow(lm_results))) %>%
-  mutate(significant = case_when(adjusted.p.value < 0.05 ~ T,
-                                 adjusted.p.value >= 0.05 ~ F))
+  mutate(significant = case_when(model.p.value < 0.05 ~ T,
+                                 model.p.value >= 0.05 ~ F))
+
+
+#  mutate(adjusted.p.value = p.adjust(model.p.value, method = 'BH', n = nrow(lm_results))) %>%
+#  mutate(significant = case_when(adjusted.p.value < 0.05 ~ T,
+#                                 adjusted.p.value >= 0.05 ~ F))
 
 volcano_plot = ggplot() +
-  geom_point(data = lm_results, aes(x = r.squared, y = -log10(adjusted.p.value)), color = alpha('#9B9A99', 0.6)) +
-  geom_point(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(adjusted.p.value), fill = significant), size = 2.5, alpha = 1, shape = 21, stroke = 0) +
-  geom_point(data = subset(lm_results, significant == FALSE), aes(x = r.squared, y = -log10(adjusted.p.value)), size = 1, alpha = 1, shape = 21, stroke = 0) +
+  geom_point(data = lm_results, aes(x = r.squared, y = -log10(model.p.value)), color = alpha('#9B9A99', 0.6)) +
+  geom_point(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), fill = significant), size = 2.5, alpha = 1, shape = 21, stroke = 0) +
+  geom_point(data = subset(lm_results, significant == FALSE), aes(x = r.squared, y = -log10(model.p.value)), size = 1, alpha = 1, shape = 21, stroke = 0) +
   geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
   xlab(expression('R squared')) +
-  ylab(expression('-log'[10]*'(p-value)'))
-
-# ggrepel::geom_label_repel(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), label = GeneName))
+  ylab(expression('-log'[10]*'(p-value)')) +
+  ggrepel::geom_label_repel(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), label = GeneName))
 
 volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                   plot.subtitle = element_text(size = 14),
@@ -276,3 +279,58 @@ volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size 
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/TEeffectR_LTRs.png", 
        width = 7, height = 5.25, units = "in")
+
+plot_regression = function(regression, counts, gene){
+  
+  counts = cbind(ID = counts$X, counts) %>%
+    separate(col = 'ID', into = c('associated_gene', 'repeat_class', 'repeat_name'), sep = ':')
+
+  x_values = subset(counts, X == gene) %>%
+    select(-c('repeat_class', 'repeat_name', 'associated_gene')) %>%
+    pivot_longer(cols = -1, values_to = 'gene_expression')
+  
+  TE = subset(regression, GeneName == gene)$RepeatName 
+  
+  y_values = subset(counts, repeat_name == TE) %>%
+    select(-c('repeat_class', 'X', 'associated_gene')) %>%
+    pivot_longer(cols = -1, values_to = 'TE_expression')
+  
+  output = merge(x_values, y_values, by = 'name') %>%
+    separate(col = 'name', into = c('patient', 'mTEC'), sep = '_')
+
+  return(output)
+  
+}
+
+lm_cpm = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/LTRs -cpm-values.tsv", header= T, sep="\t") 
+lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/LTRs -lm-results.tsv", header= T, sep="\t")
+
+regression = lm_results
+counts = lm_cpm
+gene = 'DHDH'
+
+correlation_df = plot_regression(regression = regression, counts = counts, gene = gene)
+
+correlation_plot = ggplot(data = correlation_df, aes(x = gene_expression, y = TE_expression)) +
+  geom_point(aes(fill = mTEC), shape = 21, size = 4) +
+  stat_smooth(method = "lm", col = "red") +
+  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff')) +
+  xlab(expression('Gene Expression (log'[2]*'(CPM))')) +
+  ylab(expression('TE Expression (log'[2]*'(CPM))'))
+
+correlation_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                                        plot.subtitle = element_text(size = 14),
+                                        axis.text.x = element_text(size = 14),
+                                        axis.text.y = element_text(size = 14),
+                                        axis.title = element_text(size = 14),
+                                        axis.line = element_line(size = 0.8),
+                                        panel.border = element_blank(),
+                                        legend.text = element_text(size = 15),
+                                        legend.title = element_text(size = 18),
+                                        legend.position = c(0.2, 0.93),
+                                        panel.grid.major = element_blank(),
+                                        panel.grid.minor = element_blank())
+
+ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/TEeffectR_TBC1D15.png", 
+       width = 7, height = 5.25, units = "in")
+

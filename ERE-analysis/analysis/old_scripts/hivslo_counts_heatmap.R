@@ -228,5 +228,7 @@ save_pheatmap_png <- function(x, filename, width=1200, height=600, res = 150) {
   dev.off()
 }
 
-save_pheatmap_png(my_heatmap, "/Users/mpeacey/TE_thymus/analysis/Plots/Presentation/heatmap_local.png")
+save_pheatmap_png(x = my_heatmap, 
+                  filename = "/Users/mpeacey/TE_thymus/analysis/Plots/Presentation/heatmap_local.png", 
+                  res = 300)
 
