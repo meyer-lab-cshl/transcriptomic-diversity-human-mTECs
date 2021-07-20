@@ -31,9 +31,17 @@ dds_transcripts_TE = differential_expression(TE_data, design=~patient + tissue)
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 
 results_transcripts_TE = results(dds_transcripts_TE, 
-                                 contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'), 
+                                 contrast = c('tissue', 'mTEC.hi', 'mTEC.lo'), 
                                  independentFiltering = F)
-results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts')
+
+keep_list = c('LTR', 'LINE', 'SINE', 'DNA')
+
+results_df_transcripts_TE = process_DESeq2_results(results = results_transcripts_TE, mode = 'TE_transcripts') %>%
+  mutate(ID = sub("\\?", "", ID)) %>%
+  mutate(class = sub("\\?", "", class)) %>%
+  mutate(class = case_when(class %in% keep_list ~ class,
+                           !(class %in% keep_list) ~ 'Other'))
+
 results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significant == T)
 
 #################################################################
@@ -44,20 +52,7 @@ results_df_transcripts_TE_sigdiff = filter(results_df_transcripts_TE, significan
 
 input = results_df_transcripts_TE
 
-input = mutate(input, ID = sub("\\?", "", ID))
-input = mutate(input, class = sub("\\?", "", class))
-
-input = mutate(input, grouped_class = case_when(class == 'LINE' ~ 'LINE',
-                                                   class == 'LTR' ~ 'LTR',
-                                                   class == 'SINE' ~ 'SINE',
-                                                   class == 'Retroposon' ~ 'Other',
-                                                   class == 'Satellite' ~ 'Other',
-                                                   class == 'RC' ~ 'Other',
-                                                   class == 'DNA' ~ 'DNA',
-                                                   class == 'RNA' ~ 'Other',
-                                                   class == 'Unknown' ~ 'Other'))
-
-input$grouped_class = factor(input$grouped_class, levels = c('LTR', 'DNA', 'LINE', 'SINE', 'Other'))
+input$class = factor(input$class, levels = c('LTR', 'DNA', 'LINE', 'SINE', 'Other'))
 
 ## Plot
 
@@ -204,3 +199,74 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/SB_stacked-bars.png", 
        width = 6, height = 5, units = "in")
+
+
+#################################################################
+# Odds ratio
+#################################################################
+
+class = vector()
+p_value = vector()
+odds_ratio = vector()
+lower_interval = vector()
+upper_interval = vector()
+
+for (i in 1:length(unique(results_df_transcripts_TE$class))){
+  
+  query_class = unique(results_df_transcripts_TE$class)[i]
+  
+  column_1 = c(nrow(subset(results_df_transcripts_TE, significant == T & log2FoldChange > 0 & class == query_class)), 
+               nrow(subset(results_df_transcripts_TE, (significant == F | significant == T & log2FoldChange < 0) & class == query_class)))
+  
+  column_2 = c(nrow(subset(results_df_transcripts_TE, significant == T & log2FoldChange > 0 & class != query_class)), 
+               nrow(subset(results_df_transcripts_TE, (significant == F | significant == T & log2FoldChange < 0) & class != query_class)))
+  
+  contingency = data.frame(class = column_1, 'Not' = column_2, row.names = c('Up', 'Not up'))
+  
+  class[i] = query_class
+  p_value[i] = fisher.test(x = contingency)[[1]]
+  odds_ratio[i] = fisher.test(x = contingency)[[3]]
+  lower_interval[i] = fisher.test(x = contingency)$conf.int[1]
+  upper_interval[i] = fisher.test(x = contingency)$conf.int[2]
+  
+}
+
+p_value = p.adjust(p_value, method = 'bonferroni')
+
+output = data.frame(class = class, 
+                    p_value = p_value, 
+                    odds_ratio = odds_ratio, 
+                    lower_interval = lower_interval, 
+                    upper_interval = upper_interval) %>%
+  mutate(significant = case_when(p_value < 0.001 ~ '***', 
+                                 p_value < 0.01 ~ '**',
+                                 p_value < 0.05 ~ '*',
+                                 p_value >= 0.05 ~ '')) %>%
+  mutate(class = forcats::fct_reorder(class, odds_ratio))
+
+odds_ratio_plot = ggplot(data = output, aes(x = class, y = odds_ratio)) + 
+                  geom_point() +
+                  geom_hline(yintercept = 1, linetype = 'dashed') +
+  geom_errorbar(aes(ymin = lower_interval, ymax = upper_interval), width = 0) +
+  xlab('') +
+  ylab('Odds ratio') +
+  geom_text(aes(label = significant), nudge_y = 3, size = 6)
+  
+
+odds_ratio_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                                  plot.subtitle = element_text(size = 14),
+                                  axis.text.x = element_text(size = 14),
+                                  axis.text.y = element_text(size = 14),
+                                  axis.title.x = element_blank(),
+                                  axis.title.y = element_text(size = 15, margin = margin(r = 7.5)),
+                                  axis.line = element_line(size = 0.8),
+                                  panel.border = element_blank(),
+                                  legend.text = element_text(size = 15),
+                                  legend.title = element_text(size = 18),
+                                  legend.position = c(0.2, 0.93),
+                                  panel.grid.major = element_blank(),
+                                  panel.grid.minor = element_blank())
+
+ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/odds_ratio.png", 
+       width = 5, height = 5, units = "in")
+  

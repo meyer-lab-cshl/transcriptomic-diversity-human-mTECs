@@ -28,17 +28,23 @@ transcripts_data = read.table(glue::glue('{count_table_directory}TE_transcripts_
 
 ## Run DESeq2 to obtain normalized counts
 
+gene_data = extract_subset(mode = 'gene', input = transcripts_data)
 TE_data = extract_subset(mode = 'TE', input = transcripts_data)
 ERE_data = extract_subset(mode = 'ERE', input = transcripts_data)
 
+dds_transcripts_gene = differential_expression(gene_data, design=~tissue)
 dds_transcripts_TE = differential_expression(TE_data, design=~tissue)
 dds_transcripts_ERE = differential_expression(ERE_data, design=~tissue)
 
+vs_dds_transcripts_gene = vst(dds_transcripts_gene, blind=FALSE)
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
 vs_dds_transcripts_ERE = varianceStabilizingTransformation(object = dds_transcripts_ERE, blind = FALSE)
 
+assay(vs_dds_transcripts_gene) = limma::removeBatchEffect(assay(vs_dds_transcripts_gene), vs_dds_transcripts_gene$batch)
 assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
 assay(vs_dds_transcripts_ERE) = limma::removeBatchEffect(assay(vs_dds_transcripts_ERE), vs_dds_transcripts_ERE$batch)
+
+assay(vs_dds_transcripts_TE[vs_dds_transcripts_TE$tissue == 'ESC'])
 
 
 #################################################################
@@ -53,7 +59,7 @@ percentVar = round(100 * attr(pcaData, "percentVar"))
 ## Use this to have only a subset of tissues in color: useful when you have lots of tissues
 ## and you're only interested in a few.
 
-colored_tissues = c('mTEC.hi', 'mTEC.lo', 'ESC', 'Testis')
+colored_tissues = c('mTEC.hi', 'mTEC.lo', 'ESC', 'Testis', 'Muscle.Skeletal')
 
 pcaData = mutate(pcaData, color = case_when(tissue %in% colored_tissues ~ T,
                                    !(tissue %in% colored_tissues) ~ F))
@@ -90,7 +96,7 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
 
 TPM = read.csv(glue::glue('{count_table_directory}EXPR.csv'),header=T,row.names=1)
 
-generate_heatmap = function(element_mode = 'TE', tissue_collapse = T, filter_mode = 'none', number_of_elements = 200, split_mode = 'none'){
+generate_heatmap_matrix = function(element_mode = 'TE', tissue_collapse = T, filter_mode = 'none', number_of_elements = 200){
   
   ## Generate input
   
@@ -103,6 +109,12 @@ generate_heatmap = function(element_mode = 'TE', tissue_collapse = T, filter_mod
   if (element_mode == 'ERE'){
     
     input = vs_dds_transcripts_ERE
+    
+  }
+  
+  if (element_mode == 'gene'){
+    
+    input = vs_dds_transcripts_gene
     
   }
   
@@ -149,46 +161,15 @@ generate_heatmap = function(element_mode = 'TE', tissue_collapse = T, filter_mod
     
   }
   
-  if (split_mode == 'class'){
-    
-    
-    
-  }
-  
-  data.frame(matrix)
-  col_annotation = data.frame(ID = colnames(matrix))
-  rownames(col_annotation) = col_annotation$ID
-  
-  if (tissue_collapse == F){
-    
-    col_annotation = separate(data = col_annotation, 
-                              col = 'ID', 
-                              into = c('patient', 'tissue', 'batch'), 
-                              sep = '_',
-                              remove = T)
-    
-    col_annotation = select(col_annotation, tissue)
-    
-  }
-  
-  my_heatmap = pheatmap(matrix, 
-                        cluster_rows=F,
-                        show_rownames=F,
-                        show_colnames = F,
-                        cluster_cols=T,
-                        scale = 'row',
-                        annotation_col = col_annotation,
-                        gaps_row = c(50, 100))
+  return(data.frame(matrix))
   
 }
 
-generate_heatmap(element_mode = 'TE',
-                 tissue_collapse = F,
-                 filter_mode = 'none')
+matrix = generate_heatmap_matrix(element_mode = 'TE',
+                        tissue_collapse = T,
+                        filter_mode = 'none')
 
-corrected_TPM = limma::removeBatchEffect(TPM, c('1', '1', '2', '2', '3', '3'))
-                                         
-my_heatmap = pheatmap(TPM, 
+my_heatmap = pheatmap(matrix, 
                       cluster_rows=F,
                       show_rownames=F,
                       show_colnames = T,
