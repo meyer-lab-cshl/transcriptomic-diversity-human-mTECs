@@ -21,7 +21,7 @@ for (i in functions){
 ## '{unique ID}_{tissue}_{batch}'. e.g. 'pt214_mTEC-hi_our-data'
 
 count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/"
-data = read.table(glue('{count_table_directory}TE_transcripts_hi_vs_lo.cntTable'),header=T,row.names=1)
+data = read.table(glue('{count_table_directory}mTEC.cntTable'),header=T,row.names=1)
 
 ## Run DESeq2
 

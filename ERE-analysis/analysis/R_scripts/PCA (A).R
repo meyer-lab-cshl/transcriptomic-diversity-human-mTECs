@@ -2,9 +2,10 @@ library(DESeq2)
 library(ggplot2)
 library(tidyverse)
 library(glue)
+library(pheatmap)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
-functions = c('extract_subset', 'differential_expression')
+functions = c('extract_subset', 'differential_expression', 'generate_heatmap_matrix', 'save_pheatmap_png')
 
 for (i in functions){
   
@@ -28,12 +29,17 @@ transcripts_data = read.table(glue::glue('{count_table_directory}TE_transcripts_
 ## Run DESeq2 to obtain normalized counts
 
 TE_data = extract_subset(mode = 'TE', input = transcripts_data)
+ERE_data = extract_subset(mode = 'ERE', input = transcripts_data)
 
 dds_transcripts_TE = differential_expression(TE_data, design=~tissue)
+dds_transcripts_ERE = differential_expression(ERE_data, design=~tissue)
 
 vs_dds_transcripts_TE = vst(dds_transcripts_TE, blind=FALSE)
+vs_dds_transcripts_ERE = varianceStabilizingTransformation(object = dds_transcripts_ERE, blind = FALSE)
 
 assay(vs_dds_transcripts_TE) = limma::removeBatchEffect(assay(vs_dds_transcripts_TE), vs_dds_transcripts_TE$batch)
+assay(vs_dds_transcripts_ERE) = limma::removeBatchEffect(assay(vs_dds_transcripts_ERE), vs_dds_transcripts_ERE$batch)
+
 
 #################################################################
 # PCA w/ GTEx data (A)
@@ -79,7 +85,124 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
        width = 5.25, height = 6, units = "in")
 
 #################################################################
-# Fraction of reads mapping to TEs (supplement A?)
+# Heatmap 
+#################################################################
+
+TPM = read.csv(glue::glue('{count_table_directory}EXPR.csv'),header=T,row.names=1)
+
+generate_heatmap = function(element_mode = 'TE', tissue_collapse = T, filter_mode = 'none', number_of_elements = 200, split_mode = 'none'){
+  
+  ## Generate input
+  
+  if (element_mode == 'TE'){
+    
+    input = vs_dds_transcripts_TE
+    
+  }
+  
+  if (element_mode == 'ERE'){
+    
+    input = vs_dds_transcripts_ERE
+    
+  }
+  
+  if (tissue_collapse == T){
+    
+    input = collapse_tissue_replicates(input, mode = 'mean')
+    
+  }
+  
+  if (tissue_collapse == F){
+    
+    input = as.data.frame(assay(input))
+    
+  }
+  
+  ## Generate matrix
+  
+  if (filter_mode == 'none'){
+    
+    matrix = input
+    
+  }
+  
+  if (filter_mode == 'variance'){
+    
+    topVarianceGenes = head(order(apply(input,1,var), decreasing=T),number_of_elements)
+    matrix = input[topVarianceGenes, ]
+    
+  }
+  
+  if (filter_mode == 'sig_diff'){
+    
+    if (element_mode == 'gene'){
+      
+      matrix = filter(input, rownames(input) %in% results_df_transcripts_gene_sigdiff$ID)
+      
+    }
+    
+    if (element_mode == 'TE'){
+      
+      matrix = filter(input, rownames(input) %in% results_df_transcripts_TE_sigdiff$ID)
+      
+    }  
+    
+  }
+  
+  if (split_mode == 'class'){
+    
+    
+    
+  }
+  
+  data.frame(matrix)
+  col_annotation = data.frame(ID = colnames(matrix))
+  rownames(col_annotation) = col_annotation$ID
+  
+  if (tissue_collapse == F){
+    
+    col_annotation = separate(data = col_annotation, 
+                              col = 'ID', 
+                              into = c('patient', 'tissue', 'batch'), 
+                              sep = '_',
+                              remove = T)
+    
+    col_annotation = select(col_annotation, tissue)
+    
+  }
+  
+  my_heatmap = pheatmap(matrix, 
+                        cluster_rows=F,
+                        show_rownames=F,
+                        show_colnames = F,
+                        cluster_cols=T,
+                        scale = 'row',
+                        annotation_col = col_annotation,
+                        gaps_row = c(50, 100))
+  
+}
+
+generate_heatmap(element_mode = 'TE',
+                 tissue_collapse = F,
+                 filter_mode = 'none')
+
+corrected_TPM = limma::removeBatchEffect(TPM, c('1', '1', '2', '2', '3', '3'))
+                                         
+my_heatmap = pheatmap(TPM, 
+                      cluster_rows=F,
+                      show_rownames=F,
+                      show_colnames = T,
+                      cluster_cols=T,
+                      scale = 'row')
+
+save_pheatmap_png(x = my_heatmap, 
+                  filename = "~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/heatmap.png",
+                  width = 3000,
+                  height = 1500,
+                  res = 300)
+
+#################################################################
+# Fraction of reads mapping to TEs 
 #################################################################
 
 dds_transcripts = differential_expression(transcripts_data, design=~tissue)
