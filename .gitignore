@@ -26,3 +26,4 @@ ERE-analysis/analysis/annotation_tables/
 *.Rproj
 TE_transcripts_counts
 ERE-analysis/LIONS
+ERE-analysis/cluster_scripts/SQuIRE/*
