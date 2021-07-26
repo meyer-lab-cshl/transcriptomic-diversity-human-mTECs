@@ -1,8 +1,0 @@
-Brain_Cerebellum
-Adrenal_Gland
-ESCs
-Colon_Transverse
-mTEC_lo
-mTEC_hi
-Testis
-Muscle_Skeletal

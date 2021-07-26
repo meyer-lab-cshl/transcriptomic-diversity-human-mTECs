@@ -1,4 +1,10 @@
 #!/bin/bash
+#$ -cwd
+#$ -pe threads 1
+#$ -l m_mem_free=1G
+#$ -N iterate_through_tissues
+#$ -o iterate_output.txt
+#$ -e iterate_output.txt
 
 TE_HOME=/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/
 cd $TE_HOME/data/
@@ -21,7 +27,7 @@ cd $TE_HOME/data/
 
 cat $1 | while read line || [[ -n $line ]];do
 
-	cd $line
+	cd $line/
 	
 	for FILE in *.bam;do
 
