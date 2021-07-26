@@ -7,7 +7,13 @@ library(RColorBrewer)
 library(glue)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
-functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'make_GRanges', 'run_perm_test')
+functions = c('extract_subset', 
+              'differential_expression', 
+              'process_DESeq2_results', 
+              'make_GRanges', 
+              'run_perm_test', 
+              'calculate_odds_ratio_of_overlap',
+              'save_heatmap_png')
 
 for (i in functions){
   
@@ -26,13 +32,25 @@ dds_local = differential_expression(data, design=~patient+tissue)
 
 results_local = results(dds_local, 
                         independentFiltering = F,
-                        contrast = c('tissue', 'mTEC-hi', 'mTEC-lo'))
+                        contrast = c('tissue', 'hi', 'lo'))
 
 results_local_gene = extract_subset(mode = 'gene', input = results_local)
 results_local_TE = extract_subset(mode = 'TE', input = results_local)
+results_local_ERE = extract_subset(mode = 'ERE', input = results_local)
 
-results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene')
-results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local')
+results_df_local_gene = process_DESeq2_results(results = results_local_gene, mode = 'Gene') 
+
+keep_list = c('LTR', 'LINE', 'SINE', 'Satellite', 'DNA')
+
+results_df_local_TE = process_DESeq2_results(results = results_local_TE, mode = 'TE_local') %>%
+  mutate(ID = sub("\\?", "", ID)) %>%
+  mutate(class = sub("\\?", "", class)) %>%
+  mutate(class = case_when(class %in% keep_list ~ class,
+                           !(class %in% keep_list) ~ 'Other'))
+
+results_df_local_ERE = process_DESeq2_results(results = results_local_ERE, mode = 'TE_local') %>%
+  mutate(ID = sub("\\?", "", ID)) %>%
+  mutate(class = sub("\\?", "", class))
 
 results_df_local_gene_up = filter(results_df_local_gene, (significant == T) & (log2FoldChange > 0))
 results_df_local_gene_unchanged = filter(results_df_local_gene, significant == F)
@@ -45,53 +63,147 @@ results_df_local_TE_down = filter(results_df_local_TE, (significant == T) & (log
 results_df_local_TE_sigdiff = filter(results_df_local_TE, significant == T)
 
 #################################################################
-# Genomic position analysis (D)
+# Generating GRanges objects
 #################################################################
 
-## Generate GRanges objects
+## TEs
 
-GRanges_TE = make_GRanges(mode = 'TE',
-                          results_df = results_df_local_TE)
+GRanges_TE = make_GRanges(mode = 'TE', results_df = results_df_local_TE)
+
 GRanges_TE_start = GRanges_TE
-end(GRanges_TE_start) = GenomicRanges::start(GRanges_TE_start) + 100
+end(GRanges_TE_start) = start(GRanges_TE_start)
 
-GRanges_TE_up = make_GRanges(mode = 'TE',
-                             results_df = results_df_local_TE_up)
-GRanges_TE_up_start = GRanges_TE_up
-end(GRanges_TE_up_start) = GenomicRanges::start(GRanges_TE_up) + 100
-start(GRanges_TE_up_start) = GenomicRanges::start(GRanges_TE_up) - 100
+## Genes
 
-GRanges_TE_down = make_GRanges(mode = 'TE',
-                               results_df = results_df_local_TE_down)
-GRanges_TE_down_start = GRanges_TE_down
-end(GRanges_TE_down_start) = GenomicRanges::start(GRanges_TE_down_start) + 100
+GRanges_gene = make_GRanges(mode = 'gene', results_df = results_df_local_gene)
 
-GRanges_TE_unchanged = make_GRanges(mode = 'TE',
-                                    results_df = results_df_local_TE_unchanged)
-GRanges_TE_unchanged_start = GRanges_TE_unchanged
-end(GRanges_TE_unchanged_start) = GenomicRanges::start(GRanges_TE_unchanged_start) + 100
+GRanges_gene_extended = GRanges_gene
+end(GRanges_gene_extended) = end(GRanges_gene) + 1000
+start(GRanges_gene_extended) = start(GRanges_gene) - 1000
 
-## A: Overlap between genes and TEs
+GRanges_gene_upstream = GRanges_gene
+end(GRanges_gene_upstream) = start(GRanges_gene)
+start(GRanges_gene_upstream) = start(GRanges_gene) - 5000
 
-perm_test_output_A = run_perm_test(group_A = list(TE_up = GRanges_TE_up, TE_unchanged = GRanges_TE_unchanged, TE_down = GRanges_TE_down),
-                                   group_B = list(gene_up = GRanges_gene_up, gene_unchanged = GRanges_gene_unchanged, gene_down = GRanges_gene_down),
-                                   universe = GRanges_TE,
+## EREs
+
+GRanges_ERE = make_GRanges(mode = 'TE', results_df = results_df_local_ERE)
+
+# Genes of interest
+
+ensembl = biomaRt::useMart("ensembl", dataset="hsapiens_gene_ensembl")
+
+AIRE_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_aire_dep_genes_san.csv')$ensembl_gene_id
+#FEZF2_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_fezf2_dep_genes.csv')$ensembl_gene_id
+#TRA_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_tra_genes.csv')$ensembl_gene_id
+
+housekeeping_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/housekeeping_genes.csv', sep = ' ')$refseq_mrna
+housekeeping_genes = getBM(attributes=c("refseq_mrna", "ensembl_gene_id", "hgnc_symbol"), filters = "refseq_mrna", values = housekeeping_genes, mart= ensembl)$ensembl_gene_id
+
+#################################################################
+# Permutation test
+#################################################################
+
+calculate_permutation = function(gene_sets,
+                                 iterations = 100){
+  
+  ## 'gene sets' is a list in which each entry is a list of ENSEMBL gene IDs.
+
+  subset = names(gene_sets)
+  p_value = vector()
+  Z_score = vector()
+
+  for (i in 1:length(gene_sets)){
+    
+    gene_set = gene_sets[[i]]
+    
+    pt = permTest(A = subset(GRanges_TE_start, significant == T & log2FoldChange > 0), 
+                  B = subset(GRanges_gene_extended, Geneid %in% gene_set), 
+                  ntimes = iterations,
+                  randomize.function = resampleRegions,
+                  universe = GRanges_TE_start,
+                  evaluate.function = numOverlaps,
+                  alternative = 'greater',
+                  verbose = TRUE)
+    
+    p_value[i] = pt$numOverlaps[[1]]
+    Z_score[i] = pt$numOverlaps[[6]]
+   
+    print(pt$numOverlaps[[6]])
+        
+  }
+  
+  p_value = p.adjust(p_value, method = 'bonferroni')
+  
+  output = data.frame(subset = subset, 
+                      p_value = p_value, 
+                      Z_score = Z_score)
+  
+  return(output)
+  
+}
+
+output = calculate_permutation(gene_sets = gene_sets)
+
+pt = permTest(A = subset(GRanges_TE, significant == T & log2FoldChange > 0), 
+              B = subset(GRanges_gene, Geneid %in% housekeeping_genes), 
+              ntimes = 100,
+              randomize.function = resampleRegions,
+              universe = GRanges_TE,
+              evaluate.function = meanDistance,
+              alternative = 'less',
+              verbose = TRUE)
+
+
+
+## 
+
+perm_test_output_A = run_perm_test(group_A = list(AIRE = subset(GRanges_gene_extended, Geneid %in% AIRE_genes),
+                                             housekeeping = subset(GRanges_gene_extended, Geneid %in% housekeeping_genes),
+                                             TRA = subset(GRanges_gene_extended, Geneid %in% TRA_genes),
+                                             FEZF2 = subset(GRanges_gene_extended, Geneid %in% FEZF2_genes)),
+                                   group_B = list(TE_up = subset(GRanges_TE_start, significant == T & log2FoldChange > 0), 
+                                                  TE_down = subset(GRanges_TE_start, significant == T & log2FoldChange < 0)),
+                                   universe = GRanges_gene_extended,
                                    mode = 'overlap',
                                    iterations = 1000)
 
-labels = signif(perm_test_output_A$evaluation, digits = 3)
+perm_test_output_C = run_perm_test(group_A = list(gene_up = subset(GRanges_gene_extended, significant == T & log2FoldChange > 0), 
+                                                  gene_down = subset(GRanges_gene_extended, significant == T & log2FoldChange < 0)),
+                                   group_B = list(TE_up = subset(GRanges_TE_start, significant == T & log2FoldChange > 0), 
+                                                  TE_down = subset(GRanges_TE_start, significant == T & log2FoldChange < 0)),
+                                   universe = GRanges_gene_extended,
+                                   mode = 'overlap',
+                                   iterations = 1000)
+
+perm_test_output_D = run_perm_test(group_A = list(gene_up = subset(GRanges_gene_extended, significant == T & log2FoldChange > 0), 
+                                                  gene_down = subset(GRanges_gene_extended, significant == T & log2FoldChange < 0)),
+                                   group_B = list(LTR = subset(GRanges_TE_start, class == 'LTR'), 
+                                                  SINE = subset(GRanges_TE_start, class == 'SINE'),
+                                                  LINE = subset(GRanges_TE_start, class == 'LINE'),
+                                                  DNA = subset(GRanges_TE_start, class == 'DNA')),
+                                   universe = GRanges_gene_extended,
+                                   mode = 'overlap',
+                                   iterations = 100)
+
+
+
+## Heatmap
+
+input = perm_test_output_A
+
+labels = input$p_value
 
 for (i in 1:length(labels)){
   
   old_value = labels[i]
-  p = perm_test_output_A[[2]][i]
-  print(p)
-  
-  significance_threshold = 0.05 / length(labels)
+  p = input[[2]][i]
+
+  significance_threshold = 0.05
   
   if (p < significance_threshold){
     
-    p_value = as.character(signif(p, digits = 1))
+    p_value = as.character(signif(p, digits = 2))
     annotation = glue('p = {p_value}')
     
   }
@@ -102,28 +214,26 @@ for (i in 1:length(labels)){
     
   }
   
-  new_value = glue('{old_value}%, {annotation}')
+  new_value = annotation
   labels[i] = new_value
   
 }
 
-print(labels)
-
-my_heatmap = pheatmap(mat = perm_test_output_A[[1]],
+my_heatmap = pheatmap(mat = input[[1]],
                       color = colorRampPalette(rev(c("#FC8D59","#FEE090","#FFFFBF","#E0F3F8","#91BFDB")))(100),
                       cluster_rows=FALSE,
                       show_rownames=TRUE, 
                       cluster_cols=FALSE,
-                      display_numbers = labels,
                       fontsize_number = 15,
                       fontsize = 15,
+                      display_numbers = labels,
                       number_color = 'black',
                       border_color = 'black',
-                      angle_col = '0',
+                      angle_col = '0'),
                       labels_row = c('  Up', '   - ', '  Down'),
                       labels_col = c('Up', '-', 'Down'))
 
-save_pheatmap_png(my_heatmap, "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/gene_TE_overlap.png")
+save_pheatmap_png(my_heatmap, "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/geneofinterest_TE_overlap.png")
 
 ## Overlap between TSSs and TEs
 
@@ -157,6 +267,7 @@ my_heatmap = pheatmap(mat = perm_test_output_A[[1]],
                       angle_col = '0',
                       labels_row = c('  Up', '   - ', '  Down'),
                       labels_col = c('Up', '-', 'Down'))
+
 
 ###############
 ## TEeffectR ##
@@ -334,3 +445,261 @@ correlation_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', s
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/TEeffectR_TBC1D15.png", 
        width = 7, height = 5.25, units = "in")
 
+
+
+################
+## Odds ratio ##
+################
+
+calculate_odds_ratio_of_overlap = function(gene_sets,
+                                           TE_set,
+                                           TE_coordinates = GRanges_TE, 
+                                           gene_coordinates = GRanges_gene){
+  
+  ## 'gene sets' is a list in which each entry is a list of ENSEMBL gene IDs.
+  ##
+  ## 'TE_coordinates' is a GRanges object containing all detected TEs  and
+  ## the output of differential expression analysis via TElocal.
+  ##
+  ## 'gene_coordinates' is a GRanges object containing all detected genes and
+  ## and the output of differential expression analysis via TElocal.
+  
+  subset = names(gene_sets)
+  p_value = vector()
+  odds_ratio = vector()
+  lower_interval = vector()
+  upper_interval = vector()
+  
+  if (TE_set == 'up'){
+    
+    fold_change_condition = 'log2FoldChange > 0'
+    
+  }
+  
+  if (TE_set == 'down'){
+    
+    fold_change_condition = 'log2FoldChange < 0'
+    
+  }
+  
+  for (i in 1:length(gene_sets)){
+    
+    gene_set = gene_sets[[i]]
+    
+    column_1 = c(length(findOverlaps(subset(TE_coordinates, significant == T & eval(parse(text = fold_change_condition))), subset(gene_coordinates, Geneid %in% gene_set))), 
+                 length(findOverlaps(subset(TE_coordinates, !(significant == T & eval(parse(text = fold_change_condition)))), subset(gene_coordinates, Geneid %in% gene_set))))
+    
+    column_2 = c(length(findOverlaps(subset(TE_coordinates, significant == T & eval(parse(text = fold_change_condition))), subset(gene_coordinates, !(Geneid %in% gene_set)))), 
+                 length(findOverlaps(subset(TE_coordinates, !(significant == T & eval(parse(text = fold_change_condition)))), subset(gene_coordinates, !(Geneid %in% gene_set)))))
+    
+    contingency = data.frame('gene' = column_1, 'not gene' = column_2, row.names = c('TE', 'not TE'))
+    
+    p_value[i] = fisher.test(x = contingency)[[1]]
+    odds_ratio[i] = fisher.test(x = contingency)[[3]]
+    lower_interval[i] = fisher.test(x = contingency)$conf.int[1]
+    upper_interval[i] = fisher.test(x = contingency)$conf.int[2]
+    
+  }
+  
+  p_value = p.adjust(p_value, method = 'bonferroni')
+  
+  output = data.frame(subset = subset, 
+                      p_value = p_value, 
+                      odds_ratio = odds_ratio, 
+                      lower_interval = lower_interval, 
+                      upper_interval = upper_interval) %>%
+    mutate(significant = case_when(p_value < 0.001 ~ '***', 
+                                   p_value < 0.01 ~ '**',
+                                   p_value < 0.05 ~ '*',
+                                   p_value >= 0.05 ~ '')) %>%
+    mutate(subset = forcats::fct_reorder(subset, odds_ratio))
+  
+  return(output)
+  
+}
+
+gene_sets = list('AIRE' = AIRE_genes, 
+                 'FEZF2' = FEZF2_genes, 
+                 'TRA' = TRA_genes,
+                 'Housekeeping' = housekeeping_genes)
+
+
+gene_sets = list('up_genes' = subset(GRanges_gene, significant == T & log2FoldChange > 0)$Geneid,
+                 'down_genes' = subset(GRanges_gene, significant == T & log2FoldChange < 0)$Geneid)
+
+output = calculate_odds_ratio_of_overlap(gene_sets = gene_sets,
+                                         TE_set = 'up',
+                                         TE_coordinates = GRanges_TE_start,
+                                         gene_coordinates = GRanges_gene_extended)
+
+odds_ratio_plot = ggplot(data = output, aes(x = subset, y = odds_ratio)) + 
+  geom_point() +
+  geom_hline(yintercept = 1, linetype = 'dashed') +
+  geom_errorbar(aes(ymin = lower_interval, ymax = upper_interval), width = 0) +
+  xlab('') +
+  ylab('Odds ratio') +
+  geom_text(aes(label = significant), nudge_y = 0.3, size = 6) +
+  scale_y_continuous(trans='log10')
+
+odds_ratio_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                                     plot.subtitle = element_text(size = 14),
+                                     axis.text.x = element_text(size = 14),
+                                     axis.text.y = element_text(size = 14),
+                                     axis.title.x = element_blank(),
+                                     axis.title.y = element_text(size = 15, margin = margin(r = 7.5)),
+                                     axis.line = element_line(size = 0.8),
+                                     panel.border = element_blank(),
+                                     legend.text = element_text(size = 15),
+                                     legend.title = element_text(size = 18),
+                                     legend.position = c(0.2, 0.93),
+                                     panel.grid.major = element_blank(),
+                                     panel.grid.minor = element_blank())
+
+ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/odds_ratio_overlap.png", 
+       width = 5, height = 5, units = "in")
+
+up_genes = subset(GRanges_gene, significant == T & log2FoldChange > 0)$Geneid
+
+length(TRA_genes %in% up_genes) / length(up_genes) * 100
+length(housekeeping_genes %in% up_genes) / length(up_genes) * 100
+
+
+#gene_sets = list('up_genes' = subset(GRanges_gene_extended, significant == T & log2FoldChange > 0),
+#                 'unchanged_genes' = subset(GRanges_gene_extended, significant == F),
+#                 'down_genes' = subset(GRanges_gene_extended, significant == T & log2FoldChange < 0))
+
+gene_sets = list('AIRE_genes' = subset(GRanges_gene_extended, Geneid %in% AIRE_genes),
+                 'FEZF2_genes' = subset(GRanges_gene_extended, Geneid %in% FEZF2_genes),
+                 'other_genes' = subset(GRanges_gene_extended, !(Geneid %in% AIRE_genes) & !(Geneid %in% FEZF2_genes)))
+
+
+TE_sets = list('up_TEs' = subset(GRanges_TE_start, significant == T & log2FoldChange > 0),
+               'unchanged_TEs' = subset(GRanges_TE_start, significant == F),
+               'down_TEs' = subset(GRanges_TE_start, significant == T & log2FoldChange < 0))
+
+for (a in 1:length(TE_sets)){
+  
+  total_overlaps = length(findOverlaps(query = TE_sets[[a]],
+                                       subject = GRanges_gene_extended))
+  
+  percent = vector()
+  for (b in 1:length(gene_sets)){
+    
+    subset_overlap = length(findOverlaps(query = TE_sets[[a]],
+                                         subject = gene_sets[[b]]))
+    
+    percent[b] = subset_overlap / total_overlaps * 100
+    
+  }
+  
+  output = data.frame(gene_set = names(gene_sets),
+                      percent_overlap = percent,
+                      TE_set = names(TE_sets)[a])
+  
+  if (a == 1){
+    
+    final_output = output
+    
+  }
+  
+  else{
+    
+    final_output = bind_rows(final_output, output)
+    
+  }
+  
+}
+
+final_output$gene_set = factor(final_output$gene_set, levels = c('down_genes', 'unchanged_genes', 'up_genes'))
+final_output$TE_set = factor(final_output$TE_set, levels = c('up_TEs', 'unchanged_TEs', 'down_TEs'))
+
+bar_chart = ggplot(final_output, aes(x = TE_set, y = percent_overlap, fill = gene_set)) + 
+  geom_col(colour = 'black', position = 'fill') +
+  scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
+  xlab('') +
+  ylab('Fraction of overlap events') +
+  labs(fill= "") +
+  scale_x_discrete(labels = c('Up TEs', 'Unchanged TEs', 'Down TEs')) +
+  geom_hline(yintercept = 1, linetype = 'dashed') +
+  guides(fill = guide_legend(reverse = TRUE))
+
+bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
+                               plot.subtitle = element_text(size = 14),
+                               panel.grid.major = element_blank(),
+                               panel.grid.minor = element_blank(),
+                               axis.text.x = element_text(size = 13, margin = margin(t = 6)),
+                               axis.text.y = element_text(size = 14),
+                               axis.title.y = element_text(size = 14),
+                               axis.title.x = element_text(size = 14, margin = margin(t = 6)),
+                               axis.line = element_line(size = 0.8),
+                               panel.border = element_blank(),
+                               legend.text = element_text(size = 12),
+                               legend.title = element_text(size = 14),
+                               legend.position="top")
+
+ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/fraction_of_overlaps_with_GOIs.png", 
+       width = 5, height = 5, units = "in")
+
+#################################################################
+# ereMAPs
+#################################################################
+
+ereMAPs = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/ereMAPs_Larouche.csv', header = T)
+ereMAPs$Start <- as.numeric(gsub(",","",ereMAPs$Start))
+ereMAPs$End <- as.numeric(gsub(",","",ereMAPs$End))
+
+GRanges_ereMAPs = makeGRangesFromDataFrame(ereMAPs, keep.extra.columns = T)
+
+TE_ereMAP_overlaps = findOverlaps(query = GRanges_ERE,
+                                 subject = GRanges_ereMAPs)
+
+TE_ereMAP_overlaps = data.frame(TE_ereMAP_overlaps)
+
+validated = vector()
+ereMAP_loci = vector()
+for (entry in 1:nrow(TE_ereMAP_overlaps)){
+  
+  TE_hit = TE_ereMAP_overlaps[entry, ]$queryHits
+  ereMAP_hit = TE_ereMAP_overlaps[entry, ]$subjectHits
+  
+  if (GRanges_ERE[TE_hit, ]$gene == GRanges_ereMAPs[ereMAP_hit, ]$ERE.family){
+    
+    validated[entry] = T
+    
+  }
+  
+  else{
+    
+    validated[entry] = F
+
+  }
+  
+  ereMAP_loci[entry] = GRanges_ERE[TE_hit, ]$ID
+  
+}
+
+results_df_local_ERE = mutate(results_df_local_ERE, ereMAP = case_when(ID %in% ereMAP_loci ~ T,
+                                                                      !(ID %in% ereMAP_loci) ~ F))
+
+output = generate_contingency(input = results_df_local_ERE,
+                              condition_A = list('up_TEs' = 'significant == T & log2FoldChange > 0',
+                                                 'down_TEs' = 'significant == T & log2FoldChange < 0',
+                                                 'unchanged_TEs' = 'significant == F'),
+                              condition_B = list('ereMAP' = 'ereMAP == T', 'not_ereMAP' = 'ereMAP == F'))
+
+vcd::mosaic(~condition_A+condition_B, data = output, direction = c('v', 'h'), shade = T)
+
+#################################################################
+# Ranked by expression
+#################################################################
+
+normalized_counts = data.frame(assay(vs_dds_local))
+
+normalized_counts_ERE = extract_subset(mode = 'ERE', input = normalized_counts)
+
+normalized_counts_ERE_hi = dplyr::select(normalized_counts_ERE, 
+                                     c('pt226_hi_fastp_1.fastq_Aligned.out.bam', 
+                                       'pt221_lo_fastp_1.fastq_Aligned.out.bam', 
+                                       'pt214_lo_fastp_1.fastq_Aligned.out.bam'))
+
+rowMeans(normalized_counts_hi)
