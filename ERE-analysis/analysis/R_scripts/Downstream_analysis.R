@@ -4,64 +4,13 @@ library(ggplot2)
 library(glue)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
-functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'build_count_table')
+functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'build_count_table', 'generate_contingency')
 
 for (i in functions){
   
   load(glue('{functions_directory}{i}'))
   
 }
-
-#################################################################
-# Volcano plot
-#################################################################
-
-## TEtranscripts
-
-input = results_df_transcripts_ERE
-
-input$class = factor(input$class, levels = c('LTR', 'SINE', 'LINE'))
-
-volcano_plot = ggplot() +
-  geom_point(data = input, aes(x = log2FoldChange, y = -log10(padj)), color = alpha('#9B9A99', 0.6)) +
-  geom_point(data = subset(input, significant == TRUE), aes(x = log2FoldChange, y = -log10(padj), fill = class), size = 2.5, alpha = 0.8, shape = 21, stroke = 0) +
-  geom_point(data = subset(input, significant == FALSE), aes(x = log2FoldChange, y = -log10(padj)), size = 1, alpha = 1, shape = 21, stroke = 0) +
-  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
-  xlab(expression('log'[2]*'(fold-change)')) +
-  ylab(expression('-log'[10]*'(adjusted p-value)')) +
-  xlim(-2, 3) +
-  scale_fill_manual(values = c('#e41a1c', '#984ea3', '#4daf4a', '#fb9a99')) +
-  labs(fill= "")
-
-##SalmonTE
-
-input = Salmon_results_transcripts_df
-
-volcano_plot = ggplot() +
-  geom_point(data = input, aes(x = log2FoldChange, y = -log10(padj), fill = significant)) +
-  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
-  xlab(expression('log'[2]*'(fold-change)')) +
-  ylab(expression('-log'[10]*'(adjusted p-value)')) +
-  scale_fill_manual(values = c('#9B9A99', '#e41a1c')) +
-  labs(fill= "")
-
-## Plot
-
-volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
-                                  plot.subtitle = element_text(size = 14),
-                                  axis.text.x = element_text(size = 14),
-                                  axis.text.y = element_text(size = 14),
-                                  axis.title = element_text(size = 14),
-                                  axis.line = element_line(size = 0.8),
-                                  panel.border = element_blank(),
-                                  legend.text = element_text(size = 15),
-                                  legend.title = element_text(size = 18),
-                                  legend.position = c(0.2, 0.93),
-                                  panel.grid.major = element_blank(),
-                                  panel.grid.minor = element_blank())
-
-ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/B_volcano_v2.png", 
-       width = 5.25, height = 5.25, units = "in")
 
 #################################################################
 # Stacked bars
@@ -185,7 +134,7 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
 # Odds ratio
 #################################################################
 
-input = results_df_local_ERE 
+input = results_df_transcripts_ERE 
 
 class = vector()
 p_value = vector()
@@ -204,6 +153,9 @@ for (i in 1:length(unique(input$class))){
                nrow(subset(input, !(significant == T & log2FoldChange > 0) & class != query_class)))
   
   contingency = data.frame(class = column_1, 'Not' = column_2, row.names = c('Up', 'Not up'))
+  
+  print(query_class)
+  print(contingency)
   
   class[i] = query_class
   p_value[i] = fisher.test(x = contingency)[[1]]
@@ -325,4 +277,14 @@ vcd::mosaic(~Expression_status+ERE_class, data = output,
                                                     'unchanged_TEs' = 'Unchanged',
                                                     'up_TEs' = 'Up')))
 dev.off()
+
+#################################################################
+# LIONS
+#################################################################
+
+lions = read.csv('~/Desktop/thymus-epitope-mapping/ERE-analysis/LIONS/pt214_hi_1.lion', header = T, sep = '\t')
+
+TE_initiations = tidyr::separate(data = lions, col = repeatName, sep = ':', into = c('gene', 'class', 'family'))$gene
+
+subset(results_df_transcripts_ERE, gene %in% TE_initiations & significant == T)
   
