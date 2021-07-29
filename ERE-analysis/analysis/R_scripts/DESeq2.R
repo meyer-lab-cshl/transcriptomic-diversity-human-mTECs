@@ -95,12 +95,12 @@ saveRDS(object = results_df_transcripts_ERE,
 # TElocal
 #################################################################
 
-count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/"
+count_table_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local"
 data = read.table(glue::glue('{count_table_directory}TE_local_hi_vs_lo.cntTable'),header=T,row.names=1)
 
 ## DESeq2
 
-dds_local = differential_expression(data, design=~patient+tissue)
+dds_local = differential_expression(data, design=~patient+tissue, min_reads = 10)
 
 vs_dds_local = vst(dds_local, blind = F)
 

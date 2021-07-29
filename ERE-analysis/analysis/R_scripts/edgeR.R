@@ -37,9 +37,19 @@ ESC_ERE_counts = extract_subset(input = ESC_counts, mode = 'ERE')
 ESC_ERE_counts$Geneid = row.names(ESC_ERE_counts)
 ESC_ERE_counts = separate(ESC_ERE_counts, col = Geneid, into = c('locus', 'gene', 'family', 'class'), sep = ':', remove = F)
 
+## Testis
+
+testis_counts = read.table('/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local/Testis_TE_local.cntTable'
+                        ,header=T,
+                        row.names=1)
+testis_ERE_counts = extract_subset(input = testis_counts, mode = 'ERE') 
+testis_ERE_counts$Geneid = row.names(testis_ERE_counts)
+testis_ERE_counts = separate(testis_ERE_counts, col = Geneid, into = c('locus', 'gene', 'family', 'class'), sep = ':', remove = F)
+
 ## All counts
 
-all_ERE_counts = merge(mTEC_ERE_counts, ESC_ERE_counts)
+all_ERE_counts = merge(mTEC_ERE_counts, ESC_ERE_counts) %>%
+  merge(testis_ERE_counts)
 
 #################################################################
 # Prepare DGE object
@@ -47,13 +57,8 @@ all_ERE_counts = merge(mTEC_ERE_counts, ESC_ERE_counts)
 
 ERE_counts_annotated =  merge(all_ERE_counts, annotation, by = 'locus')
 
-patient = factor(c('pt226', 'pt226', 'pt221', 'pt221', 'pt214', 'pt214', 'SRR488684', 'SRR488685'))
-tissue = factor(c('lo', 'hi', 'lo', 'hi', 'hi', 'lo', 'ESC', 'ESC'))
-y = DGEList(counts = ERE_counts_annotated[, 6: 13], group = tissue, genes = ERE_counts_annotated[, c(1:5, 14:17)])
-
-# Exclude this step for RPKM calculation; include for DGE
-# y = y[filterByExpr(y), , keep.lib.sizes=FALSE]
-
+tissue = factor(c('lo', 'hi', 'lo', 'hi', 'hi', 'lo', 'ESC', 'ESC', 'testis', 'testis'))
+y = DGEList(counts = ERE_counts_annotated[, 6: 15], group = tissue, genes = ERE_counts_annotated[, c(1:5, 16:19)])
 y = calcNormFactors(y)
 design = model.matrix(~0+tissue)
 y = estimateDisp(y, design, robust = T)
@@ -64,6 +69,8 @@ y = estimateDisp(y, design, robust = T)
 
 RPKM_values = rpkm(y, log = F, gene.length = y$genes$width)
 
+# Mean RPKM + heatmap
+
 mean_RPKM = data.frame(row.names = row.names(RPKM_values))
 for (i in unique(tissue)){
   
@@ -71,49 +78,41 @@ for (i in unique(tissue)){
 
 }
 
+ereMAP_mean_RPKM = mean_RPKM[y$genes$Geneid %in% ereMAP_loci, ]
 
+my_heatmap = pheatmap(ereMAP_mean_RPKM, 
+                      cluster_rows=T,
+                      show_rownames=F,
+                      show_colnames = T,
+                      cluster_cols=T,
+                      scale = 'row',
+                      angle_col = 45)
+
+# Ranked by expression in one tissue
 
 RPKM_df = y$genes
-RPKM_df$mean_RPKM = mean_RPKM
-RPKM_df = tidyr::unite(RPKM_df, ID, c('locus', 'gene', 'family', 'class'), sep = ':', remove = F)
-RPKM_df = mutate(RPKM_df, ereMAP = case_when(ID %in% ereMAP_loci ~ T,
-                                             !(ID %in% ereMAP_loci) ~ F)) %>% 
-  mutate(ID = forcats::fct_reorder(ID, mean_RPKM))
+
+for (i in unique(tissue)){
+  
+  RPKM_df[i] = mean_RPKM[, i]
+  
+}
+
+RPKM_df = mutate(RPKM_df, ereMAP = case_when(Geneid %in% ereMAP_loci ~ T,
+                                             !(Geneid %in% ereMAP_loci) ~ F))
+
+RPKM_df_hi = select(RPKM_df, c('locus', 'hi', 'ereMAP')) %>%
+  mutate(ID = forcats::fct_reorder(locus, hi))
+RPKM_df_lo = select(RPKM_df, c('locus', 'lo', 'ereMAP'))
+mutate(ID = forcats::fct_reorder(locus, lo))
 
 filtered_RPKM = subset(RPKM_df, mean_RPKM > 0.5)
-
-# Plot RPKM values
 
 plot = ggplot() +
   geom_point(data = filtered_RPKM, aes(x = ID, y = log2(mean_RPKM)), color = alpha('#9B9A99', 0.6)) +
   geom_point(data = subset(filtered_RPKM, ereMAP == T), aes(x = ID, y = log2(mean_RPKM), fill = ereMAP), size = 2, alpha = 0.8, shape = 21, stroke = 0) +
   geom_point(data = subset(filtered_RPKM, ereMAP == F), aes(x = ID, y = log2(mean_RPKM)), size = 1, alpha = 0.8, shape = 21, stroke = 0) +
   scale_fill_manual(values = c('#e41a1c'))
-
-# GSEA
-
-ranks = RPKM_df$mean_RPKM
-names(ranks) = RPKM_df$ID
-ranks = sort(ranks)
-
-pathways = list('ereMAPs' = subset(RPKM_df, ereMAP == T)$ID)
-
-fgseaRes = fgsea(pathways = pathways, stats = ranks)
-plotEnrichment(pathways$ereMAPs, ranks)
-
-
-plot = ggplot() +
-  geom_point(data = mean_cpm_df, aes(x = ID, y = log10(mean_cpm)), color = alpha('#9B9A99', 0.6)) +
-  geom_point(data = subset(mean_cpm_df, ereMAP == T), aes(x = ID, y = log10(mean_cpm), fill = ereMAP), size = 2, alpha = 0.8, shape = 21, stroke = 0) +
-  geom_point(data = subset(mean_cpm_df, ereMAP == F), aes(x = ID, y = log10(mean_cpm)), size = 1, alpha = 0.8, shape = 21, stroke = 0) 
-
-
-ggrepel::geom_label_repel(data = filter(mean_cpm_df, ereMAP == T),
-                            aes(x = ID,
-                                y = log10(mean_cpm), 
-                                label = ID),
-                            force = 10,
-                            max.overlaps = 30)
 
 plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                           plot.subtitle = element_text(size = 14),
@@ -128,25 +127,22 @@ plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                           panel.grid.major = element_blank(),
                           panel.grid.minor = element_blank())
 
-## Heatmap
+# GSEA
 
-ereMAP_mean_RPKM = mean_RPKM[y$genes$Geneid %in% ereMAP_loci, ]
+ranks = RPKM_df$mean_RPKM
+names(ranks) = RPKM_df$ID
+ranks = sort(ranks)
 
-my_heatmap = pheatmap(ereMAP_mean_RPKM, 
-                      cluster_rows=T,
-                      show_rownames=F,
-                      show_colnames = T,
-                      cluster_cols=T,
-                      scale = 'row',
-                      angle_col = 45)
+pathways = list('ereMAPs' = subset(RPKM_df, ereMAP == T)$ID)
 
+fgseaRes = fgsea(pathways = pathways, stats = ranks)
+plotEnrichment(pathways$ereMAPs, ranks)
 
 #################################################################
 # Differential gene expression
 #################################################################
 
-mTEC_ERE_counts_annotated =  merge(mTEC_ERE_counts, annotation, by = 'locus') %>%
-  subset(Geneid %in% ereMAP_loci)
+mTEC_ERE_counts_annotated =  merge(mTEC_ERE_counts, annotation, by = 'locus')
 
 patient = factor(c('pt226', 'pt226', 'pt221', 'pt221', 'pt214', 'pt214'))
 tissue = factor(c('lo', 'hi', 'lo', 'hi', 'hi', 'lo'))
@@ -171,6 +167,6 @@ edgeR_results$ID = row.names(edgeR_results)
 edgeR_results = mutate(edgeR_results, significant = case_when(FDR < 0.05 ~ T,
                                                               FDR > 0.05 ~ F))
 
-edgeR_results = mutate(edgeR_results, ereMAP = case_when(ID %in% ereMAP_loci ~ T,
-                                                         !(ID %in% ereMAP_loci) ~ F))
+edgeR_results = mutate(edgeR_results, ereMAP = case_when(Geneid %in% ereMAP_loci ~ T,
+                                                         !(Geneid %in% ereMAP_loci) ~ F))
 

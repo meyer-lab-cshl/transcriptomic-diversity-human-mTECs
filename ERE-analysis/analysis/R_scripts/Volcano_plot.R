@@ -86,6 +86,20 @@ volcano_plot = ggplot() +
                                y = -log10(padj), 
                                label = locus))
 
+## Overlap status annotated
+  
+input = as.data.frame(test)
+
+volcano_plot = ggplot() +
+  geom_point(data = input, aes(x = log2FoldChange, y = -log10(padj)), color = alpha('#9B9A99', 0.6)) +
+  geom_point(data = subset(input, significant == T), aes(x = log2FoldChange, y = -log10(padj), fill = overlap_expression), size = 2, alpha = 0.8, shape = 21, stroke = 0) +
+  geom_point(data = subset(input, significant == F), aes(x = log2FoldChange, y = -log10(padj)), size = 1, alpha = 0.8, shape = 21, stroke = 0) +
+  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
+  xlab(expression('log'[2]*'(fold-change)')) +
+  ylab(expression('-log'[10]*'(adjusted p-value)')) +
+  scale_fill_manual(values = c('#e41a1c', '#984ea3', '#4daf4a', '#fb9a99')) +
+  labs(fill= "")
+  
 #################################################################
 # SalmonTE
 #################################################################
@@ -106,7 +120,7 @@ volcano_plot = ggplot(data = input, aes(x = log2FoldChange, y = -log10(padj), fi
 # TE_local + edgeR
 #################################################################
 
-input = edgeR_results
+input = edgeR_results_annotated
 
 volcano_plot = ggplot() +
   geom_point(data = input, aes(x = -logFC, y = -log10(FDR)), color = alpha('#9B9A99', 0.6)) +
@@ -122,6 +136,18 @@ volcano_plot = ggplot() +
                                 y = -log10(FDR), 
                                 label = ID),
                             force = 2)
+
+# Overlap
+
+volcano_plot = ggplot() +
+  geom_point(data = input, aes(x = -logFC, y = -log10(FDR)), color = alpha('#9B9A99', 0.6)) +
+  geom_point(data = subset(input,significant == T), aes(x = -logFC, y = -log10(FDR), fill = overlap_expression), size = 2, alpha = 0.8, shape = 21, stroke = 0) +
+  geom_point(data = subset(input, significant == F), aes(x = -logFC, y = -log10(FDR)), size = 1, alpha = 0.8, shape = 21, stroke = 0) +
+  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
+  xlab(expression('log'[2]*'(fold-change)')) +
+  ylab(expression('-log'[10]*'(FDR)')) +
+  scale_fill_manual(values = c('#e41a1c', '#984ea3', '#4daf4a', '#fb9a99')) +
+  labs(fill= "")
 
 #################################################################
 # Plot

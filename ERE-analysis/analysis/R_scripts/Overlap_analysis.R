@@ -137,15 +137,9 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
 # ?
 #################################################################
 
-overlaps = as.data.frame(findOverlaps(query = GRanges_detected_ERE_start,
-             subject = GRanges_gene_extended))
 
-for (entry in unique(overlaps$queryHits)){
-  
-  gene_hits = subset(overlaps, queryHits == entry)$subjectHits
-  
-  for 
-  
-}
+GRanges_ERE_start$overlap_expression = report
 
+GRanges_ERE_start_edgeR = as.data.frame(subset(GRanges_ERE_start, locus %in% edgeR_results$locus))
 
+edgeR_results_annotated = merge(edgeR_results, select(GRanges_ERE_start_edgeR, c('locus', 'overlap_expression')), by = 'locus')
