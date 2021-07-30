@@ -210,6 +210,18 @@ for (name in 1:length(colnames(averaged_TPM))){
     
   }
   
+  if(colnames(averaged_TPM)[name] == 'Skin.Not.Sun.Exposed'){
+  
+    colnames(averaged_TPM)[name] = "Skin (unexposed)"
+    
+  }
+  
+  if(colnames(averaged_TPM)[name] == 'Skin.Sun.Exposed'){
+    
+    colnames(averaged_TPM)[name] = "Skin (sun exposed)"
+    
+  }
+  
 }
 
 ## Plot heatmap
