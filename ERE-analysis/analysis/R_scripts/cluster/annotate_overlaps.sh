@@ -4,7 +4,7 @@
 #$ -l m_mem_free=16G
 #$ -N annotate_overlaps
 #$ -o annotate_overlaps_output.txt
-#$ -e annotate_overlaps__output.txt
+#$ -e annotate_overlaps_output.txt
 
 module load EBModules
 module load R/4.0.4-fosscuda-2020a
