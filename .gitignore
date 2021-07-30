@@ -25,7 +25,7 @@ ERE-analysis/analysis/annotation_tables/
 *cntTable
 *.Rproj
 TE_transcripts_counts
-ERE-analysis/analysis/LIONS
+ERE-analysis/analysis/External_packages
 ERE-analysis/cluster_scripts/SQuIRE/*
 ERE-analysis/analysis/gene_lists/
 ERE-analysis/analysis/Plots/

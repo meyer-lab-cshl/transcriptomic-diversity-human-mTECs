@@ -11,93 +11,70 @@
 #   Output Rdata of sorted chimeric cases
 # ---------------------------------------------------------
 
+library(tidyverse)
+
 # CONTROL PANEL ===============================================================
 
-  STDIN = commandArgs(trailingOnly = TRUE)
+samples = c('pt214_lo_1', 'pt221_hi', 'pt221_lo', 'pt226_hi', 'pt226_lo')
+lions_csv = list.files(path="~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/LIONS/mTEC", pattern="*pc.lcsv", full.names=TRUE, recursive=FALSE)
+mapped_reads = list.files(path="~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/LIONS/mTEC/mapped_reads", pattern="*mappedReads", full.names=TRUE, recursive=FALSE)
 
+df = data.frame(sample = samples, lions_csv = lions_csv, mapped_reads = mapped_reads) %>%
+  mutate(output = glue::glue('/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/LIONS/mTEC/{sample}.lion')) %>%
+  mutate(mapped_reads = read_lines(mapped_reads)) %>%
+  mutate(scREADS = round(as.numeric(mapped_reads) / 20000000))
+
+lions = list(length = nrow(df))
+
+for (entry in 1:nrow(df)){
+  
+  STDIN = c(df[entry, 'lions_csv'],
+            df[entry, 'output'],
+            df[entry, 'mapped_reads'],
+            3, 10, 10, 1, 0.1, 2, 1.5)
+  
+  print(STDIN)
+  
   INPUT = STDIN[1] # Chimera_Results
   INPUTNAME = unlist(strsplit(as.character(INPUT), split = "\\."))[1]
-
+  
   OUTPUT = STDIN[2] # Chimeric Output
-
+  
   EXONIC_READS = as.numeric(STDIN[3]) # Number of exonic reads in library
-
-# Selection Criteria
-# 3 classes of Selection Criteria are defined
-  # Upstream TE Interaction
-    # Interaction = Upstream
-    # Chimeric Reads >= 5
-    # ThreadsRatio >= 10
-    # Contribution >= 0.1
-    # UpstreamCoverage >= 0.5
-
-  # Upper Edge TE Interaction
-    # Interaction = UpEdge
-    # ExonNumber = 1
-    # Chimeric Reads >= 5
-    # ThreadsRatio >= 10
-
-  # Exon Contained in TE
-    # Interaction = EInside
-    # Chimeric Reads >= 5
-    # ThreadsRatio >= 10
-
-  # Repeat Contained in TE
-    # Interaction = RInside
-    # Chimeric Reads >= 5
-    # ThreadsRatio >= 10
-    # DownThread >= 10
-
-# Chimeric Read Support (total)
-  # Number of supporting chimeric reads required (Total)
-  # Variable Number: 3 or 1/20 RPM
-   scREADS=max(as.numeric(STDIN[4]), round( EXONIC_READS / 20000000 ) ) # >=
-
-# Threads Ratio
-  # DownThread / UpThread, set to value if UpThread =0
-   scTHREAD=as.numeric(STDIN[5]) # >=
-   scDownThread=as.numeric(STDIN[6]) # >=
-
-# RPKM Cut-off to consider an exon 'expressed'
-   scRPKM=as.numeric(STDIN[7]) # >=
-
-# Contribution Ratio: Ratio of peak coverage between Exon/TE
-   scCONTR=as.numeric(STDIN[8]) # >=
-
-# Upstream Repeat Coverage Ratio to remove readthroughs
-  # Peak TE coverage / Peak Upstream Coverage
-   scUPCOV=as.numeric(STDIN[9]) # >=
-
-# Upstream Exon Expression Ratio
-   scUPEXON=as.numeric(STDIN[10]) # >=
-
-# Splice Partner Classification
-# Repeat Rank > 0 AND RepeatExonic
-
-# IMPORT ======================================================================
-
-# Read output from ChimericReadTool.sh
-ChimeraTable = read.csv(file=INPUT,
-                        header=T,
-                        sep='\t')
-
-# CALCULATED VALUES ===========================================================
-
-# CONTRIBUTION (via Max)
+  
+  #scREADS=max(as.numeric(STDIN[4]), round( EXONIC_READS / 20000000 ) )# >=
+  scREADS=as.numeric(STDIN[4])
+  scTHREAD=as.numeric(STDIN[5]) # >=
+  scDownThread=as.numeric(STDIN[6]) # >=
+  scRPKM=as.numeric(STDIN[7]) # >=
+  scCONTR=as.numeric(STDIN[8]) # >=
+  scUPCOV=as.numeric(STDIN[9]) # >=
+  scUPEXON=as.numeric(STDIN[10])
+  
+  # IMPORT ======================================================================
+  
+  # Read output from ChimericReadTool.sh
+  ChimeraTable = read.csv(file=INPUT,
+                          header=T,
+                          sep='\t')
+  
+  # CALCULATED VALUES ===========================================================
+  
+  # CONTRIBUTION (via Max)
   # = Repeat(max reads) / Exon(max reads)
   # Relative expression of Repeat to interacting Exon
-
+  
   ChimeraTable$Contribution = (ChimeraTable$RepeatMaxCoverage /
-                               ChimeraTable$ExonMax )
-
-# UpstreamCoverageRatio (UpCov)
+                                 ChimeraTable$ExonMax )
+  
+  # UpstreamCoverageRatio (UpCov)
   # = Repeat (max) / UpstreamRepeat (max)
   # Look upstream of the repeat to see if there is expression
   
   ChimeraTable$UpCov = (ChimeraTable$RepeatMaxCoverage /
                           ChimeraTable$UpstreamRepeatMaxCoverage)
-
-# Upstream Exon Experssion
+  
+  # Upstream Exon Experssion
   # If Exon 1, set value to Inf
   # = Exon (RPKM) / UpstreamExon (RPKM)
   
@@ -106,36 +83,34 @@ ChimeraTable = read.csv(file=INPUT,
   
   EX1 = which( ChimeraTable[,'exonRankInTranscript'] == 1 )
   ChimeraTable[EX1,'UpExonRatio'] = Inf
-
-# Thread Ratio
+  
+  # Thread Ratio
   # DownThread / UpThread
   # If UpThread = 0, set value to cutoff
   ChimeraTable$ThreadRatio = (ChimeraTable$DownThread /
-                              ChimeraTable$UpThread)
+                                ChimeraTable$UpThread)
   
   UpThreadZero = which(ChimeraTable$UpThread == 0)
   ChimeraTable[UpThreadZero,'ThreadRatio'] = scTHREAD
-
-# Multi-Exonic Transcripts
+  
+  # Multi-Exonic Transcripts
   MultiEx = which( ChimeraTable[,'ExonInGene'] == 2)  
-
-
-
-# CHIMERA FILTRATION ==========================================================
-
-# Global Filters (Apply to all cases)
+  
+  # CHIMERA FILTRATION ==========================================================
+  
+  # Global Filters (Apply to all cases)
   # Initialization
-    print('Applying Global Filters to Chimeric Interaction Table')
-    print(paste('     Input Entries   : ', nrow(ChimeraTable)))
-
-# CASE 1: Upstream Interactions
+  print('Applying Global Filters to Chimeric Interaction Table')
+  print(paste('     Input Entries   : ', nrow(ChimeraTable)))
+  
+  # CASE 1: Upstream Interactions
   RETAIN_UP = which( ChimeraTable$ER_Interaction == 'Up' &
                        ChimeraTable$Total >= scREADS &
                        ChimeraTable$ThreadRatio >= scTHREAD &
                        ChimeraTable$Contribution >= scCONTR &
                        ChimeraTable$UpCov >= scUPCOV)
-
-# CASE 2: Up Edge Interactions
+  
+  # CASE 2: Up Edge Interactions
   RETAIN_UPEDGE = which( ChimeraTable$ER_Interaction == 'UpEdge' &
                            ChimeraTable$Total >= scREADS &
                            ChimeraTable$exonRankInTranscript == 1 &
@@ -144,50 +119,54 @@ ChimeraTable = read.csv(file=INPUT,
                            # Order of magnitude reduction since more direct
                            # evidence of promoter is avaiable
                            ChimeraTable$ThreadRatio >= scTHREAD )
-
-# CASE 3: Exon Inside Interactions
+  
+  # CASE 3: Exon Inside Interactions
   RETAIN_EINSIDE = which( ChimeraTable$ER_Interaction == 'EInside' &
                             ChimeraTable$Total >= scREADS &
                             ChimeraTable$ExonInGene == 2 &
                             ChimeraTable$ThreadRatio >= scTHREAD )
-
-## CASE 4: Repeat Inside Interaction
-#  RETAIN_RINSIDE = which( ChimeraTable$ER_Interaction == 'RInside' &
-#                          ChimeraTable$Total >= scREADS &
-#			  ChimeraTable$ExonInGene == 2 &
-#			  ChimeraTable$ThreadRatio >= scTHREAD &
-#			  ChimeraTable$DownThread >= scDownThread )
-#
-## with RInside
-#  ChimeraOut = ChimeraTable[c(RETAIN_UPEDGE, RETAIN_EINSIDE, RETAIN_UP, RETAIN_RINSIDE),]
-
-# without RInside cases
+  
+  ## CASE 4: Repeat Inside Interaction
+  #  RETAIN_RINSIDE = which( ChimeraTable$ER_Interaction == 'RInside' &
+  #                          ChimeraTable$Total >= scREADS &
+  #			  ChimeraTable$ExonInGene == 2 &
+  #			  ChimeraTable$ThreadRatio >= scTHREAD &
+  #			  ChimeraTable$DownThread >= scDownThread )
+  #
+  ## with RInside
+  #  ChimeraOut = ChimeraTable[c(RETAIN_UPEDGE, RETAIN_EINSIDE, RETAIN_UP, RETAIN_RINSIDE),]
+  
+  # without RInside cases
   ChimeraOut = ChimeraTable[c(RETAIN_UPEDGE, RETAIN_EINSIDE, RETAIN_UP),]
-                      
-# PARSE and OUTPUT ============================================================
-
-    print(paste('     Output Entries   : ', nrow(ChimeraOut)))
+  
+  # PARSE and OUTPUT ============================================================
+  
+  print(paste('     Output Entries   : ', nrow(ChimeraOut)))
   # Sort Rows
-    SORT=4 # Coordinates
-    ChimeraOut = ChimeraOut[order(ChimeraOut[,SORT]),]
-
+  SORT=4 # Coordinates
+  ChimeraOut = ChimeraOut[order(ChimeraOut[,SORT]),]
+  
   # Start of Repeat (For comparisons)
-    ChimeraOut$RepeatID = paste('chr',ChimeraOut$Chromosome,':',ChimeraOut$RStart,sep='')
-
+  ChimeraOut$RepeatID = paste('chr',ChimeraOut$Chromosome,':',ChimeraOut$RStart,sep='')
+  
   # Add input to last column
   #  (for comparing multiple lists)
   
   # LIBRARY = unlist(strsplit(INPUT,split = '/'))[1]
-    LIBRARY = INPUTNAME
-    ChimeraOut = cbind(ChimeraOut, LIBRARY)
-    
-  # Write output CSV
-    write.table(ChimeraOut,
-                file = OUTPUT,
-                quote = F,
-                sep = '\t',
-                row.names = F,
-                col.names = T)
+  LIBRARY = INPUTNAME
+  ChimeraOut = cbind(ChimeraOut, LIBRARY)
   
+  # Write output CSV
+  write.table(ChimeraOut,
+              file = OUTPUT,
+              quote = F,
+              sep = '\t',
+              row.names = F,
+              col.names = T)
+  
+  lions[df[entry, 'sample']] = ChimeraOut
+  
+}
 
-# End of Script :D
+
+
