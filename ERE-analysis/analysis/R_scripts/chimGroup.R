@@ -8,12 +8,20 @@
 # 
 
 # CONTROL PANEL ======================================================
-
-  STDIN = c('mTEC',
-            )
+  
+  home_directory = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/External_packages/LIONS/mTEC-analysis'
+  
+  setwd(home_directory)
+  
+  STDIN = c(glue::glue('{home_directory}/mTEC-analysis.lions'),
+            glue::glue('{home_directory}/input.list'),
+            glue::glue('{home_directory}/rmStats.Rdata'),
+            2,
+            3)
 
   pLIONS = STDIN[1] # Input LIONS project file
-  pNAME = as.character(strsplit(pLIONS, '.lions')) # project+run name
+  pNAME = as.character(strsplit(pLIONS, '.lions'))
+  pNAME = unlist(strsplit(as.character(pNAME), split = "/"))[9] # project+run name
 
   stdOUTPUT = paste(pNAME, '.rslions', sep='') # Grouped Project Lions File
 
@@ -289,12 +297,12 @@ Fishers.Matrix = function(X,Y){
 
 # Filter Chimeric List for recurrent elements
 
-  Filter_Normal = which( Chimera[,'Normal_Occ'] <= NonNormal)
-  Filter_Cancer = which( Chimera[,'Cancer_Occ'] >= MultiCan)
+  #Filter_Normal = which( Chimera[,'Normal_Occ'] <= NonNormal)
+  #Filter_Cancer = which( Chimera[,'Cancer_Occ'] >= MultiCan)
 
-  Filter = intersect(Filter_Normal,Filter_Cancer)
+  #Filter = intersect(Filter_Normal,Filter_Cancer)
 
-  ChimFiltered = Chimera[Filter,]
+  ChimFiltered = Chimera
 
 # Parse for output
 # Parse ChimeraOutput such that every TE/Exon is 1 row, INPUT changed to
@@ -319,7 +327,7 @@ while (Go == T){
              'RefID','RefStrand','assXref', 
              'repeatName', 'RepeatRank',
              'coordinates', 'ER_Interaction','RepeatID',
-             'Normal_Occ','Cancer_Occ')
+             'Normal_Occ','Cancer_Occ', 'Contribution')
   
   OutputRow = ChimFiltered[1,OutCol]
   

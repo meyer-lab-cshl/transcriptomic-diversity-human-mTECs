@@ -15,16 +15,16 @@ library(tidyverse)
 
 # CONTROL PANEL ===============================================================
 
-samples = c('pt214_lo_1', 'pt221_hi', 'pt221_lo', 'pt226_hi', 'pt226_lo')
-lions_csv = list.files(path="~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/LIONS/mTEC", pattern="*pc.lcsv", full.names=TRUE, recursive=FALSE)
-mapped_reads = list.files(path="~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/LIONS/mTEC/mapped_reads", pattern="*mappedReads", full.names=TRUE, recursive=FALSE)
+home_directory='/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/External_packages/LIONS/mTEC-analysis'
+
+samples = c('pt214_hi_1', 'pt214_lo_1', 'pt221_hi_1', 'pt221_lo_1', 'pt226_hi_1', 'pt226_lo_1')
+lions_csv = list.files(path=home_directory, pattern="*pc.lcsv", full.names=TRUE, recursive=FALSE)
+mapped_reads = list.files(path=home_directory, pattern="*mappedReads", full.names=TRUE, recursive=FALSE)
 
 df = data.frame(sample = samples, lions_csv = lions_csv, mapped_reads = mapped_reads) %>%
-  mutate(output = glue::glue('/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/LIONS/mTEC/{sample}.lion')) %>%
+  mutate(output = glue::glue('{home_directory}/{sample}.lion')) %>%
   mutate(mapped_reads = read_lines(mapped_reads)) %>%
   mutate(scREADS = round(as.numeric(mapped_reads) / 20000000))
-
-lions = list(length = nrow(df))
 
 for (entry in 1:nrow(df)){
   
@@ -33,17 +33,16 @@ for (entry in 1:nrow(df)){
             df[entry, 'mapped_reads'],
             3, 10, 10, 1, 0.1, 2, 1.5)
   
-  print(STDIN)
-  
   INPUT = STDIN[1] # Chimera_Results
   INPUTNAME = unlist(strsplit(as.character(INPUT), split = "\\."))[1]
+  INPUTNAME = unlist(strsplit(as.character(INPUTNAME), split = "/"))[11]
   
   OUTPUT = STDIN[2] # Chimeric Output
   
   EXONIC_READS = as.numeric(STDIN[3]) # Number of exonic reads in library
   
-  #scREADS=max(as.numeric(STDIN[4]), round( EXONIC_READS / 20000000 ) )# >=
-  scREADS=as.numeric(STDIN[4])
+  scREADS=max(as.numeric(STDIN[4]), round( EXONIC_READS / 20000000 ) )# >=
+  #scREADS=as.numeric(STDIN[4])
   scTHREAD=as.numeric(STDIN[5]) # >=
   scDownThread=as.numeric(STDIN[6]) # >=
   scRPKM=as.numeric(STDIN[7]) # >=
@@ -152,7 +151,7 @@ for (entry in 1:nrow(df)){
   # Add input to last column
   #  (for comparing multiple lists)
   
-  # LIBRARY = unlist(strsplit(INPUT,split = '/'))[1]
+  #LIBRARY = unlist(strsplit(INPUT,split = '/'))[1]
   LIBRARY = INPUTNAME
   ChimeraOut = cbind(ChimeraOut, LIBRARY)
   
@@ -163,8 +162,6 @@ for (entry in 1:nrow(df)){
               sep = '\t',
               row.names = F,
               col.names = T)
-  
-  lions[df[entry, 'sample']] = ChimeraOut
   
 }
 
