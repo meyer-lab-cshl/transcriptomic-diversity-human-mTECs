@@ -398,9 +398,6 @@ while (Go == T){
   AXR = OrientAssembly(AXR)
   OutputRow['assXref'] = AXR
   
-  # Calculate mean
-  
-  
   # Write to output
   ChimeraOutput = rbind(ChimeraOutput,OutputRow)
   

@@ -79,16 +79,11 @@ end(GRanges_detected_ERE_start) = start(GRanges_detected_EREs)
 
 # Genes of interest
 
-AIRE_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_aire_dep_genes_san.csv')$ensembl_gene_id
-FEZF2_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_fezf2_dep_genes.csv')$ensembl_gene_id
-TRA_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/tra_genes.csv')$ensembl_gene_id
+AIRE_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_aire_dep_genes_san.csv')
+FEZF2_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_fezf2_dep_genes.csv')
+TRA_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/tra_genes.csv')
+housekeeping_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/housekeeping_genes.csv')
 
-housekeeping_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/housekeeping_genes.csv')$ensembl_gene_id
-housekeeping_genes = housekeeping_genes[!(housekeeping_genes %in% AIRE_genes)]
-housekeeping_genes = housekeeping_genes[!(housekeeping_genes %in% FEZF2_genes)]
-
-#ensembl = biomaRt::useMart("ensembl", dataset="hsapiens_gene_ensembl")
-#housekeeping_genes = getBM(attributes=c("refseq_mrna", "ensembl_gene_id", "hgnc_symbol"), filters = "refseq_mrna", values = housekeeping_genes, mart= ensembl)$ensembl_gene_id
 
 up_genes = subset(results_df_local_gene, significant == T & log2FoldChange > 0)$Geneid
 down_genes = subset(results_df_local_gene, significant == T & log2FoldChange < 0)$Geneid
