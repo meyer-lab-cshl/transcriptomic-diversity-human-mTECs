@@ -7,6 +7,8 @@ library(biomaRt)
 #  Data import
 #################################################################
 
+## From final LIONS output
+
 LIONS_HI = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/External_packages/LIONS/mTEC-analysis/mTEC-analysis.rslions', 
          sep = '\t', header = T)
 LIONS_HI['LO_occurence'] = LIONS_HI['Normal_Occ']
@@ -26,9 +28,7 @@ LIONS = bind_rows(LIONS_HI, LIONS_LO) %>%
   separate(range, into = c('start', 'end'), sep = '-') %>%
   separate(repeatName, remove = F, into = c('sub-family', 'class', 'family'), sep = ':')
 
-#################################################################
-#  Contribution analysis
-#################################################################
+## From Chimera 
 
 home_directory = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/External_packages/LIONS/mTEC-analysis'
 
@@ -94,6 +94,10 @@ Chimera['LO_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = 1)
 Chimera['HI_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = 2)
 Chimera = mutate(Chimera, total_Occ = LO_Occ + HI_Occ)
 
+#################################################################
+#  Contribution analysis: TE-centric
+#################################################################
+
 ## Annotate
 
 TRA_annotation = vector()
@@ -158,7 +162,7 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
        width = 5, height = 6, units = "in")
 
 #################################################################
-#  Gene enrichment
+#  Contribution analysis: gene-centric
 #################################################################
 
 mean_contribution = group_by(Filtered_Chimera, RepeatID) %>% 
@@ -197,8 +201,9 @@ LIONS_genes = merge(LIONS_genes, conversion , by = 'ensembl_gene_id')
 
 ## Annotate
 
-LIONS_genes = mutate(LIONS_genes, TRA_annotation = case_when(ensembl_gene_id %in% TRA_genes$ensembl_gene_id ~ T,
-                                           !(ensembl_gene_id %in% TRA_genes$ensembl_gene_id) ~ F))
+LIONS_genes = mutate(LIONS_genes, TRA_annotation = case_when(ensembl_gene_id %in% TRA_genes$ensembl_gene_id ~ "TRA",
+                                           ensembl_gene_id %in% housekeeping_genes$ensembl_gene_id ~ 'Housekeeping',
+                                           TRUE ~ 'Other'))
 
 gene_type = vector()
 for (i in 1:nrow(LIONS_genes)){
@@ -213,7 +218,8 @@ LIONS_genes['gene_type'] = gene_type
 contribution_plot = ggplot(data = LIONS_genes, aes(x = ensembl_gene_id, y = contribution, fill = TRA_annotation)) +
   geom_bar(stat = 'identity') +
   geom_hline(yintercept = .1, linetype = 'dashed') +
-  geom_text(aes(label = hgnc_symbol, angle = 270), nudge_y = 0.4)
+  geom_text(aes(label = hgnc_symbol, angle = 270), nudge_y = 0.4) +
+  scale_fill_brewer(palette = 'Set1')
 
 contribution_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                        plot.subtitle = element_text(size = 14),
@@ -225,7 +231,7 @@ contribution_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', 
                                        panel.border = element_blank(),
                                        legend.text = element_text(size = 15),
                                        legend.title = element_text(size = 18),
-                                       legend.position = c(0.25, 0.93),
+                                       legend.position = c(0.3, 0.8),
                                        panel.grid.major = element_blank(),
                                        panel.grid.minor = element_blank())
 
@@ -326,82 +332,3 @@ odds_ratio_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', si
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/LIONS_odds_ratio.png", 
        width = 4, height = 5.25, units = "in")
-
-#################################################################
-#  ?
-#################################################################
-
-LIONS_overlaps = findOverlaps(query = GRanges_LIONS, subject = GRanges_ERE)
-LIONS_overlaps = as.data.frame(LIONS_overlaps)
-
-for (i in 1:nrow(LIONS)){
-  
-  ERE = LIONS[i, 'sub-family']
-  print(ERE)
-  
-}
-
-## Venn diagram
-
-venn_diagram_list = list('mTEC-LO' = subset(LIONS, Normal_Occ >= 2)$transcriptID,
-                         'mTEC-HI' = subset(LIONS, Cancer_Occ >= 2)$transcriptID)
-
-ggvenn(venn_diagram_list)
-
-## Genes
-
-ensembl = useMart("ensembl", dataset="hsapiens_gene_ensembl")
-acceptable_genes = getBM(attributes=c("hgnc_symbol"), mart= ensembl)$hgnc_symbol
-
-gene_name = vector()
-classification = vector()
-counter = 1
-for (entry in 1:nrow(LIONS)){
-  
-  gene_list = unlist(stringr::str_split(LIONS[entry, 'RefID'], pattern = ';'))
-  
-  for (gene in gene_list){
-    
-    gene_entry = stringr::str_trim(gene, side = 'both')
-    
-    if (gene_entry %in% acceptable_genes){
-      
-      gene_name[counter] = gene_entry
-      
-      if (LIONS[entry, 'Normal_Occ'] == 0 & LIONS[entry, 'Cancer_Occ'] >= 1){
-        
-        classification[counter] = 'HI'
-        
-      }
-      
-      else if (LIONS[entry, 'Normal_Occ'] >= 1 & LIONS[entry, 'Cancer_Occ'] == 0){
-        
-        classification[counter] = 'LO'
-        
-      }
-      
-      else{
-        
-        classification[counter] = 'NONE'
-        
-      }
-      
-      counter = counter + 1
-      
-    }
-
-  }
-  
-}
-
-LIONS_genes = data.frame(hgnc_symbol = gene_name, classification = classification) %>%
-  distinct() 
-
-conversion = getBM(attributes=c("hgnc_symbol", "ensembl_gene_id"), filters = 'hgnc_symbol', values = LIONS_genes$hgnc_symbol, mart= ensembl)
-
-LIONS_genes = merge(LIONS_genes, conversion , by = 'hgnc_symbol') %>%
-  mutate(gene_group = case_when(ensembl_gene_id %in% AIRE_genes ~ 'AIRE',
-                               ensembl_gene_id %in% housekeeping_genes ~ 'Housekeeping',
-                               ensembl_gene_id %in% FEZF2_genes ~ 'FEZF2',
-                               !(ensembl_gene_id %in% AIRE_genes) & !(ensembl_gene_id %in% housekeeping_genes) & !(ensembl_gene_id %in% FEZF2_genes) ~ 'Other'))
-
