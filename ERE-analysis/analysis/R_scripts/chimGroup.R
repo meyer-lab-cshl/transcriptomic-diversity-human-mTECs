@@ -16,8 +16,8 @@
   STDIN = c(glue::glue('{home_directory}/mTEC-analysis.lions'),
             glue::glue('{home_directory}/input.list'),
             glue::glue('{home_directory}/rmStats.Rdata'),
-            2,
-            3)
+            1,
+            0)
 
   pLIONS = STDIN[1] # Input LIONS project file
   pNAME = as.character(strsplit(pLIONS, '.lions'))
@@ -93,6 +93,48 @@ for  (RUN in c(1:2)) {
 # Import
 
   Chimera = read.csv(file=pLIONS, header=T, sep='\t')
+  
+# Custom annotation step
+  
+  Chimera_annotated = mutate(Chimera, EStrand = case_when(EStrand == 1 ~ '+',
+                                                          EStrand == -1 ~ '-',
+                                                          EStrand == 0 ~ '*')) %>%
+    mutate(Chromosome = glue::glue('chr{Chromosome}'))
+  
+  Chimera_annotated = makeGRangesFromDataFrame(Chimera_annotated,
+                                               start.field = 'EStart',
+                                               end.field = 'EEnd',
+                                               seqnames.field = 'Chromosome',
+                                               strand.field = 'EStrand',
+                                               keep.extra.columns = T)
+  
+  gene_overlaps = findOverlaps(query = Chimera_annotated,
+                               subject = GRanges_gene, 
+                               ignore.strand = T)
+  
+  gene_overlaps = as.data.frame(gene_overlaps)
+  
+  Geneid = vector()
+  for (entry in 1:length(Chimera_annotated)){
+    
+    if (entry %in% gene_overlaps$queryHits){
+      
+      gene_hits = subset(gene_overlaps, queryHits == entry)[, 'subjectHits']
+      gene_hits = GRanges_gene[gene_hits, ]$Geneid
+      
+      Geneid[entry] = paste(gene_hits, collapse = ';')
+      
+    }
+    
+    else{
+      
+      Geneid[entry] = NA
+      
+    }
+    
+  }
+  
+  Chimera['Geneid'] = Geneid
   
   # Sub-sample Chimera
     #Sample = rep(0,times = nrow(Chimera))
@@ -297,12 +339,12 @@ Fishers.Matrix = function(X,Y){
 
 # Filter Chimeric List for recurrent elements
 
-  #Filter_Normal = which( Chimera[,'Normal_Occ'] <= NonNormal)
-  #Filter_Cancer = which( Chimera[,'Cancer_Occ'] >= MultiCan)
+  Filter_Normal = which( Chimera[,'Normal_Occ'] <= NonNormal)
+  Filter_Cancer = which( Chimera[,'Cancer_Occ'] >= MultiCan)
 
-  #Filter = intersect(Filter_Normal,Filter_Cancer)
+  Filter = intersect(Filter_Normal,Filter_Cancer)
 
-  ChimFiltered = Chimera
+  ChimFiltered = Chimera[Filter, ]
 
 # Parse for output
 # Parse ChimeraOutput such that every TE/Exon is 1 row, INPUT changed to
@@ -355,6 +397,8 @@ while (Go == T){
   AXR = unique(as.character(unlist(strsplit(AXR, split="; "))))
   AXR = OrientAssembly(AXR)
   OutputRow['assXref'] = AXR
+  
+  # Calculate mean
   
   
   # Write to output

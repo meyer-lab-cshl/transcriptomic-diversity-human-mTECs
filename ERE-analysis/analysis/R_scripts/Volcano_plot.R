@@ -40,7 +40,28 @@ volcano_plot = ggplot() +
                                 label = gene),
                             force = 2)
 
+## LIONS annotated
 
+input = mutate(input, LIONS = case_when(gene %in% subset(LIONS, total_occurences >= 2)$`sub-family` ~ T,
+                                        !(gene %in% subset(LIONS, total_occurences >= 2)$`sub-family`) ~ F))
+
+#input = mutate(input, LIONS = case_when(gene %in% subset(LIONS, classification == 'HI')$`sub-family` ~ 'HI', 
+#                                        gene %in% subset(LIONS, classification == 'LO')$`sub-family` ~ 'LO',
+#                                        !(gene %in% LIONS$`sub-family`) ~ 'NONE'))
+
+volcano_plot = ggplot() +
+  geom_point(data = input, aes(x = log2FoldChange, y = -log10(padj)), color = alpha('#9B9A99', 0.6)) +
+  geom_point(data = subset(input, LIONS == T & significant == T), aes(x = log2FoldChange, y = -log10(padj), fill = LIONS), size = 2, alpha = 0.8, shape = 21, stroke = 0) +
+  geom_point(data = subset(input, LIONS == F), aes(x = log2FoldChange, y = -log10(padj)), size = 1, alpha = 0.8, shape = 21, stroke = 0) +
+  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
+  xlab(expression('log'[2]*'(fold-change)')) +
+  ylab(expression('-log'[10]*'(adjusted p-value)')) +
+  scale_fill_manual(values = c('#e41a1c', '#984ea3', '#4daf4a', '#fb9a99')) +
+  labs(fill= "") +
+  ggrepel::geom_label_repel(data = filter(input, LIONS == T), 
+                           aes(x = log2FoldChange, 
+                               y = -log10(padj), 
+                               label = gene))
 
 #################################################################
 # TE local

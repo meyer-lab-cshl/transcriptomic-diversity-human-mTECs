@@ -5,7 +5,7 @@ library(glue)
 
 functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
 functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'build_count_table', 'generate_contingency')
-
+f
 for (i in functions){
   
   load(glue('{functions_directory}{i}'))

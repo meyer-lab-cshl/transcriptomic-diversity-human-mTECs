@@ -34,11 +34,11 @@ end(GRanges_TE_start) = start(GRanges_TE_start)
 
 ## Genes
 
-annotation = read.table(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
-annotation = select(annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
-annotation = dplyr::rename(annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
-annotation$Geneid = gsub('\\..+$', '', annotation$Geneid)
-GRanges_gene = makeGRangesFromDataFrame(annotation, keep.extra.columns = T)
+gene_annotation = read.table(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
+gene_annotation = select(gene_annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
+gene_annotation = dplyr::rename(gene_annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
+gene_annotation$Geneid = gsub('\\..+$', '', gene_annotation$Geneid)
+GRanges_gene = makeGRangesFromDataFrame(gene_annotation, keep.extra.columns = T)
 
 #GRanges_gene = make_GRanges(mode = 'gene', results_df = results_df_local_gene)
 
