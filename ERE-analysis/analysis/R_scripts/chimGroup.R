@@ -1,3 +1,6 @@
+library(tidyverse)
+library(GenomicRanges)
+
 # chimGroup.R
 # 
 # Usage:
@@ -16,16 +19,16 @@
   STDIN = c(glue::glue('{home_directory}/mTEC-analysis.lions'),
             glue::glue('{home_directory}/input.list'),
             glue::glue('{home_directory}/rmStats.Rdata'),
-            1,
-            0)
+            2,
+            1)
 
   pLIONS = STDIN[1] # Input LIONS project file
   pNAME = as.character(strsplit(pLIONS, '.lions'))
   pNAME = unlist(strsplit(as.character(pNAME), split = "/"))[9] # project+run name
 
   stdOUTPUT = paste(pNAME, '.rslions', sep='') # Grouped Project Lions File
-
   invOUTPUT = paste(pNAME, '.inv.rslions', sep='') # Inversed Grouped File
+  ChimeraOUTPUT = paste(pNAME, '.chimera', sep='')
 
   GROUP_LIST = STDIN[2]
   # by convention this file is the 3 column CSV file with:
@@ -94,7 +97,7 @@ for  (RUN in c(1:2)) {
 
   Chimera = read.csv(file=pLIONS, header=T, sep='\t')
   
-# Custom annotation step
+# Annotate genes
   
   Chimera_annotated = mutate(Chimera, EStrand = case_when(EStrand == 1 ~ '+',
                                                           EStrand == -1 ~ '-',
@@ -135,6 +138,58 @@ for  (RUN in c(1:2)) {
   }
   
   Chimera['Geneid'] = Geneid
+  
+  ## Annotate TEs
+  
+  Chimera_annotated = Chimera %>%
+    mutate(Chromosome = glue::glue('chr{Chromosome}'))
+  
+  Chimera_annotated = makeGRangesFromDataFrame(Chimera_annotated, 
+                                               start.field = 'RStart', 
+                                               end.field = 'REnd', 
+                                               strand.field = 'RStrand',
+                                               seqnames.field = 'Chromosome',
+                                               keep.extra.columns = T)
+  
+  TE_overlaps = findOverlaps(query = Chimera_annotated, 
+                             subject = GRanges_TE)
+  TE_overlaps = as.data.frame(TE_overlaps)
+  
+  TE_id = vector()
+  for (entry in 1:length(Chimera_annotated)){
+    
+    if (entry %in% TE_overlaps$queryHits){
+      
+      TE_hits = subset(TE_overlaps, queryHits == entry)[, 'subjectHits']
+      TE_hits = GRanges_TE[TE_hits, ]$locus
+      
+      counter = 1
+      TE_hits_filtered = vector()
+      for (hit in TE_hits){
+        
+        search_string = stringr::str_split(hit, '_')[[1]][1]
+        if (grepl(search_string, Chimera_annotated[entry, 'repeatName']$repeatName) == T){
+          
+          TE_hits_filtered[counter] = hit
+          counter = counter + 1
+          
+        }
+        
+      }
+      
+      TE_id[entry] = paste(TE_hits_filtered, collapse = ';')
+      
+    }
+    
+    else{
+      
+      TE_id[entry] = NA
+      
+    }
+    
+  }
+  
+  Chimera['TEid'] = TE_id
   
   # Sub-sample Chimera
     #Sample = rep(0,times = nrow(Chimera))
@@ -327,15 +382,22 @@ Fishers.Matrix = function(X,Y){
   # Remove Duplicates
   Chimera = Chimera[IDdup,]
      
-
 # Group Chimera
   # Assign biological catagories to Chimera from Groups
 
   Chimera['Group'] = sapply(Chimera[,'LIBRARY'], FUN = GroupAssign)
-  
+
 # Count Groups in Chimera
   Chimera['Normal_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = normGroup)
   Chimera['Cancer_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = canGroup)
+
+## Export Chimera before filtering
+  
+  if (RUN == 1){
+    
+    write.csv(Chimera, ChimeraOUTPUT)
+    
+  }
 
 # Filter Chimeric List for recurrent elements
 

@@ -92,7 +92,17 @@ Chimera['Geneid'] = Geneid
 Chimera['Group'] = sapply(Chimera[,'LIBRARY'], FUN = GroupAssign)
 Chimera['LO_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = 1)
 Chimera['HI_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = 2)
-Chimera = mutate(Chimera, total_Occ = LO_Occ + HI_Occ)
+Chimera = mutate(Chimera, total_Occ = LO_Occ + HI_Occ) %>%
+  mutate(Chromosome = glue::glue('chr{Chromosome}'))
+
+Chimera_annotated = makeGRangesFromDataFrame(Chimera, 
+                                             start.field = 'RStart', 
+                                             end.field = 'REnd', 
+                                             strand.field = 'RStrand',
+                                             seqnames.field = 'Chromosome',
+                                             keep.extra.columns = T)
+
+overlaps = findOverlaps(query = Chimera_annotated, subject = GRanges_TE)
 
 #################################################################
 #  Contribution analysis: TE-centric
@@ -237,6 +247,19 @@ contribution_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', 
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/LIONS_contribution_genes.png", 
        width = 9, height = 7, units = "in")
+
+## Gene-set enrichment
+
+library(enrichR)
+
+genes = LIONS_genes$hgnc_symbol
+genes = genes[genes != '']
+
+dbs = c("GO_Molecular_Function_2018", 'GO_Biological_Process_2018')
+
+enrichment_results = enrichr(genes, dbs)
+
+plotEnrich(enrichment_results[[1]])
 
 #################################################################
 #  Gene enrichment
