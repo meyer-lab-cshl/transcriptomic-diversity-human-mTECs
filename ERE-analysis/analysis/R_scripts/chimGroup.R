@@ -99,16 +99,12 @@ for  (RUN in c(1:2)) {
   
 # Annotate genes
   
-  Chimera_annotated = mutate(Chimera, EStrand = case_when(EStrand == 1 ~ '+',
-                                                          EStrand == -1 ~ '-',
-                                                          EStrand == 0 ~ '*')) %>%
-    mutate(Chromosome = glue::glue('chr{Chromosome}'))
+  Chimera_annotated = mutate(Chimera, Chromosome = glue::glue('chr{Chromosome}'))
   
   Chimera_annotated = makeGRangesFromDataFrame(Chimera_annotated,
                                                start.field = 'EStart',
                                                end.field = 'EEnd',
                                                seqnames.field = 'Chromosome',
-                                               strand.field = 'EStrand',
                                                keep.extra.columns = T)
   
   gene_overlaps = findOverlaps(query = Chimera_annotated,
@@ -116,28 +112,40 @@ for  (RUN in c(1:2)) {
                                ignore.strand = T)
   
   gene_overlaps = as.data.frame(gene_overlaps)
+  GRanges_gene_df = as.data.frame(GRanges_gene)
   
   Geneid = vector()
+  strands = vector()
+  gene_type = vector()
   for (entry in 1:length(Chimera_annotated)){
     
     if (entry %in% gene_overlaps$queryHits){
       
       gene_hits = subset(gene_overlaps, queryHits == entry)[, 'subjectHits']
-      gene_hits = GRanges_gene[gene_hits, ]$Geneid
       
-      Geneid[entry] = paste(gene_hits, collapse = ';')
+      gene_names = GRanges_gene_df[gene_hits, ]$Geneid
+      gene_strands = GRanges_gene_df[gene_hits, ]$strand
+      gene_types = GRanges_gene_df[gene_hits, ]$Class
+      
+      Geneid[entry] = paste(gene_names, collapse = ';')
+      strands[entry] = paste(gene_strands, collapse = ';')
+      gene_type[entry] = paste(gene_types, collapse = ';')
       
     }
     
     else{
       
       Geneid[entry] = NA
+      strands[entry] = NA
+      gene_type[entry] = NA
       
     }
     
   }
   
   Chimera['Geneid'] = Geneid
+  Chimera['Gene_strand'] = strands
+  Chimera['Gene_type'] = gene_type
   
   ## Annotate TEs
   
@@ -395,7 +403,7 @@ Fishers.Matrix = function(X,Y){
   
   if (RUN == 1){
     
-    write.csv(Chimera, ChimeraOUTPUT)
+    write.table(Chimera, ChimeraOUTPUT, sep = '\t')
     
   }
 
@@ -431,7 +439,7 @@ while (Go == T){
              'RefID','RefStrand','assXref', 
              'repeatName', 'RepeatRank',
              'coordinates', 'ER_Interaction','RepeatID',
-             'Normal_Occ','Cancer_Occ', 'Contribution')
+             'Normal_Occ','Cancer_Occ', 'TEid', 'Geneid')
   
   OutputRow = ChimFiltered[1,OutCol]
   

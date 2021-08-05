@@ -1,7 +1,7 @@
+library(biomaRt)
+library(GenomicRanges)
 library(ggvenn)
 library(tidyverse)
-library(GenomicRanges)
-library(biomaRt)
 
 #################################################################
 #  Data import
@@ -30,79 +30,63 @@ LIONS = bind_rows(LIONS_HI, LIONS_LO) %>%
 
 ## From Chimera 
 
-home_directory = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/External_packages/LIONS/mTEC-analysis'
+Chimera = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/External_packages/LIONS/mTEC-analysis/mTEC-analysis.chimera', 
+                   sep = '\t', header = T)
+Chimera['LO_occurence'] = Chimera['Normal_Occ']
+Chimera['HI_occurence'] = Chimera['Cancer_Occ']
+Chimera = select(Chimera, -c('Normal_Occ', 'Cancer_Occ'))
 
-STDIN = c(glue::glue('{home_directory}/mTEC-analysis.lions'),
-          glue::glue('{home_directory}/input.list'),
-          glue::glue('{home_directory}/rmStats.Rdata'),
-          1,
-          0)
+Chimera = mutate(Chimera, total_occurence = LO_occurence + HI_occurence) 
 
-pLIONS = STDIN[1] # Input LIONS project file
-GROUP_LIST = STDIN[2]
-RMDATA_PATH= STDIN[3]
-MultiCan = as.numeric(STDIN[4])
-NonNormal = as.numeric(STDIN[5])
+## Filtering Chimeric-gene transcription events
 
-Chimera = read.csv(pLIONS, header=T, sep='\t')
-ID = paste(Chimera[,'RepeatID'],Chimera[,'LIBRARY'],sep='~')
-IDdup = !duplicated(ID)
-Chimera = Chimera[IDdup,]
+sense_Chimera = subset(Chimera, assXref == 's' | assXref == 'c')
 
-Chimera_annotated = mutate(Chimera, EStrand = case_when(EStrand == 1 ~ '+',
-                                                        EStrand == -1 ~ '-',
-                                                        EStrand == 0 ~ '*')) %>%
-  mutate(Chromosome = glue::glue('chr{Chromosome}'))
-
-Chimera_annotated = makeGRangesFromDataFrame(Chimera_annotated,
-                                             start.field = 'EStart',
-                                             end.field = 'EEnd',
-                                             seqnames.field = 'Chromosome',
-                                             strand.field = 'EStrand',
-                                             keep.extra.columns = T)
-
-gene_overlaps = findOverlaps(query = Chimera_annotated,
-                             subject = GRanges_gene, 
-                             ignore.strand = T)
-
-gene_overlaps = as.data.frame(gene_overlaps)
-
-Geneid = vector()
-for (entry in 1:length(Chimera_annotated)){
+for (entry in 1:nrow(sense_Chimera)){
   
-  if (entry %in% gene_overlaps$queryHits){
+  if (sense_Chimera[entry, 'assXref'] == 'c'){
     
-    gene_hits = subset(gene_overlaps, queryHits == entry)[, 'subjectHits']
-    gene_hits = GRanges_gene[gene_hits, ]$Geneid
+    repeat_strand = sense_Chimera[entry, 'RStrand']
     
-    Geneid[entry] = paste(gene_hits, collapse = ';')
+    gene_list = unlist(stringr::str_split(sense_Chimera[entry, 'RefID'], ';'))
+    gene_strand_list = unlist(stringr::str_split(sense_Chimera[entry, 'RefStrand'], ';'))
     
-  }
-  
-  else{
+    counter = 1
+    keep_these_genes = vector()
+    keep_these_strands = vector()
+    for (gene_strand in gene_strand_list){
+      
+      gene_strand = stringr::str_trim(gene_strand, side = 'both')
+      
+      if (gene_strand == repeat_strand){
+        
+        keep_these_genes[counter] = gene_list[counter]
+        keep_these_strands[counter] = gene_strand_list[counter]
+        
+      }
+      
+      else {
+        
+        keep_these_genes[counter] = ''
+        keep_these_strands[counter] = ''
+        
+      }
+      
+     counter = counter + 1
+      
+    }
     
-    Geneid[entry] = NA
+    keep_these_genes = keep_these_genes[keep_these_genes != '']
+    sense_Chimera[entry, 'RefID'] = stringr::str_c(keep_these_genes, collapse = ';')
+    
+    keep_these_strands = keep_these_strands[keep_these_strands != '']
+    sense_Chimera[entry, 'RefStrand'] = stringr::str_c(keep_these_strands, collapse = ';')
     
   }
   
 }
 
-Chimera['Geneid'] = Geneid
-
-Chimera['Group'] = sapply(Chimera[,'LIBRARY'], FUN = GroupAssign)
-Chimera['LO_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = 1)
-Chimera['HI_Occ'] = apply(X = Chimera, MARGIN = 1, FUN = MatchEntry, GroupN = 2)
-Chimera = mutate(Chimera, total_Occ = LO_Occ + HI_Occ) %>%
-  mutate(Chromosome = glue::glue('chr{Chromosome}'))
-
-Chimera_annotated = makeGRangesFromDataFrame(Chimera, 
-                                             start.field = 'RStart', 
-                                             end.field = 'REnd', 
-                                             strand.field = 'RStrand',
-                                             seqnames.field = 'Chromosome',
-                                             keep.extra.columns = T)
-
-overlaps = findOverlaps(query = Chimera_annotated, subject = GRanges_TE)
+Chimera = sense_Chimera
 
 #################################################################
 #  Contribution analysis: TE-centric
@@ -142,15 +126,19 @@ Chimera['TRA_annotation'] = TRA_annotation
 
 ## Strict filtering
 Filtered_Chimera = subset(Chimera, Group == 2) %>%
-  subset(LO_Occ <= 1 & HI_Occ >= 2) %>%
+  subset(LO_occurence <= 1 & HI_occurence >= 2) %>%
   mutate(RepeatID = forcats::fct_reorder(RepeatID, Contribution, .fun='mean'))
 
 ## Not-so-strict 
 Filtered_Chimera = subset(Chimera, Group == 2) %>%
-  subset(LO_Occ <= 0 & HI_Occ >= 1) %>%
+  subset(LO_occurence <= 0 & HI_occurence >= 1) %>%
   mutate(RepeatID = forcats::fct_reorder(RepeatID, Contribution, .fun='mean'))
 
-contribution_plot = ggplot(data = Filtered_Chimera, aes(x = RepeatID, y = Contribution, fill = TRA_annotation)) +
+## Filter for total occurrence 
+Filtered_Chimera = subset(Chimera, total_occurence >= 2) %>%
+  mutate(RepeatID = forcats::fct_reorder(RepeatID, Contribution, .fun='mean'))
+
+contribution_plot = ggplot(data = Filtered_Chimera, aes(x = RepeatID, y = Contribution)) +
   geom_bar(stat = 'summary') +
   geom_hline(yintercept = 1, linetype = 'dashed')
 
@@ -186,13 +174,12 @@ for (i in 1:nrow(mean_contribution)){
   
   repeat_id = mean_contribution[i, 'RepeatID']
   
-  genes = subset(Filtered_Chimera, RepeatID == repeat_id)[1, 'Geneid']
+  genes = subset(Filtered_Chimera, RepeatID == repeat_id)[1, 'RefID']
   
   genes = unlist(stringr::str_split(genes, pattern = ';'))
-  print(genes)
   
   for (gene in genes){
-    
+    gene = stringr::str_trim(gene, side = 'both') 
     gene_list[counter] = gene
     contribution[counter] = mean_contribution[i, 'mean_contribution']
     counter = counter + 1
@@ -201,34 +188,44 @@ for (i in 1:nrow(mean_contribution)){
   
 }
 
-LIONS_genes = data.frame(ensembl_gene_id = gene_list, contribution = contribution) %>%
-  subset(!is.na(ensembl_gene_id)) %>%
-  mutate(ensembl_gene_id = forcats::fct_reorder(ensembl_gene_id, contribution, .fun='mean'))
+LIONS_genes = data.frame(gene_name = gene_list, contribution = contribution) %>%
+  subset(!is.na(gene_name)) %>%
+  mutate(gene_name = forcats::fct_reorder(gene_name, contribution, .fun='mean'))
 
-conversion = getBM(attributes=c("hgnc_symbol", "ensembl_gene_id"), filters = 'ensembl_gene_id', values = LIONS_genes$ensembl_gene_id, mart= ensembl)
+conversion = getBM(attributes = c('external_gene_name', 'gene_biotype'), 
+                           filters = 'external_gene_name', 
+                           values = LIONS_genes$gene_name, 
+                           mart = ensembl)
 
-LIONS_genes = merge(LIONS_genes, conversion , by = 'ensembl_gene_id') 
+conversion = getBM(attributes = c('ensembl_gene_id', 'external_gene_name'), 
+                   filters = 'external_gene_name', 
+                   values = LIONS_genes$gene_name, 
+                   mart = ensembl)
 
-## Annotate
-
-LIONS_genes = mutate(LIONS_genes, TRA_annotation = case_when(ensembl_gene_id %in% TRA_genes$ensembl_gene_id ~ "TRA",
-                                           ensembl_gene_id %in% housekeeping_genes$ensembl_gene_id ~ 'Housekeeping',
-                                           TRUE ~ 'Other'))
-
-gene_type = vector()
-for (i in 1:nrow(LIONS_genes)){
+gene_biotype = vector()
+for (entry in 1:nrow(LIONS_genes)){
   
-  gene = LIONS_genes[i, 'ensembl_gene_id']
-  gene_type[i] = subset(GRanges_gene, Geneid == gene)$Class
+  hgnc = match(LIONS_genes$gene_name, conversion$external_gene_name)[entry]
+  
+  if (is.na(hgnc) == T){
+    
+    gene_biotype[entry] = 'Unknown'
+    
+  }
+  
+  else{
+    
+    gene_biotype[entry] = conversion[hgnc, 'gene_biotype']
+    
+  }
   
 }
 
-LIONS_genes['gene_type'] = gene_type
+LIONS_genes['gene_biotype'] = gene_biotype
 
-contribution_plot = ggplot(data = LIONS_genes, aes(x = ensembl_gene_id, y = contribution, fill = TRA_annotation)) +
+contribution_plot = ggplot(data = LIONS_genes, aes(x = gene_name, y = contribution, fill = gene_biotype)) +
   geom_bar(stat = 'identity') +
-  geom_hline(yintercept = .1, linetype = 'dashed') +
-  geom_text(aes(label = hgnc_symbol, angle = 270), nudge_y = 0.4) +
+  geom_hline(yintercept = 1, linetype = 'dashed') +
   scale_fill_brewer(palette = 'Set1')
 
 contribution_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
