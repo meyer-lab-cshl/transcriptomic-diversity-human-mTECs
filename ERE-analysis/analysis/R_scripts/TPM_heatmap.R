@@ -1,7 +1,10 @@
 library(pheatmap)
 library(tidyverse)
+library(glue)
 
-functions_directory = "/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_functions/"
+working_directory = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
+functions_directory = glue("{working_directory}/R_functions/")
+
 functions = c('save_pheatmap_png')
 
 for (i in functions){
@@ -10,11 +13,13 @@ for (i in functions){
   
 }
 
-#################################################################
+################################################################################
 # Import TPM values from SalmonTE
-#################################################################
+################################################################################
 
-files = list.files(path="~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/SalmonTE", pattern="EXPR*", full.names=TRUE, recursive=FALSE)
+files = list.files(path="{working_directory}/count_tables/SalmonTE", 
+                   pattern="EXPR*", 
+                   full.names=TRUE, recursive=FALSE)
 
 counter = 0
 for (file in files){
@@ -23,6 +28,7 @@ for (file in files){
   if (counter == 0){TPM = input}
   else{TPM = merge(TPM, input, by = 'TE')}
   counter = counter + 1
+  remove(input)
   
 }
 
@@ -56,24 +62,23 @@ for (i in 1:length(colnames(TPM))){
   
 }
 
-#################################################################
+################################################################################
 # Batch correction
-#################################################################
+################################################################################
 
 ID = colnames(TPM)
 sampleInfo = data.frame(ID,row.names=colnames(TPM))
-sampleInfo = suppressWarnings(separate(sampleInfo, col = ID, into = c('patient', 'tissue', 'batch'), sep = '_'))
+sampleInfo = suppressWarnings(separate(sampleInfo, 
+                                       col = ID, 
+                                       into = c('patient', 'tissue', 'batch'), 
+                                       sep = '_'))
 sampleInfo$ID = row.names(sampleInfo)
 
 #TPM = limma::removeBatchEffect(TPM, sampleInfo$batch)TPM
 
-#################################################################
-# PCA
-#################################################################
-
-#################################################################
+################################################################################
 # Heatmap
-#################################################################
+################################################################################
 
 ## Collapse tissue replicates
 
@@ -103,7 +108,7 @@ for (i in (unique(sampleInfo$tissue))){
 
 averaged_TPM = output
 
-## Rename tissues
+## Manually rename tissues - there's probably a better way of doing this...
 
 for (name in 1:length(colnames(averaged_TPM))){
   
@@ -232,14 +237,12 @@ my_heatmap = pheatmap(averaged_TPM,
                       show_colnames = T,
                       cluster_cols=T,
                       scale = 'row',
-                      angle_col = 45)
+                      angle_col = 45,
+                      treeheight_row = 0)
 
-save_pheatmap_png(x = my_heatmap, 
-                  filename = "~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/TPM_heatmap.png",
-                  width = 3000,
-                  height = 1500,
+save_pheatmap_png(x = my_heatmap,
+                  type = 'pdf',
+                  filename = glue("{working_directory}/Plots/TPM_heatmap.pdf"),
+                  width = 50,
+                  height = 30,
                   res = 300)
-
-#################################################################
-# Fraction of reads mapping to TEs 
-#################################################################

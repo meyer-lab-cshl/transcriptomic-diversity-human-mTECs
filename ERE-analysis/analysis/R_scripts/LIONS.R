@@ -112,6 +112,7 @@ Filtered_Chimera = subset(Chimera, total_occurence >= 2) %>%
   mutate(RepeatID = forcats::fct_reorder(RepeatID, Contribution, .fun='mean'))
 
 ## Filter for induction detected by TElocal + DEseq2
+results_df_local_ERE = readRDS(file = glue::glue('{working_directory}/R_variables/results_df_local_ERE'))
 up_TEs = subset(results_df_local_TE, significant == T & log2FoldChange > 0)$locus
 Filtered_Chimera = subset(Chimera, TEid %in% up_TEs) %>%
   mutate(RepeatID = forcats::fct_reorder(RepeatID, Contribution, .fun='mean'))

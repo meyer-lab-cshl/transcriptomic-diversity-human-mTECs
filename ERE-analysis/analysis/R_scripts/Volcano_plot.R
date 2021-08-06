@@ -1,12 +1,12 @@
-library(ggplot2)
-library(dplyr)
+library(tidyverse)
 
-#################################################################
+working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
+
+################################################################################
 # TE transcripts
-#################################################################
+################################################################################
 
-input = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/results_df_transcripts_ERE')
-
+input = readRDS(file = glue('{working_directory}/R_variables/results_df_transcripts_ERE'))
 input$class = factor(input$class, levels = c('LTR', 'SINE', 'LINE', 'Retroposon'))
 
 volcano_plot = ggplot() +
