@@ -86,6 +86,10 @@ gene_sets = list('AIRE_genes' = subset(GRanges_gene_extended, Geneid %in% AIRE_g
                  'Housekeeping_genes' = subset(GRanges_gene_extended, Geneid %in% housekeeping_genes), 
                  'other_genes' = subset(GRanges_gene_extended, !(Geneid %in% AIRE_genes) & !(Geneid %in% FEZF2_genes) & !(Geneid %in% housekeeping_genes)))
 
+gene_sets = list('lncRNA' = subset(GRanges_gene_extended, Class == 'lncRNA'),
+                 'protein' = subset(GRanges_gene_extended, Class == 'protein_coding'),
+                 'other' = subset(GRanges_gene_extended, Class != 'lncRNA' & Class != 'protein_coding'))
+
 final_output = find_frequency_of_overlaps(gene_universe = GRanges_gene_extended,
                                           TE_universe = GRanges_ERE_start,
                                           gene_sets = gene_sets,
