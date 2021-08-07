@@ -5,8 +5,8 @@ library(GenomicRanges)
 
 input = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_ERE_start')
 GRanges_gene_extended = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_gene_extended')
-up_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/up_genes')
-down_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/down_genes')
+up_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/up_genes')
+down_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/down_genes')
 diff_genes = append(up_genes, down_genes)
 
 overlaps = as.data.frame(findOverlaps(query = input,
