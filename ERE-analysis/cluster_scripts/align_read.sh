@@ -6,18 +6,18 @@
 #$ -o align_reads_output.txt
 #$ -e align_reads_output.txt
 
-tissue=ESCs
+TE_HOME=/grid/meyer/home/mpeacey/TE_thymus
 
-cd $TE_HOME/data/RNA_seq/${tissue}/raw_fastq/
+cd $TE_HOME/data/5Pseq/raw_fastq/
 
 declare -a read_1_array=()
 declare -a read_2_array=()
 
-for READ_1 in *_1.fastq; do
+for READ_1 in *_1.paired.fastq; do
   read_1_array+=($READ_1)
 done
 
-for READ_2 in *_2.fastq; do
+for READ_2 in *_2.paired.fastq; do
   read_2_array+=($READ_2)
 done
 
@@ -27,10 +27,10 @@ counter=0
 for i in ${read_1_array[@]}; do
 
   fastp \
-  -i $TE_HOME/data/RNA_seq/${tissue}/raw_fastq/${i} \
-  -I $TE_HOME/data/RNA_seq/${tissue}/raw_fastq/${read_2_array[$counter]} \
-  -o $TE_HOME/data/RNA_seq/${tissue}/fastp/${i}.fastp \
-  -O $TE_HOME/data/RNA_seq/${tissue}/fastp/${read_2_array[$counter]}.fastp \
+  -i $TE_HOME/data/5Pseq/raw_fastq/${i} \
+  -I $TE_HOME/data/5Pseq/raw_fastq/${read_2_array[$counter]} \
+  -o $TE_HOME/data/5Pseq/fastp/${i}.fastp \
+  -O $TE_HOME/data/5Pseq/fastp/${read_2_array[$counter]}.fastp \
   -q 25 -u 10 -l 50 -y -x -w 4
   
   STAR \
@@ -38,12 +38,12 @@ for i in ${read_1_array[@]}; do
   --genomeDir $TE_HOME/index/ \
   --sjdbGTFfile $TE_HOME/index/annotations/human.GRCh38.gtf \
   --sjdbOverhang 100 \
-  --readFilesIn $TE_HOME/data/RNA_seq/${tissue}/fastp/${i}.fastp \
-  $TE_HOME/data/RNA_seq/${tissue}/fastp/${read_2_array[$counter]}.fastp \
+  --readFilesIn $TE_HOME/data/5Pseq/fastp/${i}.fastp \
+  $TE_HOME/data/5Pseq/fastp/${read_2_array[$counter]}.fastp \
   --outSAMtype BAM Unsorted \
   --winAnchorMultimapNmax 200 \
   --outFilterMultimapNmax 100 \
-  --outFileNamePrefix $TE_HOME/data/RNA_seq/${tissue}/bam_files/${i}_
+  --outFileNamePrefix $TE_HOME/data/5Pseq/bam_files/${i}_
   
   counter=$((counter+1))
 
