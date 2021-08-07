@@ -1,8 +1,22 @@
 library(tidyverse)
 library(GenomicRanges)
+library(glue)
 
-GRanges_gene_extended = loadRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_gene_extended')
-GRanges_TE_start = loadRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_TE_start')
+working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
+
+## Import required variables
+GRanges_gene_extended = readRDS(file = glue('{working_directory}/R_variables/GRanges_gene_extended'))
+GRanges_ERE_start = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_ERE_start')
+
+##Import required functions
+
+functions = c('generate_contingency')
+
+for (i in functions){
+  
+  load(glue('{working_directory}/R_functions/{i}'))
+  
+}
 
 #################################################################
 # Overlap analysis
@@ -141,9 +155,27 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
 # ?
 #################################################################
 
+results_df_local_ERE = readRDS(file = glue::glue('{working_directory}/R_variables/results_df_local_ERE'))
+overlap_annotated_GRanges_gene_extended = readRDS(file = glue::glue('{working_directory}/R_variables/overlap_annotated_GRanges_gene_extended'))
 
-GRanges_ERE_start$overlap_expression = report
+results_df_local_ERE = merge(results_df_local_ERE, as.data.frame(overlap_annotated_GRanges_gene_extended), by = 'locus')%>%
+  mutate(TE_expression = case_when(significant == T & log2FoldChange > 0 ~ 'up',
+                                   significant == T & log2FoldChange < 0 ~ 'down',
+                                   T ~ 'unchanged'))
 
-GRanges_ERE_start_edgeR = as.data.frame(subset(GRanges_ERE_start, locus %in% edgeR_results$locus))
+condition_A = list('unchanged' = 'overlap_expression == "unchanged"',
+                   'up' = 'overlap_expression == "up"',
+                   'down' = 'overlap_expression == "down"',
+                   'none' = 'overlap_expression == "none"')
 
-edgeR_results_annotated = merge(edgeR_results, select(GRanges_ERE_start_edgeR, c('locus', 'overlap_expression')), by = 'locus')
+condition_B = list('TE_unchanged' = 'TE_expression == "unchanged"',
+                   'TE_up' = 'TE_expression == "up"',
+                   'TE_down' = 'TE_expression == "down"')
+
+output = generate_contingency(input = results_df_local_ERE, 
+                     condition_A = condition_A, 
+                     condition_B = condition_B)
+
+vcd::mosaic(~condition_A+condition_B, data = output, 
+            direction = c('v', 'h'), 
+            shade = T)

@@ -61,13 +61,15 @@ annotation = separate(annotation, chromosome.start.stop, into = c('chr', 'start.
 annotation = separate(annotation, start.stop, into = c('start', 'end'), sep = '-')
 annotation = dplyr::rename(annotation, locus = TE)
 
-list_of_EREs = extract_subset(read.table(glue::glue('{count_table_directory}TE_local_hi_vs_lo.cntTable'),header=T,row.names=1), mode = 'ERE')
+count_table_directory = glue::glue("{working_directory}/count_tables/TE_local")
+list_of_EREs = extract_subset(read.table(glue::glue('{count_table_directory}/TE_local_hi_vs_lo.cntTable'),header=T,row.names=1), mode = 'ERE')
 list_of_EREs$ID = row.names(list_of_EREs)
 list_of_EREs = separate(list_of_EREs, col = 'ID', into = 'locus', sep = ':')$locus
 
 ERE_annotation = subset(annotation, locus %in% list_of_EREs)
 
 GRanges_ERE = makeGRangesFromDataFrame(ERE_annotation, keep.extra.columns = T)
+saveRDS(GRanges_ERE, file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_ERE')
 
 GRanges_ERE_start = GRanges_ERE
 end(GRanges_ERE_start) = start(GRanges_ERE_start)
@@ -83,7 +85,6 @@ AIRE_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/anal
 FEZF2_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/human_fezf2_dep_genes.csv')
 TRA_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/tra_genes.csv')
 housekeeping_genes = read.csv(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/gene_lists/housekeeping_genes.csv')
-
 
 up_genes = subset(results_df_local_gene, significant == T & log2FoldChange > 0)$Geneid
 down_genes = subset(results_df_local_gene, significant == T & log2FoldChange < 0)$Geneid
