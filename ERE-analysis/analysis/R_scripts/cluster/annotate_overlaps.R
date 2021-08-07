@@ -1,9 +1,9 @@
-.libPaths('/grid/meyer/home/mpeacey/R/x86_64-pc-linux-gnu-library/4.0/')
-
 library(tidyverse)
 library(GenomicRanges)
 
-input = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_ERE_start')
+results_df_local_ERE = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/results_df_local_ERE')
+input = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_ERE_start') %>%
+  subset(locus %in% results_df_local_ERE$locus)
 GRanges_gene_extended = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_gene_extended')
 up_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/up_genes')
 down_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/down_genes')
@@ -24,31 +24,31 @@ for (entry in 1:length(input)){
   
   else{
     
-    gene_hits = subset(overlaps, queryHits == unique(overlaps$queryHits)[entry])$subjectHits
+    gene_hits = subset(overlaps, queryHits == entry)$subjectHits
     
     up = GRanges_gene_extended[gene_hits, ]$Geneid %in% up_genes
     down = GRanges_gene_extended[gene_hits, ]$Geneid %in% down_genes
     unchanged = !(GRanges_gene_extended[gene_hits, ]$Geneid %in% diff_genes)
     
-    expression = list('unchanged' = length(unchanged[unchanged == T]),
-                      'up' = length(up[up == T]), 
-                      'down' = length(down[down == T]))
+    expression = list('up' = length(up[up == T]), 
+                      'down' = length(down[down == T]),
+                      'unchanged' = length(unchanged[unchanged == T]))
     
     if(which.max(expression) == 1){
-      
-      report[entry] = 'unchanged'
-      
-    }
-    
-    if(which.max(expression) == 2){
       
       report[entry] = 'up'
       
     }
     
-    if(which.max(expression) == 3){
+    if(which.max(expression) == 2){
       
       report[entry] = 'down'
+      
+    }
+    
+    if(which.max(expression) == 3){
+      
+      report[entry] = 'unchanged'
       
     }
     

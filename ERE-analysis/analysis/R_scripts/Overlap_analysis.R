@@ -156,9 +156,10 @@ ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plot
 #################################################################
 
 results_df_local_ERE = readRDS(file = glue::glue('{working_directory}/R_variables/results_df_local_ERE'))
-overlap_annotated_GRanges_gene_extended = readRDS(file = glue::glue('{working_directory}/R_variables/overlap_annotated_GRanges_gene_extended'))
+#overlap_annotated_GRanges_gene_extended = readRDS(file = glue::glue('{working_directory}/R_variables/overlap_annotated_GRanges_gene_extended'))
+overlap_annotated_GRanges_gene_extended = input
 
-results_df_local_ERE = merge(results_df_local_ERE, as.data.frame(overlap_annotated_GRanges_gene_extended), by = 'locus')%>%
+input = merge(subset(results_df_local_ERE, significant == T), as.data.frame(overlap_annotated_GRanges_gene_extended), by = 'locus')%>%
   mutate(TE_expression = case_when(significant == T & log2FoldChange > 0 ~ 'up',
                                    significant == T & log2FoldChange < 0 ~ 'down',
                                    T ~ 'unchanged'))
@@ -168,14 +169,13 @@ condition_A = list('unchanged' = 'overlap_expression == "unchanged"',
                    'down' = 'overlap_expression == "down"',
                    'none' = 'overlap_expression == "none"')
 
-condition_B = list('TE_unchanged' = 'TE_expression == "unchanged"',
-                   'TE_up' = 'TE_expression == "up"',
+condition_B = list('TE_up' = 'TE_expression == "up"',
                    'TE_down' = 'TE_expression == "down"')
 
-output = generate_contingency(input = results_df_local_ERE, 
+output = generate_contingency(input = input, 
                      condition_A = condition_A, 
                      condition_B = condition_B)
 
-vcd::mosaic(~condition_A+condition_B, data = output, 
+vcd::mosaic(~condition_B+condition_A, data = output, 
             direction = c('v', 'h'), 
             shade = T)
