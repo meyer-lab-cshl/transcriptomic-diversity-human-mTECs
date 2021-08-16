@@ -24,6 +24,8 @@ mm_ensembl<- useMart(biomart="ENSEMBL_MART_ENSEMBL",
 ## Fold change column defined by authors as aire_ko/aire_wt,
 ## ie small fold changes indicate upregulation through aire
 aire <- aire[(aire$fold_change <= 2) & (aire$FDR_BH < 0.05),]
+write_csv(aire,
+          file.path(indir, "gene_lists/input/mm_aire-dependent_sansom_supp3_table16.csv"))
 mm_aire <- getBM(attributes =c('ensembl_gene_id',
                                'hsapiens_homolog_ensembl_gene'),
                       filters = 'ensembl_gene_id',
@@ -48,6 +50,14 @@ mm_fezf2 <- getBM(attributes =c('ensembl_gene_id','entrezgene_id'),
                       filters = 'entrezgene_id',
                       values = fezf2_mm9$EntrezGene,
                       mart = mm_ensembl)
+fezf2_mm9 <- fezf2_mm9 %>%
+    left_join(mm_fezf2, by=c("EntrezGene"="entrezgene_id")) %>%
+    dplyr::select(ensembl_gene_id, EntrezGene, everything()) %>%
+    rename(Ensembl="ensembl_gene_id")
+write_csv(fezf2_mm9,
+          file.path(indir, "gene_lists/input/mm_fezf2-dependent_takaba_140417mTECmicroarray.csv"))
+
+
 mm_fezf2_hu <- getBM(attributes =c('ensembl_gene_id',
                                        'hsapiens_homolog_ensembl_gene'),
                          filters = 'ensembl_gene_id',
