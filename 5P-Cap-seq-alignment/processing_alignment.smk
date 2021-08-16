@@ -14,8 +14,10 @@ rule all:
             reads=['fwd', 'rev'],
             pdir=DIRECTORY,
             sample=SAMPLE),
-        expand("{pdir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.{reads}.sam",
-            reads=['fwd', 'rev'],
+        expand("{pdir}/deduplicated/overview.dedup.unique.reads.txt",
+            pdir=DIRECTORY),
+        expand("{pdir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.{reads}.bam.bai",
+            reads=['fwd'],
             pdir=DIRECTORY,
             sample=SAMPLE),
         expand("{pdir}/bedgraphs/{sample}_5prime_nz_readdepth.combined.bedgraph",
@@ -42,6 +44,36 @@ rule split_reads:
         """
         samtools view -h -f 0x40 {input.unique} > {output.fwd}
         samtools view -h -f 0x80 {input.unique} > {output.rev}
+        """
+
+rule sort:
+    input:
+        fwd="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.sam",
+    output:
+        sort="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
+    resources:
+        mem_mb = 120000
+    threads: 4
+    conda:
+        "envs/align.yaml"
+    shell:
+        """
+        samtools sort {input.fwd} -o {output.sort} -@ {threads} -m 20G
+        """
+
+rule index:
+    input:
+        sort="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam",
+    output:
+        index="{dir}/deduplicated/{sample}_Aligned.sortedByCoord.dedup.unique.fwd.bam.bai",
+    resources:
+        mem_mb = 10000
+    threads: 4
+    conda:
+        "envs/align.yaml"
+    shell:
+        """
+        samtools index {input} -@ {threads}
         """
 
 rule collapse_reads:

@@ -2,17 +2,30 @@
 library(tidyverse)
 library(biomaRt)
 
-indir <- "~/data/tss"
+indir <- "~/data/tss/gene_lists/public_data"
+tradir <- "~/data/tra"
+outdir <- "~/data/tss/gene_lists/gene_lists_human"
 
 ## read in gene lists from literature ####
 ## aire dependent genes from Sansom et a ().Supp Tab 3, sheet 16 ####
-aire<- read_csv(file.path(indir, "gene_lists/input/sansom_supp.3_table16.csv"))
+aire<- read_csv(file.path(indir, "sansom_supp.3_table16.csv"))
 
 ## housekeeping genes from Eisenberg & Levanon 2013
-housekeeping <- read_tsv(file.path(indir, "gene_lists/input/housekeeping_genes.tsv"))
+housekeeping <- read_tsv(file.path(indir, "housekeeping_genes.tsv"))
 
 ## fezf2 genes from Takaba 2015
-fezf2 <- read_csv(file.path(indir, "gene_lists/input/140417mTECmicroarray.csv"))
+fezf2 <- read_csv(file.path(indir, "140417mTECmicroarray.csv"),
+                  col_names = c("ProveSetID", "WTaverage", "KOaverage",
+                                "FoldChange", "StudentTTEST", "GeneSymbol",
+                                "EntrezGene"),
+                  skip=1
+                  )
+
+## TRA genes and transcripts from tra/tra.R ####
+tra_genes <- read_csv(file.path(tradir,
+                                "gtex_genes_binarized_expression.csv"))
+tra_transcripts <- read_csv(file.path(tradir,
+                                      "gtex_transcripts_binarized_expression.csv"))
 
 ## define marts to map mouse to human and ensembl to entrez IDs ####
 ensembl <- useMart(biomart="ENSEMBL_MART_ENSEMBL",
@@ -24,18 +37,17 @@ mm_ensembl<- useMart(biomart="ENSEMBL_MART_ENSEMBL",
 ## Fold change column defined by authors as aire_ko/aire_wt,
 ## ie small fold changes indicate upregulation through aire
 aire <- aire[(aire$fold_change <= 2) & (aire$FDR_BH < 0.05),]
-write_csv(aire,
-          file.path(indir, "gene_lists/input/mm_aire-dependent_sansom_supp3_table16.csv"))
 mm_aire <- getBM(attributes =c('ensembl_gene_id',
                                'hsapiens_homolog_ensembl_gene'),
                       filters = 'ensembl_gene_id',
                       values = aire$Ensembl,
                       mart = mm_ensembl)
-human_aire <- getBM(attributes =c('ensembl_gene_id','entrezgene_id'),
+human_aire <- getBM(attributes = c('refseq_mrna', 'entrezgene_id',
+                                  'ensembl_gene_id', 'external_gene_name'),
                          filters = 'ensembl_gene_id',
                          values = mm_aire$hsapiens_homolog_ensembl_gene,
                          mart = ensembl)
-human_aire <- human_aire[!duplicated(human_aire$entrezgene),]
+human_aire <- human_aire[!duplicated(human_aire$ensembl_gene_id),]
 
 ## define list with Fezf2 dependent genes based on Takaba 2015 ####
 ## Fold change column defined by authors as -1* WT/KO,
@@ -50,37 +62,75 @@ mm_fezf2 <- getBM(attributes =c('ensembl_gene_id','entrezgene_id'),
                       filters = 'entrezgene_id',
                       values = fezf2_mm9$EntrezGene,
                       mart = mm_ensembl)
-fezf2_mm9 <- fezf2_mm9 %>%
-    left_join(mm_fezf2, by=c("EntrezGene"="entrezgene_id")) %>%
-    dplyr::select(ensembl_gene_id, EntrezGene, everything()) %>%
-    rename(Ensembl="ensembl_gene_id")
-write_csv(fezf2_mm9,
-          file.path(indir, "gene_lists/input/mm_fezf2-dependent_takaba_140417mTECmicroarray.csv"))
-
-
 mm_fezf2_hu <- getBM(attributes =c('ensembl_gene_id',
                                        'hsapiens_homolog_ensembl_gene'),
                          filters = 'ensembl_gene_id',
                          values = mm_fezf2$ensembl_gene_id,
                          mart = mm_ensembl)
-human_fezf2 <- getBM(attributes =c('ensembl_gene_id','entrezgene_id'),
+human_fezf2 <- getBM(attributes =c('refseq_mrna', 'entrezgene_id',
+                                   'ensembl_gene_id', 'external_gene_name'),
                           filters = 'ensembl_gene_id',
                           values = mm_fezf2_hu$hsapiens_homolog_ensembl_gene,
                           mart = ensembl)
-human_fezf2 <- human_fezf2[!duplicated(human_fezf2$entrezgene_id),]
+human_fezf2 <- human_fezf2[!duplicated(human_fezf2$ensembl_gene_id),]
 
 ## define housekeeping genes ####
-housekeeping_genes <- getBM(attributes =c('refseq_mrna','entrezgene_id'),
+housekeeping_genes <- getBM(attributes =c('refseq_mrna','entrezgene_id',
+                                          'ensembl_gene_id',
+                                          'external_gene_name'),
                         filters = 'refseq_mrna',
                         values = housekeeping$refseq,
                         mart = ensembl)
-housekeeping_genes <- housekeeping_genes[!(duplicated(housekeeping_genes$entrezgene)),]
+housekeeping_genes <- housekeeping_genes[!(duplicated(housekeeping_genes$ensembl_gene_id)),]
+
+## define TRA genes and transcripts ####
+tra_genes_annotated <- getBM(attributes =c('refseq_mrna','entrezgene_id',
+                                          'ensembl_gene_id',
+                                          'external_gene_name'),
+                            filters = 'ensembl_gene_id',
+                            values = tra_genes$id,
+                            mart = ensembl)
+tra_genes_annotated <- tra_genes_annotated[!(duplicated(tra_genes_annotated$ensembl_gene_id)),]
+
+tra_genes_annotated <- tra_genes_annotated %>%
+    left_join(tra_genes, by=c("ensembl_gene_id"="id"))
+
+tra_transcripts_annotated <- getBM(attributes =c('refseq_mrna','entrezgene_id',
+                                 'ensembl_gene_id',
+                                 'external_gene_name', 'ensembl_transcript_id'),
+                   filters = 'ensembl_transcript_id',
+                   values = tra_transcripts$id,
+                   mart = ensembl)
+tra_transcripts_annotated <- tra_transcripts_annotated[!(duplicated(tra_transcripts_annotated$ensembl_transcript_id)),]
+
+tra_transcripts_annotated <- tra_transcripts_annotated %>%
+    left_join(tra_transcripts, by=c("ensembl_transcript_id"="id"))
+
+## Remove any ambiguous genes ####
+
+common_genes <- c(tra_genes_annotated$ensembl_gene_id,
+                  housekeeping_genes$ensembl_gene_id)
+ambiguous_genes <- table(common_genes)[table(common_genes) == 2]
+
+tra_genes_annotated <- tra_genes_annotated %>%
+    dplyr::filter(!ensembl_gene_id %in% names(ambiguous_genes))
+
+tra_transcripts_annotated <- tra_transcripts_annotated %>%
+    dplyr::filter(!ensembl_gene_id %in% names(ambiguous_genes))
+
+housekeeping_genes <- housekeeping_genes %>%
+    dplyr::filter(!ensembl_gene_id %in% names(ambiguous_genes))
+
 
 ## write tables with gene lists ####
 write_csv(human_aire,
-          file.path(indir, "gene_lists/human_aire_dep_genes_san.csv"))
+          file.path(outdir, "human_aire_dep_genes_san.csv"))
 write_csv(human_fezf2,
-          file.path(indir, "gene_lists/human_fezf2_dep_genes.csv"))
-write.table(housekeeping_genes,
-            file.path(indir, "gene_lists/housekeeping_genes.csv"))
+          file.path(outdir, "human_fezf2_dep_genes.csv"))
+write_csv(housekeeping_genes,
+            file.path(outdir, "housekeeping_genes.csv"))
+write_csv(tra_genes_annotated,
+          file.path(outdir, "tra_genes.csv"))
+write_csv(tra_transcripts_annotated,
+          file.path(outdir, "tra_transcripts.csv"))
 
