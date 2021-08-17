@@ -41,6 +41,10 @@ Chimera = select(Chimera, -c('Normal_Occ', 'Cancer_Occ'))
 Chimera = mutate(Chimera, total_occurence = LO_occurence + HI_occurence) %>%
   separate(col = repeatName, into = c('gene', 'class', 'family'), sep = ':', remove = F)
 
+## Remove non EREs
+
+Chimera = Chimera[Chimera$class != 'DNA', ]
+
 ## Filtering Chimeric-gene transcription events
 
 sense_Chimera = subset(Chimera, !is.na(Geneid))
@@ -158,6 +162,7 @@ mean_contribution = as.data.frame(mean_contribution)
 counter = 1
 gene_list = vector()
 contribution = vector()
+repeat_class = vector()
 
 for (i in 1:nrow(mean_contribution)){
   
@@ -172,6 +177,7 @@ for (i in 1:nrow(mean_contribution)){
     gene = stringr::str_trim(genes[a], side = 'both') 
     gene_list[counter] = gene
     contribution[counter] = mean_contribution[i, 'mean_contribution']
+    repeat_class[counter] = names(sort(table(subset(Filtered_Chimera, RepeatID == repeat_id)$class), decreasing = TRUE)[1])
     
     counter = counter + 1
     
@@ -179,10 +185,12 @@ for (i in 1:nrow(mean_contribution)){
   
 }
 
-LIONS_genes = data.frame(ensembl_gene_id = gene_list, contribution = contribution) %>%
+LIONS_genes = data.frame(ensembl_gene_id = gene_list, contribution = contribution, class = repeat_class) %>%
   mutate(ensembl_gene_id = forcats::fct_reorder(ensembl_gene_id, contribution, .fun='mean'))
 
 ## Annotate
+
+ensembl = useEnsembl(biomart = "genes", dataset = 'hsapiens_gene_ensembl')
 
 conversion = getBM(attributes = c('ensembl_gene_id', 'gene_biotype', 'external_gene_name'), 
                    mart = ensembl, filter = 'ensembl_gene_id', values = LIONS_genes$ensembl_gene_id)
@@ -198,22 +206,26 @@ input = mutate(input, TRA_annotation = case_when(ensembl_gene_id %in% TRA_genes$
 contribution_plot = ggplot(data = input, aes(x = ensembl_gene_id, y = contribution, fill = gene_biotype)) +
   geom_bar(stat = 'identity') +
   geom_hline(yintercept = 0.1, linetype = 'dashed') +
-  scale_fill_brewer(palette = 'Set1') +
-  geom_text(aes(label = external_gene_name), angle = 90, nudge_y = 0.3, size = 3)
+  geom_text(aes(label = external_gene_name), angle = 90, nudge_y = 0.3, size = 4) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +
+  ylab('Repeat expression relative to gene') +
+  scale_fill_manual(labels = c('lncRNA', 'Protein-coding', 'Pseudogene'), values = c(r, g, p)) +
+  labs(fill= "")
 
 contribution_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                        plot.subtitle = element_text(size = 14),
-                                       axis.text.x = element_text(size = 10, angle = 90),
+                                       axis.text.x = element_blank(),
                                        axis.text.y = element_text(size = 14),
                                        axis.title.x = element_blank(),
                                        axis.title.y = element_text(size = 15, margin = margin(r = 7.5)),
                                        axis.line = element_line(size = 0.8),
                                        panel.border = element_blank(),
-                                       legend.text = element_text(size = 15),
-                                       legend.title = element_text(size = 18),
-                                       legend.position = c(0.4, 0.86),
+                                       legend.text = element_text(size = 12),
+                                       legend.title = element_text(size = 13),
                                        panel.grid.major = element_blank(),
-                                       panel.grid.minor = element_blank())
+                                       panel.grid.minor = element_blank(),
+                                       legend.position = 'top',
+                                       axis.ticks.x=element_blank())
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/LIONS_contribution_genes.png", 
        width = 6, height = 7, units = "in")

@@ -65,16 +65,16 @@ Salmon_results_transcripts_df$TE = row.names(Salmon_results_transcripts_df)
 ## '{unique ID}_{tissue}_{batch}'. e.g. 'pt214_mTEC-hi_our-data'
 
 count_table_directory = glue("{working_directory}/count_tables/TE_transcripts")
-data = read.table(glue('{count_table_directory}/mTEC.cntTable'),header=T,row.names=1)
+mTEC_data = read.table(glue('{count_table_directory}/mTEC.cntTable'),header=T,row.names=1)
 
 ERE_data = extract_subset(mTEC_data, mode = 'ERE')
 
 ## Run DESeq2
 
-dds_transcripts = differential_expression(ERE_data, design=~patient + tissue)
-vs_dds_transcripts = vst(dds_transcripts, blind=FALSE)
+dds_transcripts_ERE = differential_expression(ERE_data, design=~patient + tissue)
+vs_dds_transcripts_ERE = vst(dds_transcripts_ERE, blind=FALSE)
 
-results_transcripts = results(dds_transcripts, 
+results_transcripts_ERE = results(dds_transcripts, 
                               contrast = c('tissue', 'mTEC.hi', 'mTEC.lo'), 
                               independentFiltering = F)
 

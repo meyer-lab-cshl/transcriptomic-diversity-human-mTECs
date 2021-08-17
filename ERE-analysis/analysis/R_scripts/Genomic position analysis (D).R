@@ -21,6 +21,9 @@ for (i in functions){
   
 }
 
+## Import required variables
+results_df_local_ERE = readRDS(file = glue('{working_directory}/R_variables/results_df_local_ERE'))
+
 #################################################################
 # Generating GRanges objects
 #################################################################
@@ -35,10 +38,12 @@ end(GRanges_TE_start) = start(GRanges_TE_start)
 ## Genes
 
 gene_annotation = read.table(file = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1)
-gene_annotation = select(gene_annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
+gene_annotation = dplyr::select(gene_annotation, c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
 gene_annotation = dplyr::rename(gene_annotation, chr = Chromosome, start = Start, end = End, strand = Strand)
 gene_annotation$Geneid = gsub('\\..+$', '', gene_annotation$Geneid)
 GRanges_gene = makeGRangesFromDataFrame(gene_annotation, keep.extra.columns = T)
+
+saveRDS(GRanges_gene, file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_gene')
 
 #GRanges_gene = make_GRanges(mode = 'gene', results_df = results_df_local_gene)
 
@@ -47,12 +52,6 @@ end(GRanges_gene_extended) = end(GRanges_gene) + 1000
 start(GRanges_gene_extended) = start(GRanges_gene) - 1000
 
 saveRDS(GRanges_gene_extended, file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_gene_extended')
-
-#GRanges_gene_upstream = GRanges_gene
-#end(GRanges_gene_upstream) = start(GRanges_gene)
-#start(GRanges_gene_upstream) = start(GRanges_gene) - 5000
-
-## EREs
 
 #GRanges_ERE = make_GRanges(mode = 'TE', results_df = results_df_local_ERE)
 
@@ -94,294 +93,17 @@ down_genes = subset(results_df_local_gene, significant == T & log2FoldChange < 0
 up_EREs = subset(results_df_local_ERE, significant == T & log2FoldChange > 0)$locus
 down_EREs = subset(results_df_local_ERE, significant == T & log2FoldChange < 0)$locus
 
-###############
-## TEeffectR ##
-###############
+#################################################################
+# Gene differential expression (from Jason)
+#################################################################
 
-library(stringr)
-library(biomaRt)
-library(biomartr)
-library(dplyr)
-library(Rsamtools)
-library(edgeR)
-library(rlist)
-library(limma)
-library(TEffectR)
-library(tidyr)
-library(GenomicRanges)
+Sleuth_results_sig = read.csv('~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/Sleuth_results_sig.txt')
 
-## Counts
+up_genes = subset(Sleuth_results_sig, b < 0)$ens_gene
+down_genes = subset(Sleuth_results_sig, b > 0)$ens_gene
 
-gene.counts = extract_subset(mode = 'gene', input = data)
-
-TE.counts = extract_subset(mode = 'TE', input = data) 
-TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
-TE.counts = separate(data = TE.counts, col = 'ID', into = c('locus', 'gene', 'family', 'class'), sep = ':')
-TE.counts = cbind(ID = rownames(TE.counts), TE.counts)
-TE.counts = subset(TE.counts, class == 'LTR')
-
-## Annotations
-
-gene.annotation = read.table(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/gencode.v38_gene_annotation_table.txt', header = 1) %>%
-  select(c('Chromosome', 'Start', 'End', 'Strand', 'Geneid', 'GeneSymbol')) %>%
-  dplyr::rename(chr = Chromosome, start = Start, end = End, strand = Strand, geneID = Geneid, geneName = GeneSymbol)
-
-repeat.annotation = read.table(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt', header = 1) %>%
-  separate(chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':') %>%
-  separate(start.stop, into = c('start', 'end'), sep = '-') %>%
-  dplyr::rename(locus = TE)
-
-#repeatmasker.annotation <- TEffectR::rm_format(filepath = "~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/annotation_tables/hg38.fa.out")
-
-## Make GRanges objects
-
-TE.counts.GRanges = merge(TE.counts, repeat.annotation, by = 'locus') %>%
-  makeGRangesFromDataFrame(keep.extra.columns = T)
-TE.counts.GRanges.start = TE.counts.GRanges
-end(TE.counts.GRanges.start) = start(TE.counts.GRanges)
-start(TE.counts.GRanges.start) = start(TE.counts.GRanges)
-
-gene.annotation.GRanges = makeGRangesFromDataFrame(gene.annotation, keep.extra.columns = T)
-gene.annotation.GRanges.upstream = gene.annotation.GRanges
-end(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges)
-start(gene.annotation.GRanges.upstream) = start(gene.annotation.GRanges) - 5000
-
-## Build sum.repeat.counts
-
-query = gene.annotation.GRanges.upstream
-subject = TE.counts.GRanges.start
-
-hits = as.data.frame(findOverlaps(query, subject))
-
-sum.repeat.counts = hits %>%
-  mutate(queryHits = gene.annotation[queryHits, 'geneName']) %>%
-  dplyr::rename(geneName = queryHits) %>%
-  mutate(subjectHits = TE.counts[subjectHits, 2]) %>%
-  dplyr::rename(locus = subjectHits) %>%
-  merge(TE.counts, by = 'locus') %>%
-  select(-c('ID', 'gene', 'family')) %>%
-  dplyr::rename(repeatName = locus, repeatClass = class)
-
-## RUn TEffectR
-
-# read your gene annotation file
-#gene.annotation<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/gene.annotation.tsv", header= T, stringsAsFactors = F)
-
-# read your gene expression file
-#gene.counts<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/gene.counts.tsv", header= T, row.names=1, stringsAsFactors = F)
-
-# read your summarised repeat annotation file
-#sum.repeat.counts<-read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/sampleInputs/sum.repeat.counts.tsv", header= T, stringsAsFactors = F)
-
-covariates <- NULL
-prefix = "LTRs"
-
-lm = TEffectR::apply_lm(gene.annotation = gene.annotation,
-                       gene.counts = gene.counts,
-                       repeat.counts = sum.repeat.counts,
-                       covariates = covariates,
-                       prefix = prefix)
-
-lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/LTRs -lm-results.tsv", header= T, sep="\t") %>%
-  mutate(significant = case_when(model.p.value < 0.05 ~ T,
-                                 model.p.value >= 0.05 ~ F))
-
-
-#  mutate(adjusted.p.value = p.adjust(model.p.value, method = 'BH', n = nrow(lm_results))) %>%
-#  mutate(significant = case_when(adjusted.p.value < 0.05 ~ T,
-#                                 adjusted.p.value >= 0.05 ~ F))
-
-volcano_plot = ggplot() +
-  geom_point(data = lm_results, aes(x = r.squared, y = -log10(model.p.value)), color = alpha('#9B9A99', 0.6)) +
-  geom_point(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), fill = significant), size = 2.5, alpha = 1, shape = 21, stroke = 0) +
-  geom_point(data = subset(lm_results, significant == FALSE), aes(x = r.squared, y = -log10(model.p.value)), size = 1, alpha = 1, shape = 21, stroke = 0) +
-  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
-  xlab(expression('R squared')) +
-  ylab(expression('-log'[10]*'(p-value)')) +
-  ggrepel::geom_label_repel(data = subset(lm_results, significant == TRUE), aes(x = r.squared, y = -log10(model.p.value), label = GeneName))
-
-volcano_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
-                                  plot.subtitle = element_text(size = 14),
-                                  axis.text.x = element_text(size = 14),
-                                  axis.text.y = element_text(size = 14),
-                                  axis.title = element_text(size = 14),
-                                  axis.line = element_line(size = 0.8),
-                                  panel.border = element_blank(),
-                                  legend.text = element_text(size = 15),
-                                  legend.title = element_text(size = 18),
-                                  legend.position = c(0.2, 0.93),
-                                  panel.grid.major = element_blank(),
-                                  panel.grid.minor = element_blank())
-
-ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/TEeffectR_LTRs.png", 
-       width = 7, height = 5.25, units = "in")
-
-plot_regression = function(regression, counts, gene){
-  
-  counts = cbind(ID = counts$X, counts) %>%
-    separate(col = 'ID', into = c('associated_gene', 'repeat_class', 'repeat_name'), sep = ':')
-
-  x_values = subset(counts, X == gene) %>%
-    select(-c('repeat_class', 'repeat_name', 'associated_gene')) %>%
-    pivot_longer(cols = -1, values_to = 'gene_expression')
-  
-  TE = subset(regression, GeneName == gene)$RepeatName 
-  
-  y_values = subset(counts, repeat_name == TE) %>%
-    select(-c('repeat_class', 'X', 'associated_gene')) %>%
-    pivot_longer(cols = -1, values_to = 'TE_expression')
-  
-  output = merge(x_values, y_values, by = 'name') %>%
-    separate(col = 'name', into = c('patient', 'mTEC'), sep = '_')
-
-  return(output)
-  
-}
-
-lm_cpm = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/LTRs -cpm-values.tsv", header= T, sep="\t") 
-lm_results = read.table("~/Desktop/thymus-epitope-mapping/ERE-analysis/LTRs -lm-results.tsv", header= T, sep="\t")
-
-regression = lm_results
-counts = lm_cpm
-gene = 'DHDH'
-
-correlation_df = plot_regression(regression = regression, counts = counts, gene = gene)
-
-correlation_plot = ggplot(data = correlation_df, aes(x = gene_expression, y = TE_expression)) +
-  geom_point(aes(fill = mTEC), shape = 21, size = 4) +
-  stat_smooth(method = "lm", col = "red") +
-  scale_fill_manual(values = c('#4c72b0ff', '#dd8452ff')) +
-  xlab(expression('Gene Expression (log'[2]*'(CPM))')) +
-  ylab(expression('TE Expression (log'[2]*'(CPM))'))
-
-correlation_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
-                                        plot.subtitle = element_text(size = 14),
-                                        axis.text.x = element_text(size = 14),
-                                        axis.text.y = element_text(size = 14),
-                                        axis.title = element_text(size = 14),
-                                        axis.line = element_line(size = 0.8),
-                                        panel.border = element_blank(),
-                                        legend.text = element_text(size = 15),
-                                        legend.title = element_text(size = 18),
-                                        legend.position = c(0.2, 0.93),
-                                        panel.grid.major = element_blank(),
-                                        panel.grid.minor = element_blank())
-
-ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/TEeffectR_TBC1D15.png", 
-       width = 7, height = 5.25, units = "in")
-
-
-
-################
-## Odds ratio ##
-################
-
-calculate_odds_ratio_of_overlap = function(gene_sets,
-                                           TE_set,
-                                           TE_coordinates = GRanges_TE, 
-                                           gene_coordinates = GRanges_gene){
-  
-  ## 'gene sets' is a list in which each entry is a list of ENSEMBL gene IDs.
-  ##
-  ## 'TE_coordinates' is a GRanges object containing all detected TEs  and
-  ## the output of differential expression analysis via TElocal.
-  ##
-  ## 'gene_coordinates' is a GRanges object containing all detected genes and
-  ## and the output of differential expression analysis via TElocal.
-  
-  subset = names(gene_sets)
-  p_value = vector()
-  odds_ratio = vector()
-  lower_interval = vector()
-  upper_interval = vector()
-  
-  if (TE_set == 'up'){
-    
-    fold_change_condition = 'log2FoldChange > 0'
-    
-  }
-  
-  if (TE_set == 'down'){
-    
-    fold_change_condition = 'log2FoldChange < 0'
-    
-  }
-  
-  for (i in 1:length(gene_sets)){
-    
-    gene_set = gene_sets[[i]]
-    
-    column_1 = c(length(findOverlaps(subset(TE_coordinates, significant == T & eval(parse(text = fold_change_condition))), subset(gene_coordinates, Geneid %in% gene_set))), 
-                 length(findOverlaps(subset(TE_coordinates, !(significant == T & eval(parse(text = fold_change_condition)))), subset(gene_coordinates, Geneid %in% gene_set))))
-    
-    column_2 = c(length(findOverlaps(subset(TE_coordinates, significant == T & eval(parse(text = fold_change_condition))), subset(gene_coordinates, !(Geneid %in% gene_set)))), 
-                 length(findOverlaps(subset(TE_coordinates, !(significant == T & eval(parse(text = fold_change_condition)))), subset(gene_coordinates, !(Geneid %in% gene_set)))))
-    
-    contingency = data.frame('gene' = column_1, 'not gene' = column_2, row.names = c('TE', 'not TE'))
-    
-    p_value[i] = fisher.test(x = contingency)[[1]]
-    odds_ratio[i] = fisher.test(x = contingency)[[3]]
-    lower_interval[i] = fisher.test(x = contingency)$conf.int[1]
-    upper_interval[i] = fisher.test(x = contingency)$conf.int[2]
-    
-  }
-  
-  p_value = p.adjust(p_value, method = 'bonferroni')
-  
-  output = data.frame(subset = subset, 
-                      p_value = p_value, 
-                      odds_ratio = odds_ratio, 
-                      lower_interval = lower_interval, 
-                      upper_interval = upper_interval) %>%
-    mutate(significant = case_when(p_value < 0.001 ~ '***', 
-                                   p_value < 0.01 ~ '**',
-                                   p_value < 0.05 ~ '*',
-                                   p_value >= 0.05 ~ '')) %>%
-    mutate(subset = forcats::fct_reorder(subset, odds_ratio))
-  
-  return(output)
-  
-}
-
-gene_sets = list('AIRE' = AIRE_genes, 
-                 'FEZF2' = FEZF2_genes, 
-                 'TRA' = TRA_genes,
-                 'Housekeeping' = housekeeping_genes)
-
-#gene_sets = list('up_genes' = subset(GRanges_gene, significant == T & log2FoldChange > 0)$Geneid,
-#                 'down_genes' = subset(GRanges_gene, significant == T & log2FoldChange < 0)$Geneid)
-
-output = calculate_odds_ratio_of_overlap(gene_sets = gene_sets,
-                                         TE_set = 'down',
-                                         TE_coordinates = GRanges_ERE_start,
-                                         gene_coordinates = GRanges_gene_extended)
-
-odds_ratio_plot = ggplot(data = output, aes(x = subset, y = odds_ratio)) + 
-  geom_point() +
-  geom_hline(yintercept = 1, linetype = 'dashed') +
-  geom_errorbar(aes(ymin = lower_interval, ymax = upper_interval), width = 0) +
-  xlab('') +
-  ylab('Odds ratio') +
-  geom_text(aes(label = significant), nudge_y = 0.3, size = 6) +
-  scale_y_continuous(trans='log10')
-
-odds_ratio_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
-                                     plot.subtitle = element_text(size = 14),
-                                     axis.text.x = element_text(size = 14),
-                                     axis.text.y = element_text(size = 14),
-                                     axis.title.x = element_blank(),
-                                     axis.title.y = element_text(size = 15, margin = margin(r = 7.5)),
-                                     axis.line = element_line(size = 0.8),
-                                     panel.border = element_blank(),
-                                     legend.text = element_text(size = 15),
-                                     legend.title = element_text(size = 18),
-                                     legend.position = c(0.2, 0.93),
-                                     panel.grid.major = element_blank(),
-                                     panel.grid.minor = element_blank())
-
-ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/odds-ratio_overlap_genes-of-interest_down.png", 
-       width = 5, height = 5, units = "in")
-
+saveRDS(up_genes, file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/up_genes')
+saveRDS(down_genes, file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/down_genes')
 
 #################################################################
 # ereMAPs
