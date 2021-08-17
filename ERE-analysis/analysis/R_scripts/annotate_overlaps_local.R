@@ -1,5 +1,6 @@
 library(tidyverse)
 library(GenomicRanges)
+<<<<<<< HEAD
 library(glue)
 
 working_directory = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
@@ -10,6 +11,15 @@ input = readRDS(file = glue('{working_directory}/R_variables/GRanges_ERE_start')
 GRanges_gene_extended = readRDS(file = glue('{working_directory}/R_variables/GRanges_gene_extended'))
 up_genes = readRDS(file = glue('{working_directory}/R_variables/up_genes'))
 down_genes = readRDS(file = glue('{working_directory}/R_variables/down_genes'))
+=======
+
+results_df_local_ERE = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/results_df_local_ERE')
+input = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_ERE_start') %>%
+  subset(locus %in% results_df_local_ERE$locus)
+GRanges_gene_extended = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_gene_extended')
+up_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/up_genes')
+down_genes = readRDS(file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/down_genes')
+>>>>>>> 73018c40b61fd01ae27c86a356ad3cdcf97896c3
 diff_genes = append(up_genes, down_genes)
 
 overlaps = as.data.frame(findOverlaps(query = input,
@@ -68,4 +78,8 @@ for (entry in 1:length(input)){
 }
 
 input$overlap_expression = report
+<<<<<<< HEAD
 saveRDS(input, file = glue('{working_directory}/R_variables/overlap_annotated_GRanges_gene_extended'))
+=======
+saveRDS(input, file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/overlap_annotated_GRanges_gene_extended')
+>>>>>>> 73018c40b61fd01ae27c86a356ad3cdcf97896c3
