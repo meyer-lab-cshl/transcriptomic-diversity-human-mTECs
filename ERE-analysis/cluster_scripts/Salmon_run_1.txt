@@ -1,6 +1,0 @@
-Prostate
-Spleen
-Stomach
-Testis
-Thyroid
-placeholder

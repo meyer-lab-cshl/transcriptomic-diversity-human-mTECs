@@ -9,6 +9,15 @@ library(GenomicRanges)
 library(fgsea)
 
 working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
+functions_directory = glue("{working_directory}/R_functions/")
+
+functions = c('extract_subset')
+
+for (i in functions){
+  
+  load(glue('{functions_directory}{i}'))
+  
+}
 
 ################################################################################
 # Prepare annotation
@@ -20,8 +29,8 @@ working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/
 annotation = read.table(file = glue::glue("{working_directory}/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt"), 
                         header = 1)
 
-annotation = separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':') %>%
-  separate(start.stop, into = c('start', 'end'), sep = '-') %>%
+annotation = tidyr::separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':') %>%
+  tidyr::separate(start.stop, into = c('start', 'end'), sep = '-') %>%
   dplyr::rename(annotation, locus = TE)
 
 annotation = makeGRangesFromDataFrame(annotation, keep.extra.columns = T)
@@ -33,6 +42,26 @@ annotation = as.data.frame(annotation)
 #
 # Imports raw counts from TE_local.
 #################################################################
+
+count_tables = list.files(path='/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local/New', 
+                          pattern="*cntTable", 
+                          full.names=TRUE, 
+                          recursive=FALSE)
+
+counter = 0
+for (table in count_tables){
+  
+  input = read.table(file = table,
+                     header = T,
+                     row.names = 1)
+  input = extract_subset(input = input, mode = 'ERE') 
+  input$Geneid = row.names(input)
+  if (counter == 0){counts = input}
+  else{counts = merge(counts, input, by = 'Geneid')}
+  counter = counter + 1
+  remove(input)
+  
+}
 
 ## mTECs
 
