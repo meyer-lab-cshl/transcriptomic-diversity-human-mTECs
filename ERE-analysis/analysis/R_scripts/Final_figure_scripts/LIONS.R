@@ -203,8 +203,12 @@ input = mutate(input, TRA_annotation = case_when(ensembl_gene_id %in% TRA_genes$
 
 ## Visualize
 
+r = "#FBB4AE"
+g = "#CCEBC5"
+p = "#DECBE4"
+
 contribution_plot = ggplot(data = input, aes(x = ensembl_gene_id, y = contribution, fill = gene_biotype)) +
-  geom_bar(stat = 'identity') +
+  geom_bar(stat = 'identity', col = 'black') +
   geom_hline(yintercept = 0.1, linetype = 'dashed') +
   geom_text(aes(label = external_gene_name), angle = 90, nudge_y = 0.3, size = 4) +
   scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0, .1))) +

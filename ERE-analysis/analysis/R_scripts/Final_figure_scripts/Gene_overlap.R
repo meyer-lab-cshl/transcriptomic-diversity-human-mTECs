@@ -10,9 +10,12 @@ GRanges_ERE_start = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysi
 up_genes = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/up_genes')
 down_genes = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/down_genes')
 
+up_EREs = subset(results_df_local_ERE, significant == T & log2FoldChange > 0)$locus
+down_EREs = subset(results_df_local_ERE, significant == T & log2FoldChange < 0)$locus
+
 ##Import required functions
 
-functions = c('generate_contingency')
+functions = c('generate_contingency', 'find_frequency_of_overlaps')
 
 for (i in functions){
   
@@ -23,54 +26,6 @@ for (i in functions){
 #################################################################
 # Overlap analysis
 #################################################################
-
-find_frequency_of_overlaps = function(gene_universe, TE_universe, gene_sets, TE_sets){
-  
-  for (a in 1:length(TE_sets)){
-    
-    total_overlaps = length(findOverlaps(query = TE_sets[[a]],
-                                         subject = gene_universe))
-    
-    print(total_overlaps)
-    
-    percent = vector()
-    for (b in 1:length(gene_sets)){
-      
-      subset_overlap = length(findOverlaps(query = TE_sets[[a]],
-                                           subject = gene_sets[[b]]))
-      
-      percent[b] = subset_overlap / total_overlaps * 100
-      
-    }
-    
-    table_entry = data.frame(gene_set = names(gene_sets),
-                             percent_overlap = percent,
-                             TE_set = names(TE_sets)[a])
-    
-    if (a == 1){
-      
-      frequency_table = table_entry
-      
-    }
-    
-    else{
-      
-      frequency_table = bind_rows(frequency_table, table_entry)
-      
-    }
-    
-  }
-  
-  ## Reformat the frequency table to a contingency table
-  
-  contingency_table = xtabs(percent_overlap ~ gene_set+TE_set, data=frequency_table)
-  
-  output = list('frequency_table' = frequency_table,
-                'contingency_table' = contingency_table)
-  
-  return(output)
-  
-}
 
 ## Differentially regulated genes
 
@@ -123,9 +78,9 @@ vcd::mosaic(~TE_set+gene_set, data = final_output$contingency_table,
 
 # Plot bar chart
 
-r = '#e41a1c'
-p = '#984ea3'
-g = '#4daf4a'
+r = "#FBB4AE"
+g = "#CCEBC5"
+p = "#DECBE4"
 
 input = final_output$frequency_table
 input$class = factor(input$class, levels = c('LTR', 'SINE', 'LINE', 'Retroposon'))
@@ -139,7 +94,7 @@ bar_chart = ggplot(input, aes(x = TE_set, y = percent_overlap, fill = gene_set))
   scale_x_discrete(labels = c('Down EREs', 'Unchanged EREs', 'Up EREs')) +
   geom_hline(yintercept = 1, linetype = 'dashed') +
   guides(fill = guide_legend(reverse = T)) +
-  scale_fill_manual(labels = c('Down genes', 'Unchanged genes', 'Up genes'), values = c(p, g, r))
+  scale_fill_manual(labels = c('Down genes', 'Unchanged genes', 'Up genes'), values = c(r, p, g))
 
 bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 20),
                                plot.subtitle = element_text(size = 14),

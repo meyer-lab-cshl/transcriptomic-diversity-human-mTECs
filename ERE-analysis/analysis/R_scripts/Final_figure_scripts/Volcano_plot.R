@@ -2,26 +2,17 @@ library(tidyverse)
 
 working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
 
+r = "#FBB4AE"
+g = "#CCEBC5"
+p = "#DECBE4"
+
 ################################################################################
 # TE transcripts
 ################################################################################
 
-input = readRDS(file = glue('{working_directory}/R_variables/results_df_transcripts_ERE')) %>%
+input = readRDS(file = glue('{working_directory}/R_variables/results_df_transcripts_ERE'))
   
-
-
 input$class = factor(input$class, levels = c('LTR', 'SINE', 'LINE', 'Retroposon'))
-
-volcano_plot = ggplot() +
-  geom_point(data = input, aes(x = log2FoldChange, y = -log10(padj)), color = alpha('#9B9A99', 0.6), stroke = 0) +
-  geom_point(data = subset(input, significant == TRUE), aes(x = log2FoldChange, y = -log10(padj), fill = class), size = 1.8, alpha = 0.8, shape = 21, stroke = 0) +
-  geom_point(data = subset(input, significant == FALSE), aes(x = log2FoldChange, y = -log10(padj)), size = 1, alpha = 0.8, shape = 21, stroke = 0) +
-  geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
-  xlab(expression('log'[2]*'(fold-change)')) +
-  ylab(expression('-log'[10]*'(adjusted p-value)')) +
-  xlim(-2, 3) +
-  scale_fill_manual(values = c('#e41a1c', '#984ea3', '#4daf4a', '#F781BF')) +
-  labs(fill= "")
 
 volcano_plot = ggplot() +
   geom_point(data = subset(input, significant == TRUE), aes(x = log2FoldChange, y = -log10(padj), fill = class), size = 1.8, alpha = 0.8, shape = 21, stroke = 0) +
@@ -30,7 +21,7 @@ volcano_plot = ggplot() +
   xlab(expression('log'[2]*'(fold-change)')) +
   ylab(expression('-log'[10]*'(adjusted p-value)')) +
   xlim(-2, 3) +
-  scale_fill_manual(values = c('#e41a1c', '#984ea3', '#4daf4a', '#F781BF')) +
+  scale_fill_manual(values = c(r, p, g, "#FDDAEC")) +
   labs(fill= "")
 
 ## ereMAPs annotated

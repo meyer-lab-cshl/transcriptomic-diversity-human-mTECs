@@ -31,25 +31,28 @@ annotation = read.table(file = glue::glue("{working_directory}/annotation_tables
 
 annotation = tidyr::separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':') %>%
   tidyr::separate(start.stop, into = c('start', 'end'), sep = '-') %>%
-  dplyr::rename(annotation, locus = TE)
+  dplyr::rename(locus = TE)
 
 annotation = makeGRangesFromDataFrame(annotation, keep.extra.columns = T)
 annotation$width = GenomicRanges::width(annotation)
 annotation = as.data.frame(annotation)
 
-#################################################################
+################################################################################
 # Prepare raw counts
 #
-# Imports raw counts from TE_local.
-#################################################################
+# Imports raw counts from TE_local. Column names should be in the format
+# 'uniqueID_tissue_batch.bam' e.g. pt214_mTEC.hi_new_Aligned.out.bam
+################################################################################
 
-count_tables = list.files(path='/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local/New', 
+count_tables = list.files(path=glue::glue('{working_directory}/count_tables/TE_local/New'), 
                           pattern="*cntTable", 
                           full.names=TRUE, 
                           recursive=FALSE)
 
 counter = 0
 for (table in count_tables){
+  
+  print(table)
   
   input = read.table(file = table,
                      header = T,
@@ -63,91 +66,44 @@ for (table in count_tables){
   
 }
 
-## mTECs
+counts = separate(counts, col = Geneid, 
+                  into = c('locus', 'gene', 'family', 'class'), 
+                  sep = ':', 
+                  remove = F)
 
-mTEC_counts = read.table('/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local/TE_local_hi_vs_lo.cntTable'
-                  ,header=T,
-                  row.names=1)
-mTEC_ERE_counts = extract_subset(input = mTEC_counts, mode = 'ERE') 
-mTEC_ERE_counts$Geneid = row.names(mTEC_ERE_counts)
-mTEC_ERE_counts = separate(mTEC_ERE_counts, col = Geneid, into = c('locus', 'gene', 'family', 'class'), sep = ':', remove = F)
+counts_annotated =  merge(counts, annotation, by = 'locus')
 
-## ESCs
+saveRDS(counts_annotated, file = glue::glue('{working_directory}/R_variables/counts_annotated'))
 
-ESC_counts = read.table('/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local/ESC_TE_local.cntTable'
-                        ,header=T,
-                        row.names=1)
-ESC_ERE_counts = extract_subset(input = ESC_counts, mode = 'ERE') 
-ESC_ERE_counts$Geneid = row.names(ESC_ERE_counts)
-ESC_ERE_counts = separate(ESC_ERE_counts, col = Geneid, into = c('locus', 'gene', 'family', 'class'), sep = ':', remove = F)
-
-## Testis
-
-testis_counts = read.table('/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/count_tables/TE_local/Testis_TE_local.cntTable'
-                        ,header=T,
-                        row.names=1)
-testis_ERE_counts = extract_subset(input = testis_counts, mode = 'ERE') 
-testis_ERE_counts$Geneid = row.names(testis_ERE_counts)
-testis_ERE_counts = separate(testis_ERE_counts, col = Geneid, into = c('locus', 'gene', 'family', 'class'), sep = ':', remove = F)
-
-## All counts
-
-all_ERE_counts = merge(mTEC_ERE_counts, ESC_ERE_counts) %>%
-  merge(testis_ERE_counts)
-
-#################################################################
-# Differential gene expression analysis
-#
-# Uses a paired design to compare TE expression across mTEC-HI
-# and -LO samples.
-#################################################################
-
-mTEC_ERE_counts_annotated =  merge(mTEC_ERE_counts, annotation, by = 'locus')
-
-patient = factor(c('pt226', 'pt226', 'pt221', 'pt221', 'pt214', 'pt214'))
-tissue = factor(c('lo', 'hi', 'lo', 'hi', 'hi', 'lo'))
-y = DGEList(counts = mTEC_ERE_counts_annotated[, 2:7], group = tissue, 
-            genes = mTEC_ERE_counts_annotated[, c(1, 8:15)])
-y = y[filterByExpr(y), , keep.lib.sizes=FALSE]
-y = calcNormFactors(y)
-design = model.matrix(~0+patient+tissue)
-y = estimateDisp(y, design, robust = T)
-
-## Calculate FDR
-
-fit = glmFit(y, design)
-lrt = glmLRT(fit)
-
-edgeR_results = topTags(lrt, n = nrow(lrt$table))$table
-
-## Annotation
-
-edgeR_results$ID = row.names(edgeR_results)
-
-edgeR_results = mutate(edgeR_results, significant = case_when(FDR < 0.05 ~ T,
-                                                              FDR > 0.05 ~ F))
-
-edgeR_results = mutate(edgeR_results, ereMAP = case_when(Geneid %in% ereMAP_loci ~ T,
-                                                         !(Geneid %in% ereMAP_loci) ~ F))
-
-## Export
-
-saveRDS(object = edgeR_results,
-        file = glue::glue('{working_directory}/R_variables/edgeR_results_local_ERE'))
-
-#################################################################
+################################################################################
 # Get RPKM values
-#################################################################
+################################################################################
 
-ERE_counts_annotated =  merge(all_ERE_counts, annotation, by = 'locus')
+## Moved to the cluster because it takes too much memory!
+## /R_scripts/cluster/RPKM_calculation.R
 
-tissue = factor(c('lo', 'hi', 'lo', 'hi', 'hi', 'lo', 'ESC', 'ESC', 'testis', 'testis'))
-y = DGEList(counts = ERE_counts_annotated[, 6: 15], group = tissue, genes = ERE_counts_annotated[, c(1:5, 16:19)])
-y = calcNormFactors(y)
-design = model.matrix(~0+tissue)
-y = estimateDisp(y, design, robust = T)
+#counter = 0
+#tissue = vector()
+#for (name in colnames(counts_annotated)){
+#  
+#  if (grepl(pattern = 'bam', x = name) == T){
+#    
+#    counter = counter + 1
+#    tissue[counter] = stringr::str_split(string = name, pattern = '_')[[1]][2]
+#    
+#  }
+#  
+#}
+#
+#tissue = factor(tissue)
+#y = DGEList(counts = counts_annotated[, 6: 162], group = tissue, genes = counts_annotated[, c(1:5, 163:168)])
+#y = calcNormFactors(y)
+#design = model.matrix(~0+tissue)
+#y = estimateDisp(y, design, robust = T)
+#
+#RPKM_values = rpkm(y, log = F, gene.length = y$genes$width)
 
-RPKM_values = rpkm(y, log = F, gene.length = y$genes$width)
+readRDS(file = glue::glue('{working_directory}/R_variables/RPKM_values'))
 
 # Mean RPKM + heatmap
 
@@ -218,4 +174,42 @@ pathways = list('ereMAPs' = subset(RPKM_df, ereMAP == T)$ID)
 fgseaRes = fgsea(pathways = pathways, stats = ranks)
 plotEnrichment(pathways$ereMAPs, ranks)
 
+################################################################################
+# Differential gene expression analysis
+#
+# Uses a paired design to compare TE expression across mTEC-HI
+# and -LO samples.
+################################################################################
 
+mTEC_ERE_counts_annotated =  merge(mTEC_ERE_counts, annotation, by = 'locus')
+
+patient = factor(c('pt226', 'pt226', 'pt221', 'pt221', 'pt214', 'pt214'))
+tissue = factor(c('lo', 'hi', 'lo', 'hi', 'hi', 'lo'))
+y = DGEList(counts = mTEC_ERE_counts_annotated[, 2:7], group = tissue, 
+            genes = mTEC_ERE_counts_annotated[, c(1, 8:15)])
+y = y[filterByExpr(y), , keep.lib.sizes=FALSE]
+y = calcNormFactors(y)
+design = model.matrix(~0+patient+tissue)
+y = estimateDisp(y, design, robust = T)
+
+## Calculate FDR
+
+fit = glmFit(y, design)
+lrt = glmLRT(fit)
+
+edgeR_results = topTags(lrt, n = nrow(lrt$table))$table
+
+## Annotation
+
+edgeR_results$ID = row.names(edgeR_results)
+
+edgeR_results = mutate(edgeR_results, significant = case_when(FDR < 0.05 ~ T,
+                                                              FDR > 0.05 ~ F))
+
+edgeR_results = mutate(edgeR_results, ereMAP = case_when(Geneid %in% ereMAP_loci ~ T,
+                                                         !(Geneid %in% ereMAP_loci) ~ F))
+
+## Export
+
+saveRDS(object = edgeR_results,
+        file = glue::glue('{working_directory}/R_variables/edgeR_results_local_ERE'))
