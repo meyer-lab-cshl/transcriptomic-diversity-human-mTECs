@@ -1,0 +1,9 @@
+Building DAG of jobs...
+WorkflowError:
+MissingInputException: Missing input files for rule collapse_reads:
+/Users/hannah/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.combined.ucsc.sam
+WorkflowError:
+    MissingInputException: Missing input files for rule collapse_reads:
+    /Users/hannah/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.unique.fwd.plus.sam
+    MissingInputException: Missing input files for rule unique_reads:
+    /Users/hannah/data/tss/human/5Pseq/deduplicated/pt221-lo_Aligned.sortedByCoord.dedup.bam
