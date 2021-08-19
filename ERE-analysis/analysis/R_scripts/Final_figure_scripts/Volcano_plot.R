@@ -1,10 +1,12 @@
 library(tidyverse)
+library(glue)
 
 working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
 
-r = "#FBB4AE"
-g = "#CCEBC5"
-p = "#DECBE4"
+r = "#e41a1c"
+b = '#377eb8'
+g = "#4daf4a"
+p = "#984ea3"
 
 ################################################################################
 # TE transcripts
@@ -21,7 +23,7 @@ volcano_plot = ggplot() +
   xlab(expression('log'[2]*'(fold-change)')) +
   ylab(expression('-log'[10]*'(adjusted p-value)')) +
   xlim(-2, 3) +
-  scale_fill_manual(values = c(r, p, g, "#FDDAEC")) +
+  scale_fill_manual(values = c(r, b, g, p)) +
   labs(fill= "")
 
 ## ereMAPs annotated

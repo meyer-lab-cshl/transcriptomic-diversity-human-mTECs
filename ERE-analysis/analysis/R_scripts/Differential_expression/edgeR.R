@@ -7,6 +7,7 @@ library(edgeR)
 library(tidyverse)
 library(GenomicRanges)
 library(fgsea)
+library(glue)
 
 working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
 functions_directory = glue("{working_directory}/R_functions/")
@@ -74,27 +75,28 @@ counts = separate(counts, col = Geneid,
 counts_annotated =  merge(counts, annotation, by = 'locus')
 
 saveRDS(counts_annotated, file = glue::glue('{working_directory}/R_variables/counts_annotated'))
+counts_annotated = readRDS(file = glue::glue('{working_directory}/R_variables/counts_annotated'))
 
 ################################################################################
 # Get RPKM values
 ################################################################################
 
+counter = 0
+tissue = vector()
+for (name in colnames(counts_annotated)){
+  
+  if (grepl(pattern = 'bam', x = name) == T){
+    
+    counter = counter + 1
+    tissue[counter] = stringr::str_split(string = name, pattern = '_')[[1]][2]
+    
+  }
+  
+}
+
 ## Moved to the cluster because it takes too much memory!
 ## /R_scripts/cluster/RPKM_calculation.R
 
-#counter = 0
-#tissue = vector()
-#for (name in colnames(counts_annotated)){
-#  
-#  if (grepl(pattern = 'bam', x = name) == T){
-#    
-#    counter = counter + 1
-#    tissue[counter] = stringr::str_split(string = name, pattern = '_')[[1]][2]
-#    
-#  }
-#  
-#}
-#
 #tissue = factor(tissue)
 #y = DGEList(counts = counts_annotated[, 6: 162], group = tissue, genes = counts_annotated[, c(1:5, 163:168)])
 #y = calcNormFactors(y)
@@ -103,7 +105,8 @@ saveRDS(counts_annotated, file = glue::glue('{working_directory}/R_variables/cou
 #
 #RPKM_values = rpkm(y, log = F, gene.length = y$genes$width)
 
-readRDS(file = glue::glue('{working_directory}/R_variables/RPKM_values'))
+RPKM_values = readRDS(file = glue::glue('{working_directory}/R_variables/RPKM_values'))
+y = readRDS(file = glue::glue('{working_directory}/R_variables/y'))
 
 # Mean RPKM + heatmap
 

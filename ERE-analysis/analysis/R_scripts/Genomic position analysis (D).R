@@ -15,7 +15,7 @@ functions = c('extract_subset',
               'calculate_odds_ratio_of_overlap',
               'save_heatmap_png')
 
-for (i in functions){
+for (i in functions){q
   
   load(glue('{functions_directory}{i}'))
   
