@@ -94,19 +94,15 @@ for (name in colnames(counts_annotated)){
   
 }
 
-## Moved to the cluster because it takes too much memory!
-## /R_scripts/cluster/RPKM_calculation.R
+tissue = factor(tissue)
+y = DGEList(counts = counts_annotated[, 6: 162], group = tissue, genes = counts_annotated[, c(1:5, 163:168)])
+y = calcNormFactors(y)
+design = model.matrix(~0+tissue)
 
-#tissue = factor(tissue)
-#y = DGEList(counts = counts_annotated[, 6: 162], group = tissue, genes = counts_annotated[, c(1:5, 163:168)])
-#y = calcNormFactors(y)
-#design = model.matrix(~0+tissue)
+## Step takes a long time and not sure if necessary
 #y = estimateDisp(y, design, robust = T)
-#
-#RPKM_values = rpkm(y, log = F, gene.length = y$genes$width)
 
-RPKM_values = readRDS(file = glue::glue('{working_directory}/R_variables/RPKM_values'))
-y = readRDS(file = glue::glue('{working_directory}/R_variables/y'))
+RPKM_values = rpkm(y, log = F, gene.length = y$genes$width)
 
 # Mean RPKM + heatmap
 
