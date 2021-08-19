@@ -1,12 +1,83 @@
+################################################################################
+# Get RPKM counts from TE_local output
+################################################################################
+
 library(edgeR)
 library(tidyverse)
+library(glue)
 
-print('Importing variables...')
+working_directory = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis'
+functions_directory = glue("{working_directory}/R_functions/")
 
-counts_annotated = readRDS('/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/counts_annotated')
-ereMAP_loci = readRDS('/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/ereMAP_loci')
+## Function import
+functions = c('extract_subset')
 
-print('Building tissue list...')
+for (i in functions){
+  
+  load(glue('{functions_directory}{i}'))
+  
+}
+
+## Variable import
+ereMAP_loci = readRDS('{working_directory}/R_variables/ereMAP_loci')
+
+################################################################################
+# Prepare annotation
+# 
+# Imports the RepeatMasker annotation (downloaded from 
+# http://labshare.cshl.edu/shares/mhammelllab/www-data/TElocal/prebuilt_indices/)
+################################################################################
+
+annotation = read.table(file = glue::glue("{working_directory}/annotation_tables/hg38_rmsk_TE.gtf.locInd.locations.txt"), 
+                        header = 1)
+
+annotation = tidyr::separate(annotation, chromosome.start.stop, into = c('chr', 'start.stop'), sep = ':') %>%
+  tidyr::separate(start.stop, into = c('start', 'end'), sep = '-') %>%
+  dplyr::rename(locus = TE)
+
+annotation = makeGRangesFromDataFrame(annotation, keep.extra.columns = T)
+annotation$width = GenomicRanges::width(annotation)
+annotation = as.data.frame(annotation)
+
+################################################################################
+# Prepare raw counts
+#
+# Imports raw counts from TE_local. Column names should be in the format
+# 'uniqueID_tissue_batch.bam' e.g. pt214_mTEC.hi_new_Aligned.out.bam
+################################################################################
+
+count_tables = list.files(path=glue::glue('{working_directory}/count_tables/TE_local/New'), 
+                          pattern="*cntTable", 
+                          full.names=TRUE, 
+                          recursive=FALSE)
+
+counter = 0
+for (table in count_tables){
+  
+  print(table)
+  
+  input = read.table(file = table,
+                     header = T,
+                     row.names = 1)
+  input = extract_subset(input = input, mode = 'ERE') 
+  input$Geneid = row.names(input)
+  if (counter == 0){counts = input}
+  else{counts = merge(counts, input, by = 'Geneid')}
+  counter = counter + 1
+  remove(input)
+  
+}
+
+counts = separate(counts, col = Geneid, 
+                  into = c('locus', 'gene', 'family', 'class'), 
+                  sep = ':', 
+                  remove = F)
+
+counts_annotated =  merge(counts, annotation, by = 'locus')
+
+################################################################################
+# Get RPKM values
+################################################################################
 
 counter = 0
 tissue = vector()
@@ -21,23 +92,17 @@ for (name in colnames(counts_annotated)){
   
 }
 
-print('Building DGEList...')
-
 tissue = factor(tissue)
 y = DGEList(counts = counts_annotated[, 6: 162], group = tissue, genes = counts_annotated[, c(1:5, 163:168)])
-
-print('Calculating normalization factors...')
-
 y = calcNormFactors(y)
 design = model.matrix(~0+tissue)
 
-#print('Estimating dispersion...')
-#
+## Step takes a long time and not sure if necessary
 #y = estimateDisp(y, design, robust = T)
 
-print('Estimating RPKM values...')
-
 RPKM_values = rpkm(y, log = F, gene.length = y$genes$width)
+
+# Mean RPKM + heatmap
 
 mean_RPKM = data.frame(row.names = row.names(RPKM_values))
 for (i in unique(tissue)){
@@ -48,8 +113,13 @@ for (i in unique(tissue)){
 
 ereMAP_mean_RPKM = mean_RPKM[y$genes$Geneid %in% ereMAP_loci, ]
 
-print('Saving output...')
+saveRDS(ereMAP_mean_RPKM, file = glue('{working_directory}/R_variables/ereMAP_mean_RPKM'))
 
-saveRDS(ereMAP_mean_RPKM, file = '/grid/meyer/home/mpeacey/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/ereMAP_mean_RPKM')
+#my_heatmap = pheatmap(ereMAP_mean_RPKM, 
+#                      cluster_rows=T,
+#                      show_rownames=F,
+#                      show_colnames = T,
+#                      cluster_cols=T,
+#                      scale = 'row',
+#                      angle_col = 45)
 
-print('Finished')
