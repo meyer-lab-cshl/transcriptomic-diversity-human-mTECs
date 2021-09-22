@@ -17,7 +17,7 @@ for (i in functions){
 # Import TPM values from SalmonTE
 ################################################################################
 
-files = list.files(path="{working_directory}/count_tables/SalmonTE", 
+files = list.files(path=glue("{working_directory}/count_tables/SalmonTE"), 
                    pattern="EXPR*", 
                    full.names=TRUE, recursive=FALSE)
 

@@ -9,6 +9,7 @@ GRanges_gene_extended = readRDS(file = glue('{working_directory}/R_variables/GRa
 GRanges_ERE_start = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/GRanges_ERE_start')
 up_genes = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/up_genes')
 down_genes = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/down_genes')
+results_df_local_ERE = readRDS(file = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/R_variables/results_df_local_ERE')
 
 up_EREs = subset(results_df_local_ERE, significant == T & log2FoldChange > 0)$locus
 down_EREs = subset(results_df_local_ERE, significant == T & log2FoldChange < 0)$locus
@@ -112,6 +113,11 @@ bar_chart + theme_bw() + theme(plot.title = element_text(face = 'bold', size = 2
 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/fraction_of_overlaps_with_GOIs.png", 
        width = 5, height = 5, units = "in")
+
+## Calculate Chi-square
+
+chisq.test(final_output$contingency_table)
+chisq.posthoc.test::chisq.posthoc.test(final_output$contingency_table, round = 20)
 
 ################################################################################
 # Overlap between TEs and expressed genes

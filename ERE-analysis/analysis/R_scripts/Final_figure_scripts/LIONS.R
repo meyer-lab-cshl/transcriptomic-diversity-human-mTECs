@@ -234,6 +234,25 @@ contribution_plot + theme_bw() + theme(plot.title = element_text(face = 'bold', 
 ggsave("/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis/Plots/LIONS_contribution_genes.png", 
        width = 6, height = 7, units = "in")
 
+
+## Biotype enrichment
+
+all_genes = getBM(attributes = c('ensembl_gene_id', 'gene_biotype'), mart = ensembl)
+
+all_genes = mutate(all_genes, LIONS = case_when(ensembl_gene_id %in% input$ensembl_gene_id ~ T,
+                                                T ~ F))
+
+output = generate_contingency(input = all_genes, 
+                     condition_A = list('LIONS' = "LIONS == T",
+                                        'Not LIONS' = "LIONS == F"),
+                     condition_B = list('lncRNA' = "gene_biotype == 'lncRNA'",
+                                        'protein' = "gene_biotype == 'protein_coding'",
+                                        'unprocessed_pseudogene' = "gene_biotype == 'transcribed_unprocessed_pseudogene'"),
+                     output_type = 'contingency')
+
+chisq.test(output)
+chisq.posthoc.test::chisq.posthoc.test(output)
+
 ## Gene-set enrichment
 
 library(enrichR)

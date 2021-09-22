@@ -8,53 +8,16 @@ library(tidyverse)
 library(ggplot2)
 library(glue)
 
-working_directory = '/Users/mpeacey/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
+working_directory = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
 functions_directory = glue("{working_directory}/R_functions/")
 
-functions = c('extract_subset', 'differential_expression', 'process_DESeq2_results', 'build_count_table', 'make_GRanges')
+functions = c('extract_subset', 
+              'differential_expression', 
+              'process_DESeq2_results', 
+              'build_count_table', 
+              'make_GRanges')
 
-for (i in functions){
-  
-  load(glue('{functions_directory}{i}'))
-  
-}
-
-################################################################################
-# SalmonTE
-################################################################################
-
-files = list.files(path=glue("{working_directory}/count_tables/SalmonTE"), 
-                   pattern="*mTEC*", 
-                   full.names=TRUE, 
-                   recursive=FALSE)
-
-counter = 0
-for (file in files){
-  
-  input = read.csv(file = file)
-  if (counter == 0){mTEC_data = input}
-  else{mTEC_data = merge(mTEC_data, input, by = 'TE')}
-  counter = counter + 1
-  remove(input)
-  
-}
-
-row.names(mTEC_data) = mTEC_data$TE
-mTEC_data = select(mTEC_data, -TE)
-
-mTEC_data_rounded = round(mTEC_data)
-
-Salmon_dds_transcripts = differential_expression(mTEC_data_rounded, 
-                                                 design=~patient + tissue)
-
-Salmon_vs_dds_transcripts = vst(Salmon_dds_transcripts, blind=FALSE)
-
-Salmon_results_transcripts = results(Salmon_dds_transcripts, 
-                              contrast = c('tissue', 'mTEC.hi', 'mTEC.lo'), 
-                              independentFiltering = F)
-
-Salmon_results_transcripts_df = process_DESeq2_results(results = Salmon_results_transcripts, mode = 'Salmon')
-Salmon_results_transcripts_df$TE = row.names(Salmon_results_transcripts_df)
+for (i in functions){load(glue('{functions_directory}{i}'))}
 
 ################################################################################
 # TEtranscripts
@@ -72,9 +35,9 @@ ERE_data = extract_subset(mTEC_data, mode = 'ERE')
 ## Run DESeq2
 
 dds_transcripts_ERE = differential_expression(ERE_data, design=~patient + tissue)
-vs_dds_transcripts_ERE = vst(dds_transcripts_ERE, blind=FALSE)
+#vs_dds_transcripts_ERE = vst(dds_transcripts_ERE, blind=FALSE)
 
-results_transcripts_ERE = results(dds_transcripts, 
+results_transcripts_ERE = results(dds_transcripts_ERE, 
                               contrast = c('tissue', 'mTEC.hi', 'mTEC.lo'), 
                               independentFiltering = F)
 
@@ -139,4 +102,42 @@ results_df_local_ereMAP = process_DESeq2_results(results = results_local_ereMAP,
 
 saveRDS(object = results_df_local_ereMAP, 
         file = glue('{working_directory}/R_variables/results_df_local_ereMAP'))
+
+################################################################################
+# SalmonTE
+################################################################################
+
+files = list.files(path=glue("{working_directory}/count_tables/SalmonTE"), 
+                   pattern="*mTEC*", 
+                   full.names=TRUE, 
+                   recursive=FALSE)
+
+counter = 0
+for (file in files){
+  
+  input = read.csv(file = file)
+  if (counter == 0){mTEC_data = input}
+  else{mTEC_data = merge(mTEC_data, input, by = 'TE')}
+  counter = counter + 1
+  remove(input)
+  
+}
+
+row.names(mTEC_data) = mTEC_data$TE
+mTEC_data = select(mTEC_data, -TE)
+
+mTEC_data_rounded = round(mTEC_data)
+
+Salmon_dds_transcripts = differential_expression(mTEC_data_rounded, 
+                                                 design=~patient + tissue)
+
+Salmon_vs_dds_transcripts = vst(Salmon_dds_transcripts, blind=FALSE)
+
+Salmon_results_transcripts = results(Salmon_dds_transcripts, 
+                                     contrast = c('tissue', 'mTEC.hi', 'mTEC.lo'), 
+                                     independentFiltering = F)
+
+Salmon_results_transcripts_df = process_DESeq2_results(results = Salmon_results_transcripts, mode = 'Salmon')
+Salmon_results_transcripts_df$TE = row.names(Salmon_results_transcripts_df)
+
 

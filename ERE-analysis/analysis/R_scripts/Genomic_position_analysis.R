@@ -23,8 +23,8 @@ results_df_local_ERE = readRDS(file = glue('{working_directory}/R_variables/resu
 ################################################################################
 
 ## Imports a gene annotation
-gene_annotation = read.table(file = glue('{working_directory}/annotation_tables/gencode.v38_gene_annotation_table.txt', 
-                                         header = 1))
+gene_annotation = read.table(file = glue('{working_directory}/annotation_tables/gencode.v38_gene_annotation_table.txt'), 
+                                         header = 1)
 gene_annotation = dplyr::select(gene_annotation, 
                                 c('Geneid', 'Chromosome', 'Start', 'End', 'Strand', 'Class'))
 gene_annotation = dplyr::rename(gene_annotation, 
