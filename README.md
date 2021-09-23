@@ -23,3 +23,15 @@ consecutively labelled scripts.
     
 ## Endogenous retroviral elements in mTECs
 ERE expression in medullary thymic epithelial cells.
+
+## Dependencies
+Python 3.9.6 
+IPython 7.26.0
+scipy 1.7.1
+seaborn 0.11.1
+matplotlib 3.4.2
+matplotlib_venn 0.11.6
+numpy 1.21.1
+pandas 1.3.1
+sklearn 0.24.2
+statsmodels 0.12.2

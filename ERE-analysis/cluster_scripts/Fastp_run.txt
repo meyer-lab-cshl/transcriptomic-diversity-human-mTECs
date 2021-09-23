@@ -1,9 +1,0 @@
-Brain_Caudate
-Brain_Frontal_Cortex
-Brain_Spinal_Cord
-Heart_Left_Ventricle
-Kidney_Cortex
-Liver
-Skin_Not_Sun_Exposed
-Skin_Sun_Exposed
-placeholder
