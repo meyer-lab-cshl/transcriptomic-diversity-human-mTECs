@@ -12,6 +12,8 @@ gene-lists/tra/GTEx_Analysis_v8_gene_mean_expression.Rdata
 
 data/
 index/
+GEO/
+Figures/old
 software/TElocal-master
 analysis/*.txt
 analysis/annotation_tables/
@@ -30,3 +32,8 @@ ERE-analysis/cluster_scripts/SQuIRE/*
 ERE-analysis/analysis/gene_lists/
 ERE-analysis/analysis/Plots/
 ERE-analysis/analysis/R_variables/
+
+Extra_Figure_Files
+Figures/Figure5_data/GTEx_mTEC_expression_transcript.pkl
+Figures/Figure3_data/TE_package.txt
+Figures/Figure5_data/GTEx_mTEC_entropies.pkl
