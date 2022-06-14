@@ -4,7 +4,7 @@
 The induction of central T-cell tolerance in the thymus depends on the  presentation of peripheral self-epitopes by medullary thymic epithelial cells (mTECs), enabled by a process known as promiscuous gene expression (pGE). Transcriptome diversity generated during pGE has many contributors, including non-canonical transcription initiation, alternative splicing and expression of endogenous retroelements (EREs). However, their significance and regulation are poorly understood in the healthy human thymus. Here, we mapped the expression of genome-wide transcripts in immature and mature human mTECs using high-throughput 5'Cap and RNA sequencing. Overall, 96\% of protein coding genes were represented across five human mTEC samples, with mature mTECs showing increased rates of global transcript mis-initiation. Both mTEC populations have increased splicing entropy, which appears to be driven by expression of peripheral splicing factors. Furthermore, EREs enriched in long terminal repeat retrotransposons are up-regulated during mTEC maturation and enriched in genomic proximity to differentially expressed genes. We provide an interactive interface to explore the transcriptome diversity we uncovered at http://transcriptomediversity.cshl.edu/. Our findings represent an important first step towards the generation of a comprehensive map of transcriptome diversity in the healthy human thymus. Ultimately, a complete map of thymic expression diversity will allow for the identification of epitopes that contribute to the pathogenesis of auto-immunity and that drive immune recognition of tumor antigens.
 
 
-## In this repository
+## This repository
 This repository contains all analyses conducted in the manuscript.
 It is divided into subdirectories(brief description below), where
 each subdirectory contains analysis organised in either a snakemake workflow
@@ -12,7 +12,9 @@ each subdirectory contains analysis organised in either a snakemake workflow
 consecutively labelled scripts. 
 
 All manuscript figures can be reproduced by running the python notebooks in the 
-Figures folder.
+Figures folder. To make this possible, source data for all the figures are provided,
+some of which exceed the standard github file size. To ensure proper file download,
+please use [git lsf](https://git-lfs.github.com/) for cloning this repository. 
 
 
 ### 5P-Cap-seq-alignment
