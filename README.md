@@ -18,18 +18,21 @@ please use [git lsf](https://git-lfs.github.com/) for cloning this repository.
 
 
 ### 5P-Cap-seq-alignment
-* Alignment and quality control of 5P-Cap-seq data of mTEC samples from 5 human tissue donors
+* Alignment and quality control of 5P-Cap-seq data from 5 human mTEC samples
 
 ### 5P-Cap-seq-processing
 * Transcription start site and transcription start region calling for immature and mature human mTECs
+    
+### RNAseq
+Alignment and differential expression analysis of RNAseq data from 5 human mTEC samples
+
+### ERE-analysis
+ERE expression in medullary thymic epithelial cells.
 
 ### Gene-lists
 * gene lists derived from public datasets, and re-mapping to GRCh38
 * estimating tissue specifc antigens based on tissue exclusivity index tau and
     22 tissues from GTEx
-    
-### ERE-analysis
-ERE expression in medullary thymic epithelial cells.
 
 ## Dependencies
 - Python: python (v3.9.6), IPython (v7.26.0), scipy (v1.7.1), seaborn (v0.11.1), matplotlib (v3.4.2), matplotlib_venn (v0.11.6), numpy (v1.21.1), pandas (v1.3.1),  sklearn (v0.24.2), statsmodels (v0.12.2)
