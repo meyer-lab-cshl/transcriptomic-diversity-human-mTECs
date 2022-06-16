@@ -1,0 +1,7 @@
+sample	condition	subject
+pt214_hi_fastp	high	214
+pt214_lo_fastp	low	214
+pt221_hi_fastp	high	221
+pt221_lo_fastp	low	221
+pt226_hi_fastp	high	226
+pt226_lo_fastp	low	226
