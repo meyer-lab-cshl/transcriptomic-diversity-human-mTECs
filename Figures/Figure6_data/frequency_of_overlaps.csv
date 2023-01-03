@@ -1,0 +1,10 @@
+gene_set,percent_overlap,TE_set
+up_genes,63.10537129,up_EREs
+unchanged_genes,35.92603463,up_EREs
+down_genes,1.643674787,up_EREs
+up_genes,11.67887661,unchanged_EREs
+unchanged_genes,82.39098252,unchanged_EREs
+down_genes,6.516422292,unchanged_EREs
+up_genes,2.207505519,down_EREs
+unchanged_genes,57.83664459,down_EREs
+down_genes,40.39735099,down_EREs

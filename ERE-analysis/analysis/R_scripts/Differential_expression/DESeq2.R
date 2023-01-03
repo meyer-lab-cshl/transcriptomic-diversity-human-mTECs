@@ -8,7 +8,7 @@ library(tidyverse)
 library(ggplot2)
 library(glue)
 
-working_directory = '~/Desktop/thymus-epitope-mapping/ERE-analysis/analysis'
+working_directory = '~/Desktop/transcriptomic-diversity-human-mTECs/ERE-analysis/analysis'
 functions_directory = glue("{working_directory}/R_functions/")
 
 functions = c('extract_subset', 
