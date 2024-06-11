@@ -1,0 +1,3 @@
+~/Sansom/Merged/H3K27me3.bam	~/Handel/aire.txt	"Aire"	150	grey	
+~/Sansom/Merged/H3K27me3.bam	~/Handel/fezf2.txt	"Fezf2"	150	salmon
+
