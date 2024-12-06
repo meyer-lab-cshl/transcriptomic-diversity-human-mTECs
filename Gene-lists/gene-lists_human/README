@@ -1,0 +1,8 @@
+Thymus/mTEC related gene lists
+==============================
+
+housekeeping_genes.csv: formated housekeeping genes from Eisenberg & Levanon 2013
+human_aire_dep_genes_san.csv: orthologue mapping based on list of Aire dependent genes from Sansom et al (2014).Supp Tab 3, sheet 16; processed with gene_list_processing.R
+human_fezf2_dep_genes.csv:  orthologue mapping based on list of fezf2 dependent genes from Tabaka et al (2015); processed with gene_list_processing.R
+tra_genes.csv: based on TRA estimation in folder ./tra
+tra_transcripts.csv: based on TRA estimation in folder ./tra

@@ -2,9 +2,9 @@
 library(tidyverse)
 library(biomaRt)
 
-indir <- "~/data/tss/gene_lists/public_data"
-tradir <- "~/data/tra"
-outdir <- "~/data/tss/gene_lists/gene_lists_human"
+indir <- "public_datasets"
+tradir <- "tra"
+outdir <- "gene_lists_human"
 
 ## read in gene lists from literature ####
 ## aire dependent genes from Sansom et a ().Supp Tab 3, sheet 16 ####

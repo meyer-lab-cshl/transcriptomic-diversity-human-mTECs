@@ -1,0 +1,6 @@
+Thymus/mTEC related gene lists
+==============================
+
+mm_tra-genes_sansom_supp2.csv: List of TRA genes from Sansom et al (2014).Supp Tab 2
+mm_aire-dependent_sansom_supp3_table16.csv: List of Aire dependent genes from Sansom et al (2014).Supp Tab 3, sheet 16; processed with gene_list_processing.R
+mm_fezf2-dependent_takaba_140417mTECmicroarray.csv: List of fezf2 dependent genes from Takaba et al (2015); processed with gene_list_processing.R
